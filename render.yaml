@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: gold-saas-bp
-    env: ruby
-    buildCommand: ""  # Skip build step
-    startCommand: "bundle exec rails server"
