@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Gold SaaS BP</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  </head>
+
+  <body class="bg-gray-100 text-gray-900 font-sans">
+    <header class="bg-white shadow p-4">
+      <div class="container mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold">gold-saas-bp</h1>
+        <% if user_signed_in? %>
+          <div>
+            Logged in as <%= current_user.email %> |
+            <%= link_to 'Dashboard', dashboard_path, class: "text-blue-500 hover:underline" %> |
+            <%= link_to 'Sign out', destroy_user_session_path, method: :delete, class: "text-red-500 hover:underline" %>
+          </div>
+        <% else %>
+          <%= link_to 'Sign in', new_user_session_path, class: "text-blue-500 hover:underline" %>
+        <% end %>
+      </div>
+    </header>
+
+    <main class="p-6">
+      <%= yield %>
+    </main>
+  </body>
+</html>

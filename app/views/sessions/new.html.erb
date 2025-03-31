@@ -1,0 +1,15 @@
+<h2>Login via Magic Link</h2>
+
+<%= form_with url: create_user_magic_link_path, method: :post do |f| %>
+  <div>
+    <%= f.label :email %><br>
+    <%= f.email_field :email, required: true %>
+  </div>
+
+  <div>
+    <%= f.submit "Send Magic Link" %>
+  </div>
+<% end %>
+
+<%= flash[:notice] %>
+<%= flash[:alert] %>
