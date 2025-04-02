@@ -10,6 +10,14 @@ Rails.application.routes.draw do
     get '/users/sign_out', to: 'devise/sessions#destroy'
   end
   
+  # User profile customization routes
+  namespace :users do
+    resource :profile, only: [:show, :edit, :update]
+    resource :preferences, only: [:show, :update]
+    resource :account, only: [:show, :update, :destroy]
+    resource :usage, only: [:show]
+  end
+  
   # Admin routes
   namespace :admin do
     get '/', to: 'dashboard#index', as: :dashboard

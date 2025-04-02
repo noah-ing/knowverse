@@ -1,11 +1,15 @@
 class User < ApplicationRecord
   devise :magic_link_authenticatable, :database_authenticatable, :registerable, :recoverable, :rememberable, :validatable
 
+  # Active Storage association for avatar
+  has_one_attached :avatar
+  
   # Constants for subscription statuses
   SUBSCRIPTION_STATUSES = %w[trialing active past_due canceled].freeze
 
   # Validations
   validates :subscription_status, inclusion: { in: SUBSCRIPTION_STATUSES }, allow_nil: true
+  validates :name, length: { maximum: 100 }, allow_blank: true
   
   # Admin helper methods
   def admin?
@@ -64,7 +68,7 @@ class User < ApplicationRecord
       # Create a new customer if none exists
       customer = Stripe::Customer.create(
         email: email,
-        name: email.split('@').first # Default to using email prefix as name
+        name: name.presence || email.split('@').first # Use name if present, otherwise use email prefix
       )
       update(stripe_customer_id: customer.id)
       customer
@@ -80,5 +84,22 @@ class User < ApplicationRecord
       card_exp_month: card.exp_month,
       card_exp_year: card.exp_year
     )
+  end
+
+  # Helper for displaying user's name or email
+  def display_name
+    name.presence || email.split('@').first
+  end
+
+  # Notification preferences helpers
+  def notification_enabled?(type)
+    return false unless notification_preferences.is_a?(Hash)
+    notification_preferences[type.to_s] || notification_preferences[type.to_sym]
+  end
+
+  def toggle_notification(type)
+    prefs = notification_preferences || {}
+    prefs[type.to_sym] = !notification_enabled?(type)
+    update(notification_preferences: prefs)
   end
 end

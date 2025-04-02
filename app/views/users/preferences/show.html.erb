@@ -1,0 +1,92 @@
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Notification Preferences</h1>
+    <p class="mt-1 text-sm text-gray-500">Manage what notifications you receive</p>
+  </div>
+
+  <% if notice %>
+    <div class="bg-green-50 p-4 mb-6 rounded-md">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-green-800"><%= notice %></p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <% if alert %>
+    <div class="bg-yellow-50 p-4 mb-6 rounded-md">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-yellow-800"><%= alert %></p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Email Notifications</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">Choose which emails you'd like to receive</p>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+      <%= form_with(url: users_preferences_path, method: :patch, class: "space-y-6") do |form| %>
+        <div class="space-y-4">
+          <div class="relative flex items-start">
+            <div class="flex items-center h-5">
+              <%= check_box_tag "preferences[product_updates]", "1", @user.notification_enabled?(:product_updates), class: "focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" %>
+            </div>
+            <div class="ml-3 text-sm">
+              <%= label_tag "preferences[product_updates]", "Product Updates", class: "font-medium text-gray-700" %>
+              <p class="text-gray-500">Get notified about new features and improvements</p>
+            </div>
+          </div>
+
+          <div class="relative flex items-start">
+            <div class="flex items-center h-5">
+              <%= check_box_tag "preferences[marketing_emails]", "1", @user.notification_enabled?(:marketing_emails), class: "focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" %>
+            </div>
+            <div class="ml-3 text-sm">
+              <%= label_tag "preferences[marketing_emails]", "Marketing Emails", class: "font-medium text-gray-700" %>
+              <p class="text-gray-500">Receive marketing and promotional materials</p>
+            </div>
+          </div>
+
+          <div class="relative flex items-start">
+            <div class="flex items-center h-5">
+              <%= check_box_tag "preferences[billing_alerts]", "1", @user.notification_enabled?(:billing_alerts), class: "focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" %>
+            </div>
+            <div class="ml-3 text-sm">
+              <%= label_tag "preferences[billing_alerts]", "Billing Alerts", class: "font-medium text-gray-700" %>
+              <p class="text-gray-500">Get important notifications about your billing and subscription</p>
+            </div>
+          </div>
+
+          <div class="relative flex items-start">
+            <div class="flex items-center h-5">
+              <%= check_box_tag "preferences[weekly_summary]", "1", @user.notification_enabled?(:weekly_summary), class: "focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" %>
+            </div>
+            <div class="ml-3 text-sm">
+              <%= label_tag "preferences[weekly_summary]", "Weekly Summary", class: "font-medium text-gray-700" %>
+              <p class="text-gray-500">Receive a weekly summary of your account activity</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <%= form.submit "Save Preferences", class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
