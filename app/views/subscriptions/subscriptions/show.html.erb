@@ -1,0 +1,73 @@
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-semibold mb-8">Your Subscription</h1>
+  
+  <% if @subscription.nil? %>
+    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-8">
+      <p>You don't have an active subscription. <%= link_to "Choose a plan", subscriptions_plans_path, class: "underline" %> to get started.</p>
+    </div>
+  <% else %>
+    <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+      <div class="border-b pb-4 mb-4">
+        <h2 class="text-xl font-semibold">Current Plan</h2>
+        <p class="text-2xl font-bold mt-2"><%= current_user.current_plan&.name || 'Unknown Plan' %></p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-lg font-medium mb-2">Subscription Details</h3>
+          <ul class="space-y-2 text-gray-700">
+            <li><span class="font-medium">Status:</span> 
+              <span class="inline-flex items-center">
+                <% case current_user.subscription_status %>
+                <% when 'trialing' %>
+                  <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">TRIAL</span>
+                <% when 'active' %>
+                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">ACTIVE</span>
+                <% when 'past_due' %>
+                  <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">PAST DUE</span>
+                <% when 'canceled' %>
+                  <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">CANCELED</span>
+                <% else %>
+                  <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-medium">UNKNOWN</span>
+                <% end %>
+              </span>
+            </li>
+            <% if current_user.trialing? %>
+              <li><span class="font-medium">Trial Ends:</span> <%= current_user.trial_ends_at.strftime("%B %d, %Y") %></li>
+            <% end %>
+            <li><span class="font-medium">Subscription ID:</span> <%= current_user.stripe_subscription_id %></li>
+            <li><span class="font-medium">Payment Method:</span> <%= current_user.card_info %></li>
+            <% if current_user.card_brand.present? && current_user.card_exp_month.present? && current_user.card_exp_year.present? %>
+              <li><span class="font-medium">Expires:</span> <%= current_user.card_expiration %></li>
+            <% end %>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-lg font-medium mb-2">Plan Actions</h3>
+          <div class="space-y-4">
+            <%= link_to "Change Plan", subscriptions_plans_path, class: "block w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-center" %>
+            
+            <%= link_to "Manage Payment Methods", subscriptions_payment_methods_path, class: "block w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition-colors text-center" %>
+            
+            <% if current_user.canceled? %>
+              <%= button_to subscriptions_resume_subscription_path, method: :patch, class: "w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors" do %>
+                Resume Subscription
+              <% end %>
+            <% else %>
+              <%= button_to subscriptions_cancel_subscription_path, method: :patch, class: "w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors", data: { confirm: "Are you sure you want to cancel your subscription?" } do %>
+                Cancel Subscription
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+  
+  <div class="mt-8">
+    <%= link_to dashboard_path, class: "text-blue-600 hover:text-blue-800" do %>
+      ← Back to Dashboard
+    <% end %>
+  </div>
+</div>

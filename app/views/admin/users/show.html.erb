@@ -1,0 +1,160 @@
+<% content_for :title, "User Details" %>
+
+<div class="mb-6 flex justify-between items-center">
+  <h1 class="text-3xl font-bold">User: <%= @user.email %></h1>
+  <div>
+    <%= link_to "Back to Users", admin_users_path, class: "inline-flex items-center px-4 py-2 bg-gray-100 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:border-gray-300 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150" %>
+    <%= link_to "Edit User", edit_admin_user_path(@user), class: "ml-3 inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150" %>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- User Information -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">User Information</h2>
+    
+    <div class="space-y-4">
+      <div>
+        <p class="text-sm font-medium text-gray-500">Email</p>
+        <p class="mt-1"><%= @user.email %></p>
+      </div>
+      
+      <div>
+        <p class="text-sm font-medium text-gray-500">Created At</p>
+        <p class="mt-1"><%= @user.created_at.strftime("%B %d, %Y at %I:%M %p") %></p>
+      </div>
+      
+      <div>
+        <p class="text-sm font-medium text-gray-500">Admin Status</p>
+        <p class="mt-1">
+          <% if @user.admin? %>
+            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Admin</span>
+          <% else %>
+            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Regular User</span>
+          <% end %>
+        </p>
+      </div>
+      
+      <div>
+        <p class="text-sm font-medium text-gray-500">Last Sign In</p>
+        <p class="mt-1"><%= @user.updated_at.strftime("%B %d, %Y at %I:%M %p") %></p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Subscription Information -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">Subscription</h2>
+    
+    <div class="space-y-4">
+      <div>
+        <p class="text-sm font-medium text-gray-500">Status</p>
+        <p class="mt-1">
+          <% if @user.active_subscription? %>
+            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+          <% elsif @user.trialing? %>
+            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Trial</span>
+          <% elsif @user.past_due? %>
+            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Past Due</span>
+          <% elsif @user.canceled? %>
+            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Canceled</span>
+          <% else %>
+            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">No Subscription</span>
+          <% end %>
+        </p>
+      </div>
+      
+      <div>
+        <p class="text-sm font-medium text-gray-500">Current Plan</p>
+        <p class="mt-1"><%= @user.current_plan&.name || "None" %></p>
+      </div>
+      
+      <% if @user.trialing? %>
+        <div>
+          <p class="text-sm font-medium text-gray-500">Trial Ends</p>
+          <p class="mt-1"><%= @user.trial_ends_at&.strftime("%B %d, %Y") || "N/A" %></p>
+        </div>
+      <% end %>
+      
+      <div>
+        <p class="text-sm font-medium text-gray-500">Payment Method</p>
+        <p class="mt-1"><%= @user.card_info %></p>
+        <% if @user.card_brand.present? && @user.card_exp_month.present? && @user.card_exp_year.present? %>
+          <p class="text-xs text-gray-500 mt-1">Expires: <%= @user.card_expiration %></p>
+        <% end %>
+      </div>
+    </div>
+    
+    <div class="mt-6">
+      <h3 class="text-lg font-semibold mb-3">Update Subscription</h3>
+      
+      <div class="space-y-3">
+        <% @plans.each do |plan| %>
+          <%= form_with url: update_subscription_admin_user_path(@user), method: :patch do |f| %>
+            <%= f.hidden_field :plan_id, value: plan.id %>
+            <button type="submit" class="<%= @user.current_plan&.id == plan.id ? 'bg-green-100 border-green-300' : 'bg-white hover:bg-gray-50' %> block w-full text-left px-4 py-2 border rounded shadow-sm">
+              <div class="flex justify-between items-center">
+                <div>
+                  <span class="font-medium"><%= plan.name %></span>
+                  <span class="text-sm text-gray-500 ml-2">$<%= plan.price %>/mo</span>
+                </div>
+                <% if @user.current_plan&.id == plan.id %>
+                  <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">Current</span>
+                <% else %>
+                  <span class="text-xs text-gray-500">Switch</span>
+                <% end %>
+              </div>
+            </button>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Admin Actions -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold mb-4 text-gray-800">Admin Actions</h2>
+    
+    <div class="space-y-4">
+      <%= button_to send_magic_link_admin_user_path(@user), method: :post, class: "w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+        Send Magic Link
+      <% end %>
+      
+      <% if @user.active_subscription? || @user.trialing? %>
+        <%= button_to deactivate_admin_user_path(@user), method: :patch, class: "w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" do %>
+          Deactivate Account
+        <% end %>
+      <% elsif @user.canceled? %>
+        <%= button_to reactivate_admin_user_path(@user), method: :patch, class: "w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" do %>
+          Reactivate Account
+        <% end %>
+      <% end %>
+    </div>
+    
+    <div class="mt-8 pt-6 border-t border-gray-200">
+      <h3 class="text-lg font-semibold mb-3 text-gray-800">Danger Zone</h3>
+      
+      <div class="rounded-md border border-red-300 bg-red-50 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002.
+0v-3a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Data Deletion</h3>
+            <div class="mt-2 text-sm text-red-700">
+              <p>Permanently delete user data. This action cannot be undone.</p>
+            </div>
+            <div class="mt-4">
+              <button type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                Delete User Data
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

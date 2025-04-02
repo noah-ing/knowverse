@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Admin - Gold SaaS Boilerplate</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  </head>
+
+  <body class="bg-gray-50 min-h-screen">
+    <div class="flex">
+      <!-- Sidebar -->
+      <div class="bg-indigo-800 text-white w-64 min-h-screen fixed">
+        <div class="p-6">
+          <h1 class="text-2xl font-bold">Admin Panel</h1>
+        </div>
+        <nav class="mt-6">
+          <div class="px-4">
+            <%= link_to admin_dashboard_path, class: "block py-2.5 px-4 rounded transition duration-200 #{current_page?(admin_dashboard_path) ? 'bg-indigo-700' : 'hover:bg-indigo-700'}" do %>
+              <span class="text-white">Dashboard</span>
+            <% end %>
+            
+            <%= link_to admin_users_path, class: "block py-2.5 px-4 rounded transition duration-200 #{current_page?(admin_users_path) ? 'bg-indigo-700' : 'hover:bg-indigo-700'}" do %>
+              <span class="text-white">Users</span>
+            <% end %>
+            
+            <%= link_to dashboard_path, class: "block py-2.5 px-4 rounded transition duration-200 hover:bg-indigo-700" do %>
+              <span class="text-white">Exit Admin</span>
+            <% end %>
+          </div>
+        </nav>
+      </div>
+
+      <!-- Main Content -->
+      <div class="ml-64 flex-1 p-10">
+        <% if notice %>
+          <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+            <p><%= notice %></p>
+          </div>
+        <% end %>
+        <% if alert %>
+          <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+            <p><%= alert %></p>
+          </div>
+        <% end %>
+
+        <%= yield %>
+      </div>
+    </div>
+  </body>
+</html>

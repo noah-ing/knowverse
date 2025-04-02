@@ -16,8 +16,10 @@ gem "devise-passwordless"
 gem "resend"
 gem "dotenv-rails"
 
-# ✨ Updated to use `letter_opener_web` instead
-# gem "letter_opener_web", group: :development
+# Stripe and subscription management
+gem "stripe", "~> 9.0"
+gem "pay", "~> 6.8"
+gem "stripe_event"
 
 gem "bootsnap", require: false
 gem "kamal", require: false
@@ -37,3 +39,5 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
+
+gem "kaminari", "~> 1.2"

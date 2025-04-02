@@ -1,9 +1,11 @@
-<h1>Hello, <%= @user.email %>!</h1>
-
-<p>Click below to sign in:</p>
+<p>Hello <%= @user.email %>,</p>
 
 <p>
-  <a href="<%= @login_url %>">
-    <%= @login_url %>
-  </a>
+  Click the button below to sign in:
 </p>
+
+<p>
+  <a href="<%= @login_url %>">Sign in with this magic link</a>
+</p>
+
+<p>This link will expire in 15 minutes.</p>

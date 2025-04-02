@@ -10,9 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_29_180117) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_01_234926) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "plans", force: :cascade do |t|
+    t.string "name"
+    t.string "stripe_price_id"
+    t.integer "amount"
+    t.string "interval"
+    t.boolean "active"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "features", default: [], array: true
+  end
 
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
@@ -24,6 +35,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_29_180117) do
     t.datetime "updated_at", null: false
     t.string "login_token"
     t.datetime "login_token_valid_until"
+    t.string "stripe_customer_id"
+    t.string "stripe_subscription_id"
+    t.string "card_brand"
+    t.string "card_last4"
+    t.string "card_exp_month"
+    t.string "card_exp_year"
+    t.string "subscription_status"
+    t.datetime "trial_ends_at"
+    t.boolean "admin", default: false, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end

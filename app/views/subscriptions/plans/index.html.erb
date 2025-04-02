@@ -1,0 +1,47 @@
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-semibold mb-8">Choose a Subscription Plan</h1>
+
+  <% if current_user.subscribed? %>
+    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-8">
+      <p>You are currently subscribed to the <strong><%= current_user.current_plan&.name || 'Unknown' %></strong> plan.</p>
+      <p>
+        <%= link_to "Manage your subscription", subscriptions_subscription_path, class: "text-blue-600 underline" %>
+      </p>
+    </div>
+  <% end %>
+
+  <div class="grid md:grid-cols-<%= @plans.count > 3 ? 4 : @plans.count %> gap-6">
+    <% @plans.each do |plan| %>
+      <div class="border rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 <%= current_user.current_plan&.id == plan.id ? 'bg-blue-50 border-blue-300' : '' %>">
+        <h2 class="text-xl font-semibold mb-2"><%= plan.name %></h2>
+        <p class="text-2xl font-bold mb-4"><%= plan.formatted_price %></p>
+        
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-2">Features:</h3>
+          <ul class="space-y-2">
+            <% plan.feature_list.each do |feature| %>
+              <li class="flex items-start">
+                <svg class="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <%= feature %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+
+        <% if current_user.current_plan&.id == plan.id %>
+          <div class="mt-auto">
+            <span class="inline-block w-full py-2 px-4 text-center bg-gray-200 rounded-md">Current Plan</span>
+          </div>
+        <% else %>
+          <div class="mt-auto">
+            <%= button_to subscriptions_subscribe_path(plan_id: plan.id), class: "w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors" do %>
+              <%= plan.amount.zero? ? 'Start Free Plan' : 'Subscribe' %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

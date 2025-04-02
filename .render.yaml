@@ -5,3 +5,39 @@ services:
     plan: free
     buildCommand: "./bin/render-build.sh"
     startCommand: "bundle exec puma -C config/puma.rb"
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: gold-saas-bp-redis
+          property: connectionString
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+  - type: worker
+    name: gold-saas-bp-worker
+    env: ruby
+    buildCommand: "./bin/render-build.sh"
+    startCommand: "bundle exec rails solid_queue:start"
+    plan: starter
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: gold-saas-bp-redis
+          property: connectionString
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+  - type: redis
+    name: gold-saas-bp-redis
+    ipAllowList: []
+    plan: free

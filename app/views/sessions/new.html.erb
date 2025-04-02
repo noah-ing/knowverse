@@ -2,12 +2,12 @@
 
 <%= form_with url: create_user_magic_link_path, method: :post do |f| %>
   <div>
-    <%= f.label :email %><br>
-    <%= f.email_field :email, required: true %>
+    <%= label_tag :email %><br>
+    <%= email_field_tag :email, nil, required: true %>
   </div>
 
   <div>
-    <%= f.submit "Send Magic Link" %>
+    <%= submit_tag "Send Magic Link" %>
   </div>
 <% end %>
 

@@ -1,0 +1,133 @@
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-semibold mb-8">Add Payment Method</h1>
+  
+  <div class="max-w-lg mx-auto">
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+      <form id="payment-form" class="space-y-6">
+        <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+        
+        <div>
+          <label for="card-element" class="block text-gray-700 text-sm font-bold mb-2">
+            Credit or debit card
+          </label>
+          <div id="card-element" class="border rounded p-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- Stripe Elements will create input here -->
+          </div>
+          <div id="card-errors" role="alert" class="mt-2 text-red-600 text-sm"></div>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <button type="submit" id="submit-button" class="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
+            Add Payment Method
+          </button>
+          <%= link_to "Cancel", subscriptions_payment_methods_path, class: "text-blue-600 hover:text-blue-800 transition-colors" %>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Create a Stripe client
+  const stripe = Stripe('<%= @stripe_publishable_key %>');
+
+  // Create an instance of Elements
+  const elements = stripe.elements();
+
+  // Create a Card Element
+  const cardElement = elements.create('card', {
+    style: {
+      base: {
+        color: '#32325d',
+        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+        fontSmoothing: 'antialiased',
+        fontSize: '16px',
+        '::placeholder': {
+          color: '#aab7c4'
+        }
+      },
+      invalid: {
+        color: '#fa755a',
+        iconColor: '#fa755a'
+      }
+    }
+  });
+
+  // Mount the Card Element to the DOM
+  cardElement.mount('#card-element');
+
+  // Handle real-time validation errors from the card Element
+  cardElement.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    if (event.error) {
+      displayError.textContent = event.error.message;
+    } else {
+      displayError.textContent = '';
+    }
+  });
+
+  // Handle form submission
+  const form = document.getElementById('payment-form');
+  form.addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const submitButton = document.getElementById('submit-button');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Processing...';
+
+    stripe.createPaymentMethod({
+      type: 'card',
+      card: cardElement,
+    }).then(function(result) {
+      if (result.error) {
+        // Display error
+        const errorElement = document.getElementById('card-errors');
+        errorElement.textContent = result.error.message;
+        submitButton.disabled = false;
+        submitButton.textContent = 'Add Payment Method';
+      } else {
+        // Send the payment method ID to the server
+        stripePaymentMethodHandler(result.paymentMethod.id);
+      }
+    });
+  });
+
+  function stripePaymentMethodHandler(paymentMethodId) {
+    // Create a hidden input with the payment method ID
+    const hiddenInput = document.createElement('input');
+    hiddenInput.setAttribute('type', 'hidden');
+    hiddenInput.setAttribute('name', 'payment_method_id');
+    hiddenInput.setAttribute('value', paymentMethodId);
+    form.appendChild(hiddenInput);
+
+    // Submit the form
+    fetch('<%= subscriptions_payment_methods_path %>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('input[name="authenticity_token"]').value
+      },
+      body: JSON.stringify({
+        payment_method_id: paymentMethodId
+      })
+    })
+    .then(function(response) {
+      return response.json();
+    })
+    .then(function(data) {
+      // Redirect to payment methods page on success
+      window.location.href = '<%= subscriptions_payment_methods_path %>';
+    })
+    .catch(function(error) {
+      // Display error and re-enable the submit button
+      const errorElement = document.getElementById('card-errors');
+      errorElement.textContent = 'An error occurred. Please try again.';
+      
+      const submitButton = document.getElementById('submit-button');
+      submitButton.disabled = false;
+      submitButton.textContent = 'Add Payment Method';
+    });
+  }
+});
+</script>
