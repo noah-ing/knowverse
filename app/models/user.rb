@@ -4,6 +4,10 @@ class User < ApplicationRecord
   # Active Storage association for avatar
   has_one_attached :avatar
   
+  # Analytics associations
+  has_many :visits, class_name: "Ahoy::Visit"
+  has_many :events, through: :visits, class_name: "Ahoy::Event"
+  
   # Constants for subscription statuses
   SUBSCRIPTION_STATUSES = %w[trialing active past_due canceled].freeze
 

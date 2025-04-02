@@ -9,9 +9,11 @@ The Gold SaaS Boilerplate (gold-saas-bp) is a production-grade starter kit for r
 - Sets up real-world email delivery infrastructure using Resend
 - Includes complete Stripe subscription management with tiered pricing plans
 - Includes production deployment configuration for Render
-- Establishes a solid foundation for scaling with PostgreSQL, Redis, and Sidekiq
+- Establishes a solid foundation for scaling with PostgreSQL, Redis, and SolidQueue
 - Implements modern frontend with Hotwire (Turbo + Stimulus) and TailwindCSS
 - Creates a consistent, tested environment that works identically in development and production
+- Provides built-in analytics tracking for user behavior and subscription metrics
+- Includes comprehensive test coverage for all major components
 
 ## How it should work
 - Developers should be able to clone the repo and have a fully functional SaaS foundation

@@ -21,6 +21,15 @@ Rails.application.routes.draw do
   # Admin routes
   namespace :admin do
     get '/', to: 'dashboard#index', as: :dashboard
+    
+    # Analytics routes
+    resource :analytics, only: [:index], controller: 'analytics' do
+      collection do
+        get :events
+        get :user_activity
+      end
+    end
+    
     resources :users do
       member do
         patch :update_subscription

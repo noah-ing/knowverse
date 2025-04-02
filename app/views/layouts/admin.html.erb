@@ -26,6 +26,12 @@
               <span class="text-white">Users</span>
             <% end %>
             
+            <%= link_to admin_analytics_path, class: "block py-2.5 px-4 rounded transition duration-200 #{controller_name == 'analytics' ? 'bg-indigo-700' : 'hover:bg-indigo-700'}" do %>
+              <span class="text-white">Analytics</span>
+            <% end %>
+            
+            <div class="border-t border-indigo-700 my-4"></div>
+            
             <%= link_to dashboard_path, class: "block py-2.5 px-4 rounded transition duration-200 hover:bg-indigo-700" do %>
               <span class="text-white">Exit Admin</span>
             <% end %>

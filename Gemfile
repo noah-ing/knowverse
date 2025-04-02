@@ -29,6 +29,9 @@ group :development, :test do
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
   gem "brakeman", require: false
   gem "rubocop-rails-omakase", require: false
+  gem "rspec-rails", "~> 6.0"
+  gem "factory_bot_rails"
+  gem "faker"
 end
 
 group :development do
@@ -38,6 +41,15 @@ end
 group :test do
   gem "capybara"
   gem "selenium-webdriver"
+  gem "webmock"
+  gem "vcr"
+  gem "shoulda-matchers"
+  gem "database_cleaner-active_record"
 end
 
 gem "kaminari", "~> 1.2"
+
+# Analytics
+gem "ahoy_matey"
+gem "groupdate"
+gem "chartkick"

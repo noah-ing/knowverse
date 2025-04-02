@@ -13,19 +13,35 @@
 - Stripe (payment processing and subscription management)
 - Pay (Stripe integration helper)
 - Solid Cache (caching)
-- Solid Queue (background jobs, fully implemented)
+- Solid Queue (background jobs)
 - Kaminari (pagination for admin interfaces)
+- Active Storage (file attachments and image processing)
+- Ahoy (analytics tracking)
+- Groupdate (time-based data grouping)
+- Chartkick (chart generation)
 
 ### Frontend
 - Hotwire (Turbo + Stimulus)
 - TailwindCSS v4.0.17
-- Minimal custom JavaScript
+- Alpine.js (interactive components)
+- Stripe Elements (payment UI)
+- Responsive design patterns
+
+### Testing
+- RSpec (test framework)
+- FactoryBot (test data generation)
+- Capybara (system testing)
+- Shoulda Matchers (test helpers)
+- VCR (API mocking)
+- WebMock (HTTP stub)
+- Database Cleaner (test isolation)
 
 ### DevOps & Infrastructure
 - Render (cloud hosting platform)
 - GitHub Actions (CI/CD)
 - Docker (containerization)
 - dotenv-rails (environment variable management)
+- System verification tools
 
 ## Development setup
 1. Clone repository
@@ -61,6 +77,8 @@
 4. **Database**
    - Uses PostgreSQL-specific features, not database-agnostic
    - Migrations should be backward-compatible for zero-downtime deployments
+   - JSONB column for notification preferences (PostgreSQL-specific)
+   - Active Storage tables for avatar storage
 
 5. **Payment Processing**
    - Requires Stripe API keys for testing and production
@@ -72,3 +90,11 @@
 6. **Performance**
    - Email sending is handled asynchronously via background jobs
    - No CDN configuration yet for assets
+   - Image processing for avatars is done synchronously (could be moved to background jobs)
+
+7. **User Profiles**
+   - Avatar upload requires Active Storage configuration
+   - Notification preferences stored in JSONB column for flexibility
+   - Profile data is extended from core user model
+   - Namespaced controllers for organization (Users::ProfilesController, etc.)
+   - Route structure follows RESTful conventions for all profile-related functionality

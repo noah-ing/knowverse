@@ -119,6 +119,9 @@ class Users::MagicLinksController < ApplicationController
       Rails.logger.info "[MagicLink] Signing in user: #{user.email}"
       sign_in(user)
       
+      # Track successful login with Ahoy
+      ahoy.track "magic_link_login", user_id: user.id, email: user.email
+      
       flash[:notice] = "You have been signed in successfully."
       redirect_to dashboard_path
     rescue => e

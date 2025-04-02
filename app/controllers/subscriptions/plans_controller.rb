@@ -46,6 +46,18 @@ module Subscriptions
         current_user.update(trial_ends_at: Time.at(subscription.trial_end))
       end
       
+      # Track subscription creation with Ahoy
+      ahoy.track "subscription_changed", 
+        user_id: current_user.id, 
+        action: "subscribed",
+        plan: @plan.name,
+        plan_id: @plan.id,
+        subscription_id: subscription.id,
+        amount: @plan.amount,
+        interval: @plan.interval,
+        status: subscription.status,
+        has_trial: subscription.trial_end.present?
+      
       flash[:notice] = "You have successfully subscribed to the #{@plan.name} plan!"
       redirect_to dashboard_path
     rescue Stripe::CardError => e
@@ -57,7 +69,7 @@ module Subscriptions
       # Update existing subscription in Stripe
       subscription = Stripe::Subscription.retrieve(current_user.stripe_subscription_id)
       
-      Stripe::Subscription.update(
+      updated_subscription = Stripe::Subscription.update(
         subscription.id,
         {
           cancel_at_period_end: false,
@@ -70,6 +82,17 @@ module Subscriptions
           ],
         }
       )
+      
+      # Track plan change with Ahoy
+      ahoy.track "subscription_changed", 
+        user_id: current_user.id, 
+        action: "changed_plan",
+        previous_plan: current_user.current_plan&.name,
+        new_plan: @plan.name,
+        plan_id: @plan.id,
+        subscription_id: subscription.id,
+        amount: @plan.amount,
+        interval: @plan.interval
       
       flash[:notice] = "Your subscription has been updated to the #{@plan.name} plan!"
       redirect_to dashboard_path

@@ -1,0 +1,168 @@
+<div class="px-6 py-4">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">User Activity</h1>
+    <%= link_to "Back to Dashboard", admin_analytics_path, class: "px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition" %>
+  </div>
+  
+  <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="col-span-1">
+        <h2 class="text-xl font-semibold mb-4">User Details</h2>
+        <div class="mb-4">
+          <div class="text-sm text-gray-500 mb-1">Email</div>
+          <div class="font-medium"><%= @user.email %></div>
+        </div>
+        
+        <div class="mb-4">
+          <div class="text-sm text-gray-500 mb-1">Name</div>
+          <div class="font-medium"><%= @user.name.present? ? @user.name : "Not set" %></div>
+        </div>
+        
+        <div class="mb-4">
+          <div class="text-sm text-gray-500 mb-1">Registered</div>
+          <div class="font-medium"><%= @user.created_at.strftime("%B %d, %Y") %></div>
+        </div>
+        
+        <div class="mb-4">
+          <div class="text-sm text-gray-500 mb-1">Subscription</div>
+          <div class="font-medium">
+            <% if @user.current_plan %>
+              <%= @user.current_plan.name %> (<%= @user.subscription_status %>)
+            <% else %>
+              No active subscription
+            <% end %>
+          </div>
+        </div>
+        
+        <%= link_to "Edit User", edit_admin_user_path(@user), class: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition block text-center" %>
+      </div>
+      
+      <div class="col-span-2">
+        <h2 class="text-xl font-semibold mb-4">Activity Summary</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500">Total Visits</div>
+            <div class="text-2xl font-bold text-blue-600"><%= @user.visits.count %></div>
+          </div>
+          
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500">Total Events</div>
+            <div class="text-2xl font-bold text-blue-600"><%= @user.events.count %></div>
+          </div>
+          
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div class="text-sm text-gray-500">Last Seen</div>
+            <div class="font-medium text-blue-600">
+              <% if @user.visits.any? %>
+                <%= time_ago_in_words(@user.visits.order(started_at: :desc).first.started_at) %> ago
+              <% else %>
+                Never
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white rounded-lg shadow mb-6 overflow-hidden">
+    <div class="px-6 py-4 bg-gray-50 border-b">
+      <h2 class="text-lg font-semibold text-gray-700">Recent Visits</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrer</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Browser</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">OS</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @visits.each do |visit| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-900">
+                <%= visit.started_at.strftime("%b %d, %Y %H:%M") %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                <%= visit.referring_domain || "Direct" %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                <%= visit.device_type || "Unknown" %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                <%= visit.browser || "Unknown" %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                <%= visit.os || "Unknown" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      
+      <% if @visits.empty? %>
+        <div class="py-8 text-center text-gray-500">
+          No visits recorded for this user.
+        </div>
+      <% end %>
+      
+      <div class="px-6 py-4 bg-gray-50">
+        <%= paginate @visits %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-6 py-4 bg-gray-50 border-b">
+      <h2 class="text-lg font-semibold text-gray-700">Recent Events</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Name</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Properties</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @events.each do |event| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                <%= event.name %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                <%= event.time.strftime("%b %d, %Y %H:%M:%S") %>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-500">
+                <% if event.properties.present? %>
+                  <details>
+                    <summary class="text-blue-600 hover:text-blue-800 cursor-pointer">View Properties</summary>
+                    <pre class="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-40"><%= JSON.pretty_generate(event.properties) %></pre>
+                  </details>
+                <% else %>
+                  <span class="text-gray-400">No properties</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      
+      <% if @events.empty? %>
+        <div class="py-8 text-center text-gray-500">
+          No events recorded for this user.
+        </div>
+      <% end %>
+      
+      <div class="px-6 py-4 bg-gray-50">
+        <%= paginate @events %>
+      </div>
+    </div>
+  </div>
+</div>

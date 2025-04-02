@@ -2,36 +2,137 @@
 <html>
   <head>
     <title>Gold SaaS BP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload" %>
+    
+    <%# Ahoy.js for analytics tracking %>
+    <% if Rails.env.production? || Rails.env.development? %>
+      <%= javascript_include_tag "ahoy", "data-turbo-track": "reload" %>
+    <% end %>
   </head>
 
-  <body class="bg-gray-100 text-gray-900 font-sans">
-    <header class="bg-white shadow p-4">
-      <div class="container mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-bold">gold-saas-bp</h1>
+  <body class="bg-gray-100 text-gray-900 font-sans min-h-screen flex flex-col">
+    <header class="bg-white shadow-md">
+      <nav class="container mx-auto px-4 py-3">
+        <div class="flex justify-between items-center">
+          <a href="<%= root_path %>" class="text-2xl font-bold text-blue-600 hover:text-blue-700 transition">
+            Gold SaaS BP
+          </a>
+          
+          <% if user_signed_in? %>
+            <div class="hidden md:flex items-center space-x-4">
+              <%= link_to 'Dashboard', dashboard_path, class: "text-gray-600 hover:text-blue-600 transition" %>
+              
+              <div class="relative inline-block" x-data="{ open: false }">
+                <button @click="open = !open" class="flex items-center text-gray-600 hover:text-blue-600 transition">
+                  <span class="mr-1"><%= current_user.display_name %></span>
+                  <% if current_user.avatar.attached? %>
+                    <%= image_tag current_user.avatar.variant(resize_to_limit: [32, 32]), class: "h-8 w-8 rounded-full ml-1" %>
+                  <% else %>
+                    <div class="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center ml-1">
+                      <span class="text-sm text-gray-600"><%= current_user.display_name[0].upcase %></span>
+                    </div>
+                  <% end %>
+                </button>
+                
+                <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1">
+                  <p class="px-4 py-2 text-sm text-gray-700 border-b">
+                    <% if current_user.current_plan %>
+                      <span class="font-semibold"><%= current_user.current_plan.name %> Plan</span>
+                    <% else %>
+                      <span class="font-semibold">Free Plan</span>
+                    <% end %>
+                  </p>
+                  
+                  <%= link_to 'Profile', users_profile_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" %>
+                  <%= link_to 'Notification Settings', users_preferences_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" %>
+                  <%= link_to 'Usage Statistics', users_usage_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" %>
+                  <%= link_to 'Account Settings', users_account_path, class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" %>
+                  
+                  <% if current_user.admin? %>
+                    <div class="border-t border-gray-200 my-1"></div>
+                    <%= link_to 'Admin Dashboard', admin_dashboard_path, class: "block px-4 py-2 text-sm text-purple-600 hover:bg-gray-100" %>
+                  <% end %>
+                  
+                  <div class="border-t border-gray-200 my-1"></div>
+                  <%= button_to 'Sign out', destroy_user_session_path, method: :delete, class: "block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 bg-transparent border-0 cursor-pointer" %>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Mobile menu button -->
+            <button class="md:hidden text-gray-600 hover:text-gray-900 focus:outline-none" x-data="{open: false}" @click="open = !open; $refs.mobileMenu.classList.toggle('hidden');">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+          <% else %>
+            <%= link_to 'Sign in', new_user_session_path, class: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition" %>
+          <% end %>
+        </div>
+        
+        <!-- Mobile menu -->
         <% if user_signed_in? %>
-          <div>
-            Logged in as <%= current_user.display_name %> |
-            <%= link_to 'Dashboard', dashboard_path, class: "text-blue-500 hover:underline" %> |
-            <%= link_to 'Profile', users_profile_path, class: "text-blue-500 hover:underline" %> |
-            <%= link_to 'Notifications', users_preferences_path, class: "text-blue-500 hover:underline" %> |
-            <%= link_to 'Usage', users_usage_path, class: "text-blue-500 hover:underline" %> |
-            <%= link_to 'Account', users_account_path, class: "text-blue-500 hover:underline" %> |
+          <div class="md:hidden hidden mt-4 pb-3 border-t border-gray-200" x-ref="mobileMenu">
+            <%= link_to 'Dashboard', dashboard_path, class: "block py-2 text-gray-600 hover:text-blue-600" %>
+            <%= link_to 'Profile', users_profile_path, class: "block py-2 text-gray-600 hover:text-blue-600" %>
+            <%= link_to 'Notifications', users_preferences_path, class: "block py-2 text-gray-600 hover:text-blue-600" %>
+            <%= link_to 'Usage', users_usage_path, class: "block py-2 text-gray-600 hover:text-blue-600" %>
+            <%= link_to 'Account', users_account_path, class: "block py-2 text-gray-600 hover:text-blue-600" %>
             <% if current_user.admin? %>
-              <%= link_to 'Admin', admin_dashboard_path, class: "text-purple-600 hover:underline" %> |
+              <%= link_to 'Admin', admin_dashboard_path, class: "block py-2 text-purple-600 hover:text-purple-700" %>
             <% end %>
-            <%= button_to 'Sign out', destroy_user_session_path, method: :delete, class: "text-red-500 hover:underline bg-transparent border-0 cursor-pointer p-0", form: { class: "inline" } %>
+            <%= button_to 'Sign out', destroy_user_session_path, method: :delete, class: "block py-2 text-red-600 bg-transparent border-0 cursor-pointer p-0" %>
           </div>
-        <% else %>
-          <%= link_to 'Sign in', new_user_session_path, class: "text-blue-500 hover:underline" %>
         <% end %>
-      </div>
+      </nav>
     </header>
 
-    <main class="p-6">
+    <% if notice || alert || flash[:success] || flash[:error] || flash[:warning] %>
+      <div class="container mx-auto px-4 mt-4">
+        <% if notice %>
+          <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded shadow-sm" role="alert">
+            <p><%= notice %></p>
+          </div>
+        <% end %>
+        
+        <% if alert %>
+          <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded shadow-sm" role="alert">
+            <p><%= alert %></p>
+          </div>
+        <% end %>
+        
+        <% if flash[:success] %>
+          <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded shadow-sm" role="alert">
+            <p><%= flash[:success] %></p>
+          </div>
+        <% end %>
+        
+        <% if flash[:error] %>
+          <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded shadow-sm" role="alert">
+            <p><%= flash[:error] %></p>
+          </div>
+        <% end %>
+        
+        <% if flash[:warning] %>
+          <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded shadow-sm" role="alert">
+            <p><%= flash[:warning] %></p>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <main class="container mx-auto px-4 py-6 flex-grow">
       <%= yield %>
     </main>
+    
+    <footer class="bg-white shadow-inner py-6 mt-8">
+      <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+        <p>&copy; <%= Time.current.year %> Gold SaaS Boilerplate. All rights reserved.</p>
+      </div>
+    </footer>
   </body>
 </html>

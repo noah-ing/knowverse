@@ -18,6 +18,13 @@ module Subscriptions
         # Update the subscription status
         current_user.update(subscription_status: 'canceled')
         
+        # Track subscription cancellation
+        ahoy.track "subscription_changed", 
+          user_id: current_user.id, 
+          action: "canceled", 
+          plan: current_user.current_plan&.name,
+          subscription_id: current_user.stripe_subscription_id
+        
         flash[:notice] = "Your subscription has been canceled. You will still have access until the end of your billing period."
         redirect_to dashboard_path
       rescue Stripe::StripeError => e
@@ -36,6 +43,13 @@ module Subscriptions
         
         # Update the subscription status
         current_user.update(subscription_status: 'active')
+        
+        # Track subscription resumption
+        ahoy.track "subscription_changed", 
+          user_id: current_user.id, 
+          action: "resumed", 
+          plan: current_user.current_plan&.name,
+          subscription_id: current_user.stripe_subscription_id
         
         flash[:notice] = "Your subscription has been resumed."
         redirect_to dashboard_path
