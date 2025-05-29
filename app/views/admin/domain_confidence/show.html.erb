@@ -1,0 +1,307 @@
+<div class="kv-container kv-animation-fade-in" style="--kv-animation-delay: 100ms;">
+  <div class="flex flex-wrap items-center justify-between mb-6">
+    <div>
+      <h1 class="kv-text-primary text-2xl font-bold">Domain Confidence Analytics</h1>
+      <p class="kv-text-secondary mt-1">View performance metrics and confidence scores across domains</p>
+    </div>
+    <div class="flex gap-2 mt-3 sm:mt-0">
+      <%= render partial: "shared/button", locals: {
+        text: "Settings",
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>',
+        href: settings_admin_domain_confidence_path(@organization),
+        variant: "secondary"
+      } %>
+      
+      <%= render partial: "shared/button", locals: {
+        text: "Test Tool",
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a4 4 0 00-2.171.102l-.47.156a4 4 0 01-2.53 0l-.563-.187a1.993 1.993 0 00-.114-.035l1.063-1.063A3 3 0 009 8.172z" clip-rule="evenodd" /></svg>',
+        href: test_admin_domain_confidence_path(@organization),
+        variant: "secondary"
+      } %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 kv-animation-fade-in" style="--kv-animation-delay: 200ms;">
+    <!-- Current Settings Card -->
+    <%= render partial: "shared/card", locals: {
+      title: "Current Settings",
+      content: capture do %>
+        <ul class="space-y-3">
+          <li class="flex justify-between items-center">
+            <span class="kv-text-secondary">Primary Threshold:</span>
+            <span class="kv-text-primary font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+              <%= @organization.domain_confidence_primary_threshold %>
+            </span>
+          </li>
+          <li class="flex justify-between items-center">
+            <span class="kv-text-secondary">Secondary Threshold:</span>
+            <span class="kv-text-primary font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+              <%= @organization.domain_confidence_secondary_threshold %>
+            </span>
+          </li>
+          <li class="flex justify-between items-center">
+            <span class="kv-text-secondary">Fallback Enabled:</span>
+            <span class="kv-text-primary font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+              <%= @organization.enable_domain_fallback ? 'Yes' : 'No' %>
+            </span>
+          </li>
+        </ul>
+      <% end 
+    } %>
+
+    <!-- Available Domains Card -->
+    <%= render partial: "shared/card", locals: {
+      title: "Available Domains",
+      content: capture do %>
+        <div class="flex flex-wrap gap-2">
+          <% @domains.each do |domain| %>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+              <%= domain %>
+            </span>
+          <% end %>
+        </div>
+      <% end 
+    } %>
+  </div>
+
+  <!-- Domain Confidence Performance Card -->
+  <div class="mb-6 kv-animation-fade-in" style="--kv-animation-delay: 300ms;">
+    <%= render partial: "shared/card", locals: {
+      title: "Domain Confidence Performance",
+      content: capture do %>
+        <% if @confidence_scores.present? %>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Domain</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Avg. Confidence</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Success Rate</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Query Count</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                <% @confidence_scores.each_with_index do |score, index| %>
+                  <tr class="kv-animation-slide-up" style="--kv-animation-delay: <%= 300 + ((index + 1) * 50) %>ms;">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <div class="text-sm font-medium kv-text-primary"><%= score.domain %></div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <span class="px-2 py-1 text-xs rounded-full <%= confidence_level_color(score.avg_score) %>">
+                          <%= (score.avg_score * 100).round(1) %>%
+                        </span>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm kv-text-primary">
+                        <%= (score.success_count.to_f / score.query_count * 100).round(1) %>%
+                        <span class="kv-text-secondary">(<%= score.success_count %>/<%= score.query_count %>)</span>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm kv-text-secondary">
+                      <%= score.query_count %>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <a href="#" class="text-primary hover:text-primary-dark transition-colors" data-action="click->domain-confidence#showDetails" data-domain="<%= score.domain %>">
+                        Details
+                      </a>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="text-center py-10 bg-gray-50 dark:bg-gray-800 rounded-md">
+            <p class="kv-text-secondary">No confidence score data available yet. As users search, the system will track domain confidence metrics.</p>
+          </div>
+        <% end %>
+      <% end 
+    } %>
+  </div>
+
+  <!-- Confidence Factors Analysis Card -->
+  <div class="kv-animation-fade-in" style="--kv-animation-delay: 400ms;">
+    <%= render partial: "shared/card", locals: {
+      title: "Confidence Factors Analysis",
+      content: capture do %>
+        <% if @recent_scores.present? %>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="kv-animation-fade-in" style="--kv-animation-delay: 500ms;">
+              <%= render partial: "shared/card", locals: {
+                title: "Factor Distribution",
+                background: "bg-gray-50 dark:bg-gray-800",
+                content: capture do %>
+                  <div class="h-64" id="factorsChart"></div>
+                <% end 
+              } %>
+            </div>
+            
+            <div class="kv-animation-fade-in" style="--kv-animation-delay: 600ms;">
+              <%= render partial: "shared/card", locals: {
+                title: "Confidence Trend",
+                background: "bg-gray-50 dark:bg-gray-800",
+                content: capture do %>
+                  <div class="h-64" id="trendChart"></div>
+                <% end 
+              } %>
+            </div>
+          </div>
+        <% else %>
+          <div class="text-center py-10 bg-gray-50 dark:bg-gray-800 rounded-md">
+            <p class="kv-text-secondary">No confidence factor data available yet. As users search, the system will track domain confidence factors.</p>
+          </div>
+        <% end %>
+      <% end 
+    } %>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+  document.addEventListener('turbo:load', function() {
+    // Detect dark mode state
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const textColor = isDarkMode ? 'rgba(229, 231, 235, 1)' : 'rgba(17, 24, 39, 1)';
+    const gridColor = isDarkMode ? 'rgba(75, 85, 99, 0.2)' : 'rgba(209, 213, 219, 0.2)';
+    
+    // Configure Chart.js defaults for dark mode
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
+    
+    <% if @recent_scores.present? %>
+      // Factor Distribution Chart
+      const factorsCtx = document.getElementById('factorsChart').getContext('2d');
+      new Chart(factorsCtx, {
+        type: 'radar',
+        data: {
+          labels: ['Semantic Similarity', 'Corpus Coverage', 'Query Characteristics', 'Historical Performance'],
+          datasets: [
+            <% @recent_scores.each_with_index do |(domain, scores), index| %>
+              <% if index < 5 && scores.any? %>
+                {
+                  label: '<%= domain %>',
+                  data: [
+                    <%= scores.map(&:semantic_similarity).compact.sum / [scores.length, 1].max %>,
+                    <%= scores.map(&:corpus_coverage).compact.sum / [scores.length, 1].max %>,
+                    <%= scores.map(&:query_characteristics).compact.sum / [scores.length, 1].max %>,
+                    <%= scores.map(&:historical_performance).compact.sum / [scores.length, 1].max %>
+                  ],
+                  backgroundColor: 'rgba(<%= 50 + index * 50 %>, <%= 100 + index * 30 %>, <%= 200 - index * 30 %>, 0.2)',
+                  borderColor: 'rgba(<%= 50 + index * 50 %>, <%= 100 + index * 30 %>, <%= 200 - index * 30 %>, 1)',
+                  pointBackgroundColor: 'rgba(<%= 50 + index * 50 %>, <%= 100 + index * 30 %>, <%= 200 - index * 30 %>, 1)',
+                  pointBorderColor: isDarkMode ? '#374151' : '#fff',
+                  pointHoverBackgroundColor: isDarkMode ? '#374151' : '#fff',
+                  pointHoverBorderColor: 'rgba(<%= 50 + index * 50 %>, <%= 100 + index * 30 %>, <%= 200 - index * 30 %>, 1)'
+                }<%= index < [@recent_scores.size, 5].min - 1 ? ',' : '' %>
+              <% end %>
+            <% end %>
+          ]
+        },
+        options: {
+          elements: {
+            line: {
+              tension: 0.2
+            }
+          },
+          scales: {
+            r: {
+              angleLines: {
+                display: true,
+                color: gridColor
+              },
+              grid: {
+                color: gridColor
+              },
+              suggestedMin: 0,
+              suggestedMax: 1,
+              ticks: {
+                color: textColor
+              },
+              pointLabels: {
+                color: textColor
+              }
+            }
+          }
+        }
+      });
+      
+      // Confidence Trend Chart
+      const trendCtx = document.getElementById('trendChart').getContext('2d');
+      new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: Array.from({ length: 10 }, (_, i) => `${i+1}`),
+          datasets: [
+            <% @recent_scores.each_with_index do |(domain, scores), index| %>
+              <% if index < 5 && scores.size >= 3 %>
+                {
+                  label: '<%= domain %>',
+                  data: <%= scores.first(10).map(&:total_score).reverse %>,
+                  fill: false,
+                  borderColor: 'rgba(<%= 50 + index * 50 %>, <%= 100 + index * 30 %>, <%= 200 - index * 30 %>, 1)',
+                  tension: 0.1
+                }<%= index < [@recent_scores.size, 5].min - 1 ? ',' : '' %>
+              <% end %>
+            <% end %>
+          ]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              suggestedMax: 1,
+              grid: {
+                color: gridColor
+              },
+              ticks: {
+                color: textColor
+              }
+            },
+            x: {
+              grid: {
+                color: gridColor
+              },
+              ticks: {
+                color: textColor
+              }
+            }
+          }
+        }
+      });
+    <% end %>
+    
+    // Update charts when dark mode toggle occurs
+    document.addEventListener('kv-dark-mode-toggle', function() {
+      // Refresh charts with new theme colors
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 10);
+    });
+  });
+  
+  // Helper function for confidence level colors
+  function confidenceLevelColor(score) {
+    if (score >= 0.8) return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
+    if (score >= 0.6) return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
+    if (score >= 0.4) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
+    return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
+  }
+</script>
+
+<% # Helper method for view %>
+<% def confidence_level_color(score) %>
+  <% if score >= 0.8 %>
+    bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+  <% elsif score >= 0.6 %>
+    bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100
+  <% elsif score >= 0.4 %>
+    bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100
+  <% else %>
+    bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100
+  <% end %>
+<% end %>

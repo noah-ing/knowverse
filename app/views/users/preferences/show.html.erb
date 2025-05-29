@@ -1,92 +1,152 @@
-<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Notification Preferences</h1>
-    <p class="mt-1 text-sm text-gray-500">Manage what notifications you receive</p>
-  </div>
+<%# User Preferences page - Refactored with KnowVerse Design System %>
 
-  <% if notice %>
-    <div class="bg-green-50 p-4 mb-6 rounded-md">
-      <div class="flex">
-        <div class="flex-shrink-0">
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+  <%= render "shared/card", 
+    title: "Notification Preferences", 
+    subtitle: "Manage what notifications you receive",
+    animate: "fade-in",
+    animate_delay: "100ms" do %>
+    
+    <% if notice %>
+      <div class="kv-alert kv-alert-success mb-6">
+        <div class="kv-alert-icon">
           <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
           </svg>
         </div>
-        <div class="ml-3">
-          <p class="text-sm font-medium text-green-800"><%= notice %></p>
+        <div class="kv-alert-content">
+          <p class="kv-text-primary"><%= notice %></p>
         </div>
       </div>
-    </div>
-  <% end %>
+    <% end %>
 
-  <% if alert %>
-    <div class="bg-yellow-50 p-4 mb-6 rounded-md">
-      <div class="flex">
-        <div class="flex-shrink-0">
+    <% if alert %>
+      <div class="kv-alert kv-alert-warning mb-6">
+        <div class="kv-alert-icon">
           <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
           </svg>
         </div>
-        <div class="ml-3">
-          <p class="text-sm font-medium text-yellow-800"><%= alert %></p>
+        <div class="kv-alert-content">
+          <p class="kv-text-primary"><%= alert %></p>
         </div>
       </div>
-    </div>
-  <% end %>
+    <% end %>
 
-  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-    <div class="px-4 py-5 sm:px-6">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">Email Notifications</h3>
-      <p class="mt-1 max-w-2xl text-sm text-gray-500">Choose which emails you'd like to receive</p>
-    </div>
-    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+    <%= render "shared/card", 
+      title: "Email Notifications", 
+      subtitle: "Choose which emails you'd like to receive",
+      animate: "fade-in",
+      animate_delay: "200ms",
+      border: true do %>
+      
       <%= form_with(url: users_preferences_path, method: :patch, class: "space-y-6") do |form| %>
         <div class="space-y-4">
-          <div class="relative flex items-start">
+          <div class="relative flex items-start animate-in fade-in duration-300 ease-out" style="animation-delay: 100ms;">
             <div class="flex items-center h-5">
-              <%= check_box_tag "preferences[product_updates]", "1", @user.notification_enabled?(:product_updates), class: "focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" %>
+              <%= check_box_tag "preferences[product_updates]", "1", @user.notification_enabled?(:product_updates), class: "kv-checkbox" %>
             </div>
             <div class="ml-3 text-sm">
-              <%= label_tag "preferences[product_updates]", "Product Updates", class: "font-medium text-gray-700" %>
-              <p class="text-gray-500">Get notified about new features and improvements</p>
+              <%= label_tag "preferences[product_updates]", "Product Updates", class: "kv-label" %>
+              <p class="kv-text-secondary">Get notified about new features and improvements</p>
             </div>
           </div>
 
-          <div class="relative flex items-start">
+          <div class="relative flex items-start animate-in fade-in duration-300 ease-out" style="animation-delay: 200ms;">
             <div class="flex items-center h-5">
-              <%= check_box_tag "preferences[marketing_emails]", "1", @user.notification_enabled?(:marketing_emails), class: "focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" %>
+              <%= check_box_tag "preferences[marketing_emails]", "1", @user.notification_enabled?(:marketing_emails), class: "kv-checkbox" %>
             </div>
             <div class="ml-3 text-sm">
-              <%= label_tag "preferences[marketing_emails]", "Marketing Emails", class: "font-medium text-gray-700" %>
-              <p class="text-gray-500">Receive marketing and promotional materials</p>
+              <%= label_tag "preferences[marketing_emails]", "Marketing Emails", class: "kv-label" %>
+              <p class="kv-text-secondary">Receive marketing and promotional materials</p>
             </div>
           </div>
 
-          <div class="relative flex items-start">
+          <div class="relative flex items-start animate-in fade-in duration-300 ease-out" style="animation-delay: 300ms;">
             <div class="flex items-center h-5">
-              <%= check_box_tag "preferences[billing_alerts]", "1", @user.notification_enabled?(:billing_alerts), class: "focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" %>
+              <%= check_box_tag "preferences[billing_alerts]", "1", @user.notification_enabled?(:billing_alerts), class: "kv-checkbox" %>
             </div>
             <div class="ml-3 text-sm">
-              <%= label_tag "preferences[billing_alerts]", "Billing Alerts", class: "font-medium text-gray-700" %>
-              <p class="text-gray-500">Get important notifications about your billing and subscription</p>
+              <%= label_tag "preferences[billing_alerts]", "Billing Alerts", class: "kv-label" %>
+              <p class="kv-text-secondary">Get important notifications about your billing and subscription</p>
             </div>
           </div>
 
-          <div class="relative flex items-start">
+          <div class="relative flex items-start animate-in fade-in duration-300 ease-out" style="animation-delay: 400ms;">
             <div class="flex items-center h-5">
-              <%= check_box_tag "preferences[weekly_summary]", "1", @user.notification_enabled?(:weekly_summary), class: "focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" %>
+              <%= check_box_tag "preferences[weekly_summary]", "1", @user.notification_enabled?(:weekly_summary), class: "kv-checkbox" %>
             </div>
             <div class="ml-3 text-sm">
-              <%= label_tag "preferences[weekly_summary]", "Weekly Summary", class: "font-medium text-gray-700" %>
-              <p class="text-gray-500">Receive a weekly summary of your account activity</p>
+              <%= label_tag "preferences[weekly_summary]", "Weekly Summary", class: "kv-label" %>
+              <p class="kv-text-secondary">Receive a weekly summary of your account activity</p>
             </div>
           </div>
         </div>
 
-        <div class="flex justify-end">
-          <%= form.submit "Save Preferences", class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+        <div class="flex justify-end animate-in fade-in duration-300 ease-out" style="animation-delay: 500ms;">
+          <%= render "shared/button", 
+            text: "Save Preferences", 
+            variant: "primary",
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>',
+            type: "submit",
+            animate: "fade" %>
         </div>
       <% end %>
-    </div>
-  </div>
+    <% end %>
+    
+    <%= render "shared/card", 
+      title: "Advanced Settings", 
+      subtitle: "Manage additional notification settings",
+      animate: "fade-in",
+      animate_delay: "300ms",
+      border: true,
+      classes: "mt-6" do %>
+      
+      <div class="space-y-6">
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 100ms;">
+          <h4 class="text-sm font-medium kv-text-primary mb-2">Notification Delivery</h4>
+          <p class="kv-text-secondary mb-4">Choose how you'd like to receive notifications</p>
+          
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <input type="radio" id="notification_email" name="notification_delivery" value="email" checked class="kv-checkbox rounded-full" />
+              <label for="notification_email" class="ml-3 kv-label">Email</label>
+            </div>
+            <div class="flex items-center">
+              <input type="radio" id="notification_app" name="notification_delivery" value="app" class="kv-checkbox rounded-full" />
+              <label for="notification_app" class="ml-3 kv-label">In-app only</label>
+            </div>
+            <div class="flex items-center">
+              <input type="radio" id="notification_both" name="notification_delivery" value="both" class="kv-checkbox rounded-full" />
+              <label for="notification_both" class="ml-3 kv-label">Both email and in-app</label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 200ms;">
+          <h4 class="text-sm font-medium kv-text-primary mb-2">Frequency</h4>
+          <p class="kv-text-secondary mb-4">Control how often you receive email notifications</p>
+          
+          <select class="kv-input w-full" aria-label="Notification frequency">
+            <option>Immediate</option>
+            <option>Daily digest</option>
+            <option>Weekly digest</option>
+          </select>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 300ms;">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-sm font-medium kv-text-primary">Do Not Disturb</h4>
+              <p class="kv-text-secondary">Pause all notifications temporarily</p>
+            </div>
+            <label class="kv-dark-mode-toggle" aria-label="Toggle do not disturb mode">
+              <input type="checkbox" class="sr-only" />
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
 </div>

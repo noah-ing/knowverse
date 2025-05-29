@@ -1,0 +1,595 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-200">
+  <% if @table_missing %>
+    <%= render "shared/missing_table_alert", missing_table: @missing_table %>
+  <% end %>
+  
+  <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 animate-in fade-in duration-300 ease-out">
+    <div>
+      <h1 class="text-2xl font-bold kv-text-primary"><%= @organization&.name || "Organization" %> - Documents</h1>
+      <p class="kv-text-secondary"><%= pluralize(@documents&.total_count || 0, 'document') %> in your knowledge base</p>
+    </div>
+    <div class="flex items-center space-x-4">
+      <!-- Dark mode toggle -->
+      <div class="kv-dark-mode-toggle" data-controller="dark-mode" data-action="click->dark-mode#toggle" 
+          data-dark-mode-target="toggle" title="Toggle dark mode" role="switch" aria-checked="false"></div>
+          
+      <div class="flex flex-wrap gap-3">
+        <%= render "shared/button", 
+          text: "Dashboard",
+          variant: "secondary",
+          href: dashboard_organization_path(@organization),
+          animate: "fade",
+          icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+          </svg>'
+        %>
+                 
+        <%= render "shared/button", 
+          text: "Upload Document",
+          variant: "primary",
+          href: new_organization_document_path(@organization),
+          animate: "fade",
+          icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>'
+        %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Search, Filter and Sort -->
+  <% header_actions = capture do %>
+    <button type="button" data-action="click->document-filters#toggle" class="kv-text-accent hover:underline text-sm font-medium flex items-center">
+      <span data-document-filters-target="label">Show Advanced Filters</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor" data-document-filters-target="icon">
+        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+      </svg>
+    </button>
+  <% end %>
+  
+  <%= render "shared/card", { 
+    title: "Search & Filter",
+    animate: "fade-in",
+    animate_delay: "100ms",
+    classes: "mb-6 transition-all duration-200",
+    data: { controller: "document-filters" },
+    header_actions: header_actions.presence # ensure nil value is handled properly
+  } do %>
+    <div class="space-y-6">
+      <%= form_with url: organization_documents_path(@organization), method: :get, data: { turbo_frame: "documents_list" } do |form| %>
+          <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+            <!-- Basic Search and Filter - Always Visible -->
+            <div class="sm:col-span-3">
+              <%= form.label :q, "Search documents", class: "kv-label" %>
+              <div class="mt-1">
+                <%= form.text_field :q, value: @filter_params[:q], class: "kv-input", placeholder: "Search by title or content..." %>
+              </div>
+            </div>
+            
+            <div class="sm:col-span-2">
+              <%= form.label :status, "Processing Status", class: "kv-label" %>
+              <div class="mt-1">
+                <%= form.select :status, 
+                    [
+                      ['All Statuses', ''], 
+                      ['Processed', 'processed'], 
+                      ['Processing', 'processing'], 
+                      ['Pending', 'pending'], 
+                      ['Error', 'error']
+                    ], 
+                    { selected: @filter_params[:status] },
+                    { class: "kv-input kv-select" } 
+                %>
+              </div>
+            </div>
+            
+            <!-- Sorting Options (Always Visible) -->
+            <div class="sm:col-span-1">
+              <%= form.label :per_page, "Per Page", class: "kv-label" %>
+              <div class="mt-1">
+                <%= form.select :per_page, 
+                    [
+                      ['10', '10'], 
+                      ['20', '20'], 
+                      ['50', '50'], 
+                      ['100', '100']
+                    ], 
+                    { selected: params[:per_page] || '10' },
+                    { class: "kv-input kv-select" } 
+                %>
+              </div>
+            </div>
+          </div>
+        
+          <!-- Advanced Filters - Hidden by Default -->
+          <div class="mt-6 hidden" data-document-filters-target="advancedFilters">
+            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-md transition-colors duration-200">
+              <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <!-- File Type Filter -->
+                <div class="sm:col-span-2">
+                  <%= form.label :file_type, "File Type", class: "kv-label" %>
+                  <div class="mt-1">
+                    <%= form.select :file_type, 
+                        [
+                          ['All Types', ''], 
+                          ['PDF', 'pdf'], 
+                          ['Word', 'docx'], 
+                          ['Text', 'txt'], 
+                          ['Markdown', 'md'], 
+                          ['Rich Text', 'rtf']
+                        ], 
+                        { selected: @filter_params[:file_type] },
+                        { class: "kv-input kv-select" } 
+                    %>
+                  </div>
+                </div>
+                
+                <!-- Embedding Status Filter -->
+                <div class="sm:col-span-2">
+                  <%= form.label :embedding_status, "Embedding Status", class: "kv-label" %>
+                  <div class="mt-1">
+                    <%= form.select :embedding_status, 
+                        [
+                          ['All', ''], 
+                          ['Processed', 'processed'], 
+                          ['Processing', 'processing'], 
+                          ['Pending', 'pending'], 
+                          ['Error', 'error']
+                        ], 
+                        { selected: @filter_params[:embedding_status] },
+                        { class: "kv-input kv-select" } 
+                    %>
+                  </div>
+                </div>
+                
+                <!-- Date From Filter -->
+                <div class="sm:col-span-1">
+                  <%= form.label :date_from, "Date From", class: "kv-label" %>
+                  <div class="mt-1">
+                    <%= form.date_field :date_from, value: @filter_params[:date_from], class: "kv-input" %>
+                  </div>
+                </div>
+                
+                <!-- Date To Filter -->
+                <div class="sm:col-span-1">
+                  <%= form.label :date_to, "Date To", class: "kv-label" %>
+                  <div class="mt-1">
+                    <%= form.date_field :date_to, value: @filter_params[:date_to], class: "kv-input" %>
+                  </div>
+                </div>
+              </div>
+          
+              <!-- Sorting Options -->
+              <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <div class="sm:col-span-3">
+                  <fieldset>
+                    <legend class="kv-label">Sort By</legend>
+                    <div class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <div>
+                        <div class="flex items-center">
+                          <%= form.radio_button :sort_by, 'created_at', checked: @sort_field == 'created_at', class: "kv-radio" %>
+                          <%= form.label :sort_by_created_at, "Date Added", class: "ml-2 text-sm kv-text-secondary" %>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="flex items-center">
+                          <%= form.radio_button :sort_by, 'title', checked: @sort_field == 'title', class: "kv-radio" %>
+                          <%= form.label :sort_by_title, "Title", class: "ml-2 text-sm kv-text-secondary" %>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="flex items-center">
+                          <%= form.radio_button :sort_by, 'status', checked: @sort_field == 'status', class: "kv-radio" %>
+                          <%= form.label :sort_by_status, "Status", class: "ml-2 text-sm kv-text-secondary" %>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="flex items-center">
+                          <%= form.radio_button :sort_by, 'file_type', checked: @sort_field == 'file_type', class: "kv-radio" %>
+                          <%= form.label :sort_by_file_type, "File Type", class: "ml-2 text-sm kv-text-secondary" %>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="flex items-center">
+                          <%= form.radio_button :sort_by, 'word_count', checked: @sort_field == 'word_count', class: "kv-radio" %>
+                          <%= form.label :sort_by_word_count, "Word Count", class: "ml-2 text-sm kv-text-secondary" %>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="flex items-center">
+                          <%= form.radio_button :sort_by, 'updated_at', checked: @sort_field == 'updated_at', class: "kv-radio" %>
+                          <%= form.label :sort_by_updated_at, "Last Updated", class: "ml-2 text-sm kv-text-secondary" %>
+                        </div>
+                      </div>
+                    </div>
+                  </fieldset>
+                </div>
+                
+                <div class="sm:col-span-3">
+                  <fieldset>
+                    <legend class="kv-label">Sort Direction</legend>
+                    <div class="mt-2 space-x-4 flex">
+                      <div class="flex items-center">
+                        <%= form.radio_button :sort_direction, 'asc', checked: @sort_direction == 'asc', class: "kv-radio" %>
+                        <%= form.label :sort_direction_asc, "Ascending", class: "ml-2 text-sm kv-text-secondary" %>
+                      </div>
+                      <div class="flex items-center">
+                        <%= form.radio_button :sort_direction, 'desc', checked: @sort_direction == 'desc', class: "kv-radio" %>
+                        <%= form.label :sort_direction_desc, "Descending", class: "ml-2 text-sm kv-text-secondary" %>
+                      </div>
+                    </div>
+                  </fieldset>
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <!-- Filter & Reset Buttons -->
+          <div class="mt-6 flex flex-wrap justify-end gap-3">
+            <%= render "shared/button", 
+              text: "Reset Filters", 
+              variant: "outline", 
+              href: organization_documents_path(@organization)
+            %>
+                     
+            <%= render "shared/button", 
+              text: "Apply Filters",
+              variant: "primary",
+              type: "submit"
+            %>
+          </div>
+        <% end %>
+    </div>
+  <% end %>
+
+  <!-- Bulk Upload Section -->
+  <% upload_header_actions = capture do %>
+    <button type="button" id="show-upload-form" class="kv-btn kv-btn-primary kv-btn-sm">
+      <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+      </svg>
+      Upload Files
+    </button>
+  <% end %>
+  
+  <%= render "shared/card", { 
+    title: "Upload Multiple Documents",
+    subtitle: "Drag and drop files to add them to your knowledge base",
+    animate: "fade-in",
+    animate_delay: "200ms",
+    classes: "mb-6 transition-all duration-200",
+    header_actions: upload_header_actions.presence
+  } do %>
+    <div id="upload-form" class="hidden border-t border-gray-200 dark:border-gray-700 transition-colors duration-200">
+      <div class="kv-card-body">
+        <%= form_with url: upload_organization_documents_path(@organization), method: :post, multipart: true, class: "space-y-6", id: "file-upload-form" do |form| %>
+          <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-md transition-colors duration-200" id="drop-area">
+            <div class="space-y-1 text-center">
+              <svg class="mx-auto h-12 w-12 kv-text-secondary" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <div class="flex text-sm kv-text-secondary">
+                <label for="file-upload" class="relative cursor-pointer rounded-md font-medium kv-text-accent hover:underline focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                  <span>Upload files</span>
+                  <%= form.file_field :files, multiple: true, direct_upload: true, class: "sr-only", id: "file-upload" %>
+                </label>
+                <p class="pl-1">or drag and drop</p>
+              </div>
+              <p class="text-xs kv-text-secondary">
+                PDF, DOCX, TXT, CSV, XLSX up to 10MB
+              </p>
+            </div>
+          </div>
+          
+          <div id="file-list" class="hidden space-y-2">
+            <h4 class="text-sm font-medium kv-text-primary">Files to upload:</h4>
+            <ul class="mt-1 border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-200 dark:divide-gray-700 transition-colors duration-200"></ul>
+          </div>
+          
+          <div class="flex flex-wrap justify-end gap-3">
+            <%= render "shared/button", 
+              text: "Cancel",
+              variant: "outline",
+              id: "cancel-upload",
+              type: "button"
+            %>
+                     
+            <%= render "shared/button", 
+              text: "Upload Selected Files",
+              variant: "primary",
+              type: "submit"
+            %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Documents Grid/List Toggle -->
+  <% doc_header_actions = capture do %>
+    <!-- View Toggle -->
+    <div class="flex items-center gap-2" data-controller="view-toggle">
+      <label class="sr-only" for="view-style">View Style</label>
+      <div class="flex items-center space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-md transition-colors duration-200">
+        <button type="button" 
+               class="view-toggle-btn flex items-center justify-center h-8 w-8 rounded text-sm font-medium kv-text-primary bg-white dark:bg-gray-700 shadow-sm transition-all duration-200" 
+               data-view-toggle-target="gridBtn" 
+               data-action="click->view-toggle#switchToGrid" 
+               aria-pressed="true"
+               aria-label="Grid view">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+        </button>
+        <button type="button" 
+               class="view-toggle-btn flex items-center justify-center h-8 w-8 rounded text-sm font-medium kv-text-secondary hover:kv-text-primary transition-all duration-200" 
+               data-view-toggle-target="listBtn" 
+               data-action="click->view-toggle#switchToList"
+               aria-pressed="false"
+               aria-label="List view">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render "shared/card", { 
+    title: "Documents",
+    subtitle: "Your knowledge base files",
+    animate: "fade-in",
+    animate_delay: "300ms",
+    classes: "transition-all duration-200 mb-6",
+    header_actions: doc_header_actions.presence
+  } do %>
+    <% if @documents.any? %>
+      <!-- Grid View (Default) -->
+      <div class="documents-container p-4" data-view-toggle-target="gridView">
+        <% @documents.each_with_index do |document, index| %>
+          <%= link_to organization_document_path(@organization, document), class: "group animate-in fade-in duration-300 ease-out", style: "animation-delay: #{(300 + index * 50)}ms" do %>
+            <div class="document-card kv-card h-full overflow-hidden flex flex-col hover:shadow-md transition-all duration-200 transform hover:-translate-y-1">
+              <!-- Document preview thumbnail -->
+              <div class="relative h-36 bg-gray-100 dark:bg-gray-800 transition-colors duration-200 border-b border-gray-200 dark:border-gray-700 overflow-hidden">
+                <% if document.file_type&.include?('image') %>
+                  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url(<%= url_for(document.file) if document.file.attached? %>)"></div>
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                <% else %>
+                  <% icon_color = case document.file_type&.split('/')&.first
+                                when 'image' then 'text-pink-500 dark:text-pink-400'
+                                when 'application' 
+                                  if document.file_type&.include?('pdf')
+                                    'text-red-500 dark:text-red-400'
+                                  elsif document.file_type&.include?('word') || document.file_type&.include?('docx')
+                                    'text-blue-500 dark:text-blue-400'
+                                  elsif document.file_type&.include?('excel') || document.file_type&.include?('spreadsheet')
+                                    'text-green-500 dark:text-green-400'
+                                  else
+                                    'text-amber-500 dark:text-amber-400'
+                                  end
+                                when 'text' then 'text-blue-500 dark:text-blue-400'
+                                else 'kv-text-secondary'
+                                end %>
+                  
+                  <div class="flex flex-col items-center justify-center h-full p-4">
+                    <div class="flex items-center justify-center p-4 mb-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors duration-200">
+                      <% if document.file_type&.include?('pdf') %>
+                        <svg class="h-10 w-10 <%= icon_color %>" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      <% elsif document.file_type&.include?('word') || document.file_type&.include?('docx') %>
+                        <svg class="h-10 w-10 <%= icon_color %>" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      <% elsif document.file_type&.include?('spreadsheet') || document.file_type&.include?('excel') %>
+                        <svg class="h-10 w-10 <%= icon_color %>" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      <% else %>
+                        <svg class="h-10 w-10 <%= icon_color %>" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      <% end %>
+                    </div>
+                    <p class="text-xs kv-text-secondary line-clamp-1 text-center">
+                      <%= document.file_type || "Unknown type" %>
+                    </p>
+                  </div>
+                <% end %>
+                  <!-- Status indicators -->
+                  <div class="absolute top-2 right-2 flex gap-1.5 z-10">
+                  <!-- Document Processing Status -->
+                  <% doc_status_class = case document.status
+                                       when 'processed' then 'bg-success-500'
+                                       when 'processing' then 'bg-warning-500'
+                                       when 'pending' then 'bg-primary-500'
+                                       when 'error' then 'bg-error-500'
+                                       else 'bg-gray-500'
+                                       end %>
+                  
+                  <div class="relative" title="Document status: <%= document.status.capitalize %>">
+                    <span class="inline-flex h-3 w-3 relative">
+                      <% if document.status == 'processing' %>
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full <%= doc_status_class %> opacity-25"></span>
+                      <% end %>
+                      <span class="relative inline-flex rounded-full h-3 w-3 <%= doc_status_class %>"></span>
+                    </span>
+                  </div>
+                  
+                  <!-- Embedding Status -->
+                  <% embedding_status_class = case document.embedding_status
+                                             when 'processed' then 'bg-success-500'
+                                             when 'processing' then 'bg-warning-500'
+                                             when 'pending' then 'bg-primary-500'
+                                             when 'error' then 'bg-error-500'
+                                             else 'bg-gray-500'
+                                             end %>
+                  
+                  <div class="relative" title="Embedding status: <%= document.embedding_status.capitalize %>">
+                    <span class="inline-flex h-3 w-3 relative">
+                      <% if document.embedding_status == 'processing' %>
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full <%= embedding_status_class %> opacity-25"></span>
+                      <% end %>
+                      <span class="relative inline-flex rounded-full h-3 w-3 <%= embedding_status_class %>"></span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Document info -->
+              <div class="p-4 flex-grow flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-start">
+                    <h3 class="text-sm font-medium kv-text-accent line-clamp-2 mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
+                      <%= document.title %>
+                    </h3>
+                    <%= button_to organization_document_path(@organization, document), 
+                      method: :delete,
+                      form: { data: { turbo_confirm: "Are you sure you want to delete this document?" }, class: "inline" },
+                      class: "text-gray-400 hover:text-error-500 dark:hover:text-error-400 transition-colors duration-200",
+                      title: "Delete document", 
+                      onClick: "event.stopPropagation(); event.preventDefault(); if(confirm('Are you sure you want to delete this document?')) { this.closest('form').submit(); }" do %>
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    <% end %>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2 mt-2">
+                    <% if document.word_count && document.word_count > 0 %>
+                      <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-100 dark:bg-gray-800 kv-text-secondary transition-colors duration-200">
+                        <%= document.word_count %> words
+                      </span>
+                    <% end %>
+                    <span class="text-xs kv-text-secondary">
+                      <%= time_ago_in_words(document.created_at) %> ago
+                    </span>
+                  </div>
+                </div>
+                
+                <!-- Status badges -->
+                <div class="mt-4 flex flex-wrap gap-2">
+                  <% doc_status_class = case document.status
+                                       when 'processed' then 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'
+                                       when 'processing' then 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200'
+                                       when 'pending' then 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200'
+                                       when 'error' then 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200'
+                                       else 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                       end %>
+                                       
+                  <span class="document-status status-<%= document.status %> inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= doc_status_class %>">
+                    <%= document.status.capitalize %>
+                  </span>
+                  
+                  <% embedding_status_class = case document.embedding_status
+                                             when 'processed' then 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'
+                                             when 'processing' then 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200'
+                                             when 'pending' then 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200'
+                                             when 'error' then 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200'
+                                             else 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                             end %>
+                                             
+                  <span class="document-status status-<%= document.embedding_status %> inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= embedding_status_class %>">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <%= document.embedding_status.capitalize %>
+                  </span>
+                  
+                  <% if document.search_ready? %>
+                    <span class="document-status status-processed inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Search Ready
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+
+      <!-- List view, hidden by default -->
+      <div class="hidden" data-view-toggle-target="listView">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 transition-colors duration-200">
+          <thead class="bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Title</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">File Type</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Status</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Word Count</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Uploaded</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+            <% @documents.each do |document| %>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <%= link_to document.title, organization_document_path(@organization, document), class: "kv-text-accent hover:underline" %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm kv-text-secondary">
+                  <%= document.file_type || "Unknown" %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <div class="flex flex-col gap-1">
+                    <!-- Document Status -->
+                    <% doc_status_class = case document.status
+                                         when 'processed' then 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'
+                                         when 'processing' then 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200'
+                                         when 'pending' then 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200'
+                                         when 'error' then 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200'
+                                         else 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                         end %>
+                    <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium <%= doc_status_class %>">
+                      Doc: <%= document.status.capitalize %>
+                    </span>
+                    
+                    <!-- Embedding Status -->
+                    <% embedding_status_class = case document.embedding_status
+                                               when 'processed' then 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'
+                                               when 'processing' then 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200'
+                                               when 'pending' then 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200'
+                                               when 'error' then 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200'
+                                               else 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                               end %>
+                    <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium <%= embedding_status_class %>">
+                      Emb: <%= document.embedding_status.capitalize %>
+                    </span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm kv-text-secondary">
+                  <%= document.word_count || "—" %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm kv-text-secondary">
+                  <%= time_ago_in_words(document.created_at) %> ago
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <%= button_to organization_document_path(@organization, document), 
+                      method: :delete,
+                      form: { data: { turbo_confirm: "Are you sure you want to delete this document?" }, class: "inline" },
+                      class: "text-gray-400 hover:text-error-500 dark:hover:text-error-400 transition-colors duration-200",
+                      title: "Delete document" do %>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-4 text-center text-sm kv-text-secondary">
+        No documents found. Try adjusting your filters or uploading a new file.
+      </div>
+    <% end %>
+  <% end %>
+
+  <!-- Pagination -->
+  <div class="mt-6">
+    <%= paginate @documents %>
+  </div>
+</div>

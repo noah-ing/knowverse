@@ -1,57 +1,250 @@
+<%# Admin Dashboard - Refactored with KnowVerse Design System %>
 <% content_for :title, "Admin Dashboard" %>
 
-<h1 class="text-3xl font-bold mb-8">Admin Dashboard</h1>
-
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-  <div class="bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-xl font-semibold text-gray-700">Total Users</h2>
-    <p class="text-4xl font-bold mt-2 text-indigo-600"><%= @total_users %></p>
-  </div>
-  
-  <div class="bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-xl font-semibold text-gray-700">Active Subscriptions</h2>
-    <p class="text-4xl font-bold mt-2 text-green-500"><%= @active_subscriptions %></p>
-  </div>
-  
-  <div class="bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-xl font-semibold text-gray-700">Trialing Users</h2>
-    <p class="text-4xl font-bold mt-2 text-blue-500"><%= @trialing_users %></p>
-  </div>
-  
-  <div class="bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-xl font-semibold text-gray-700">Past Due</h2>
-    <p class="text-4xl font-bold mt-2 text-yellow-500"><%= @past_due_users %></p>
-  </div>
-</div>
-
-<div class="bg-white p-6 rounded-lg shadow-md">
-  <div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-semibold text-gray-700">Quick Actions</h2>
-  </div>
-  
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <%= link_to admin_users_path, class: "p-4 border rounded-lg flex items-center space-x-3 hover:bg-gray-50" do %>
-      <div class="text-indigo-600 bg-indigo-100 rounded-full p-2">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-        </svg>
+<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+  <%= render "shared/card", 
+    title: "Admin Dashboard", 
+    subtitle: "System-wide statistics and quick actions",
+    animate: "fade-in",
+    animate_delay: "100ms" do %>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 150ms;">
+        <%= render "shared/card", 
+          title: "Total Users", 
+          border: true,
+          classes: "h-full" do %>
+          <p class="text-4xl font-bold mt-2 kv-text-primary"><%= @total_users %></p>
+          <p class="kv-text-secondary text-sm mt-2">Registered accounts</p>
+        <% end %>
       </div>
-      <div>
-        <h3 class="font-medium">Manage Users</h3>
-        <p class="text-sm text-gray-500">View, edit, and manage user accounts</p>
+      
+      <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 200ms;">
+        <%= render "shared/card", 
+          title: "Active Subscriptions", 
+          border: true,
+          classes: "h-full" do %>
+          <p class="text-4xl font-bold mt-2 text-green-500 dark:text-green-400"><%= @active_subscriptions %></p>
+          <p class="kv-text-secondary text-sm mt-2">Current paying customers</p>
+        <% end %>
+      </div>
+      
+      <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 250ms;">
+        <%= render "shared/card", 
+          title: "Trialing Users", 
+          border: true,
+          classes: "h-full" do %>
+          <p class="text-4xl font-bold mt-2 text-blue-500 dark:text-blue-400"><%= @trialing_users %></p>
+          <p class="kv-text-secondary text-sm mt-2">Trial period accounts</p>
+        <% end %>
+      </div>
+      
+      <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 300ms;">
+        <%= render "shared/card", 
+          title: "Past Due", 
+          border: true,
+          classes: "h-full" do %>
+          <p class="text-4xl font-bold mt-2 text-yellow-500 dark:text-yellow-400"><%= @past_due_users %></p>
+          <p class="kv-text-secondary text-sm mt-2">Payment issues</p>
+        <% end %>
+      </div>
+    </div>
+
+    <%= render "shared/card", 
+      title: "Quick Actions",
+      subtitle: "Common administration tasks",
+      border: true,
+      animate: "fade-in",
+      animate_delay: "400ms" do %>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 450ms;">
+          <%= link_to admin_users_path, class: "kv-card-link group" do %>
+            <div class="flex items-center space-x-3">
+              <div class="kv-icon-container">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Manage Users</h3>
+                <p class="kv-text-secondary text-sm">View, edit, and manage user accounts</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 500ms;">
+          <%= link_to admin_distributed_dashboard_path, class: "kv-card-link group" do %>
+            <div class="flex items-center space-x-3">
+              <div class="kv-icon-container">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Distributed System</h3>
+                <p class="kv-text-secondary text-sm">Manage distributed search infrastructure</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 550ms;">
+          <%= link_to admin_llm_providers_path, class: "kv-card-link group" do %>
+            <div class="flex items-center space-x-3">
+              <div class="kv-icon-container">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">LLM Providers</h3>
+                <p class="kv-text-secondary text-sm">Manage AI language model providers</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 600ms;">
+          <%= link_to admin_domain_confidence_index_path, class: "kv-card-link group" do %>
+            <div class="flex items-center space-x-3">
+              <div class="kv-icon-container">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 15.3m14.8 0l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21a48.309 48.309 0 01-8.135-.687c-1.718-.293-2.3-2.379-1.067-3.61L5 15.3" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Domain Confidence</h3>
+                <p class="kv-text-secondary text-sm">Configure domain detection thresholds</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 650ms;">
+          <%= link_to admin_embedding_cache_dashboard_path, class: "kv-card-link group" do %>
+            <div class="flex items-center space-x-3">
+              <div class="kv-icon-container">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Embedding Cache</h3>
+                <p class="kv-text-secondary text-sm">Monitor and manage vector cache</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 700ms;">
+          <%= link_to admin_search_metrics_path, class: "kv-card-link group" do %>
+            <div class="flex items-center space-x-3">
+              <div class="kv-icon-container">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Search Metrics</h3>
+                <p class="kv-text-secondary text-sm">Analyze search performance</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+      
+      <div class="mt-6 animate-in fade-in duration-300 ease-out" style="animation-delay: 750ms;">
+        <%= render "shared/button", 
+          text: "Return to Application", 
+          icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>',
+          variant: "outline", 
+          url: dashboard_path,
+          animate: "fade",
+          classes: "mt-2" %>
       </div>
     <% end %>
     
-    <%= link_to dashboard_path, class: "p-4 border rounded-lg flex items-center space-x-3 hover:bg-gray-50" do %>
-      <div class="text-indigo-600 bg-indigo-100 rounded-full p-2">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-        </svg>
+    <%= render "shared/card", 
+      title: "System Status",
+      subtitle: "Current system health metrics",
+      border: true,
+      animate: "fade-in",
+      animate_delay: "800ms",
+      classes: "mt-6" do %>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 850ms;">
+          <div class="kv-status-card">
+            <h3 class="kv-title-sm">Search API</h3>
+            <div class="flex items-center mt-2">
+              <div class="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+              <p class="kv-text-secondary text-sm">Operational</p>
+            </div>
+            <p class="kv-text-secondary text-sm mt-1">Avg response: 132ms</p>
+          </div>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 900ms;">
+          <div class="kv-status-card">
+            <h3 class="kv-title-sm">LLM API</h3>
+            <div class="flex items-center mt-2">
+              <div class="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+              <p class="kv-text-secondary text-sm">Operational</p>
+            </div>
+            <p class="kv-text-secondary text-sm mt-1">First token: 475ms</p>
+          </div>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 950ms;">
+          <div class="kv-status-card">
+            <h3 class="kv-title-sm">Vector Database</h3>
+            <div class="flex items-center mt-2">
+              <div class="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+              <p class="kv-text-secondary text-sm">Operational</p>
+            </div>
+            <p class="kv-text-secondary text-sm mt-1">4 nodes active</p>
+          </div>
+        </div>
+        
+        <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 1000ms;">
+          <div class="kv-status-card">
+            <h3 class="kv-title-sm">Cache</h3>
+            <div class="flex items-center mt-2">
+              <div class="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+              <p class="kv-text-secondary text-sm">Operational</p>
+            </div>
+            <p class="kv-text-secondary text-sm mt-1">82% hit rate</p>
+          </div>
+        </div>
       </div>
-      <div>
-        <h3 class="font-medium">Return to App</h3>
-        <p class="text-sm text-gray-500">View the regular user dashboard</p>
+      
+      <div class="mt-6 animate-in fade-in duration-300 ease-out" style="animation-delay: 1050ms;">
+        <%= render "shared/button", 
+          text: "View Detailed Status", 
+          icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>',
+          variant: "outline", 
+          url: admin_distributed_status_path,
+          animate: "fade",
+          classes: "mt-2" %>
       </div>
     <% end %>
-  </div>
+  <% end %>
 </div>
+
+<% content_for :styles do %>
+<style>
+  .kv-card-link {
+    @apply p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center transition-all duration-200 hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800;
+  }
+  
+  .kv-icon-container {
+    @apply text-indigo-600 bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-900/50 rounded-full p-2 flex-shrink-0;
+  }
+  
+  .kv-status-card {
+    @apply p-4 rounded-lg border border-gray-200 dark:border-gray-700 h-full;
+  }
+</style>
+<% end %>

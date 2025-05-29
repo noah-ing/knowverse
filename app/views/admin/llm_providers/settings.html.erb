@@ -1,0 +1,256 @@
+<% content_for :page_title, "LLM Provider Settings" %>
+
+<div class="container mx-auto px-4 py-8">
+  <!-- Main Header Card -->
+  <%= render 'shared/card', animation_delay: 0.1 do |card| %>
+    <% card.with_header do %>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <div class="mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-lg font-semibold kv-text-primary">LLM Provider Settings</h1>
+            <p class="text-sm kv-text-secondary">Configure API keys and defaults for language model providers</p>
+          </div>
+        </div>
+        
+        <%= render 'shared/button', 
+                text: 'Back to Providers', 
+                url: admin_llm_providers_path, 
+                variant: 'secondary', 
+                size: 'sm',
+                icon: 'arrow-left',
+                animate: true,
+                animation_delay: 0.1 %>
+      </div>
+    <% end %>
+    
+    <% card.with_body do %>
+    
+      <!-- API Keys and Configuration Card -->
+      <%= render 'shared/card', animation_delay: 0.2, border: true do |config_card| %>
+        <% config_card.with_header do %>
+          <div class="flex items-center">
+            <div class="mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v-1l1-1 1-1-1.243-1.243A6 6 0 1118 8zm-6-4a1 1 0 10-2 0 1 1 0 002 0z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium kv-text-primary">API Keys and Configuration</h3>
+              <p class="text-xs kv-text-secondary">Configure your LLM provider API keys and default settings.</p>
+            </div>
+          </div>
+        <% end %>
+        
+        <% config_card.with_body do %>
+      
+          <%= form_tag admin_update_llm_providers_path, method: :patch do %>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-6 animate-fade-in" style="animation-delay: 0.25s">
+              <!-- OpenAI Section -->
+              <div class="sm:col-span-3 animate-fade-in" style="animation-delay: 0.3s">
+              <label for="openai_api_key" class="kv-form-label">
+                OpenAI API Key
+              </label>
+              <div class="mt-1">
+                <input 
+                  type="password" 
+                  name="openai_api_key" 
+                  id="openai_api_key" 
+                  value="<%= @open_ai_api_key %>"
+                  placeholder="sk-..." 
+                  class="kv-form-input"
+                >
+              </div>
+              <p class="kv-form-help-text">
+                Get your API key from the <a href="https://platform.openai.com/account/api-keys" target="_blank" class="kv-link">OpenAI dashboard</a>
+              </p>
+            </div>
+            
+            <!-- Default OpenAI Model -->
+            <div class="sm:col-span-3 animate-fade-in" style="animation-delay: 0.35s">
+              <label for="default_openai_model" class="kv-form-label">
+                Default OpenAI Model
+              </label>
+              <div class="mt-1">
+                <select 
+                  id="default_openai_model" 
+                  name="default_openai_model" 
+                  class="kv-form-select"
+                >
+                  <option value="gpt-4" <%= @default_openai_model == 'gpt-4' ? 'selected' : '' %>>GPT-4</option>
+                  <option value="gpt-4-turbo" <%= @default_openai_model == 'gpt-4-turbo' ? 'selected' : '' %>>GPT-4 Turbo</option>
+                  <option value="gpt-3.5-turbo" <%= @default_openai_model == 'gpt-3.5-turbo' ? 'selected' : '' %>>GPT-3.5 Turbo</option>
+                </select>
+              </div>
+              <p class="kv-form-help-text">
+                Select the default model to use for OpenAI requests
+              </p>
+            </div>
+            
+            <!-- Anthropic API Key -->
+            <div class="sm:col-span-3 animate-fade-in" style="animation-delay: 0.4s">
+              <label for="anthropic_api_key" class="kv-form-label">
+                Anthropic API Key
+              </label>
+              <div class="mt-1">
+                <input 
+                  type="password" 
+                  name="anthropic_api_key" 
+                  id="anthropic_api_key" 
+                  value="<%= @anthropic_api_key %>"
+                  placeholder="sk-ant-..." 
+                  class="kv-form-input"
+                >
+              </div>
+              <p class="kv-form-help-text">
+                Get your API key from the <a href="https://console.anthropic.com/account/keys" target="_blank" class="kv-link">Anthropic console</a>
+              </p>
+            </div>
+            
+            <!-- Default Anthropic Model -->
+            <div class="sm:col-span-3 animate-fade-in" style="animation-delay: 0.45s">
+              <label for="default_anthropic_model" class="kv-form-label">
+                Default Anthropic Model
+              </label>
+              <div class="mt-1">
+                <select 
+                  id="default_anthropic_model" 
+                  name="default_anthropic_model" 
+                  class="kv-form-select"
+                >
+                  <option value="claude-3-opus-20240229" <%= @default_anthropic_model == 'claude-3-opus-20240229' ? 'selected' : '' %>>Claude 3 Opus</option>
+                  <option value="claude-3-sonnet-20240229" <%= @default_anthropic_model == 'claude-3-sonnet-20240229' ? 'selected' : '' %>>Claude 3 Sonnet</option>
+                  <option value="claude-3-haiku-20240307" <%= @default_anthropic_model == 'claude-3-haiku-20240307' ? 'selected' : '' %>>Claude 3 Haiku</option>
+                </select>
+              </div>
+              <p class="kv-form-help-text">
+                Select the default model to use for Anthropic requests
+              </p>
+            </div>
+            
+            <!-- Enable Local LLM -->
+            <div class="sm:col-span-6 animate-fade-in" style="animation-delay: 0.5s">
+              <div class="kv-form-checkbox-group">
+                <div class="kv-form-checkbox">
+                  <input 
+                    id="enable_local_llm" 
+                    name="enable_local_llm" 
+                    type="checkbox" 
+                    value="1"
+                    <%= @enable_local_llm ? 'checked' : '' %>
+                    class="kv-form-checkbox-input"
+                  >
+                </div>
+                <div class="kv-form-checkbox-label">
+                  <label for="enable_local_llm" class="kv-form-label">Enable Local LLM</label>
+                  <p class="kv-text-secondary text-sm">Enable this to use a locally hosted LLM instead of API-based providers. Requires appropriate hardware and model setup.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Local LLM Path -->
+            <div class="sm:col-span-6 animate-fade-in" style="animation-delay: 0.55s">
+              <label for="local_llm_path" class="kv-form-label">
+                Local LLM Path
+              </label>
+              <div class="mt-1">
+                <input 
+                  type="text" 
+                  name="local_llm_path" 
+                  id="local_llm_path" 
+                  value="<%= @local_llm_path %>"
+                  placeholder="meta-llama/Llama-2-7b-chat-hf" 
+                  class="kv-form-input"
+                >
+              </div>
+              <p class="kv-form-help-text">
+                Path to the local model or Hugging Face model name
+              </p>
+            </div>
+            
+            <!-- Default Provider -->
+            <div class="sm:col-span-6 animate-fade-in" style="animation-delay: 0.6s">
+              <label for="default_provider" class="kv-form-label">
+                Default Provider
+              </label>
+              <div class="mt-1">
+                <select 
+                  id="default_provider" 
+                  name="default_provider" 
+                  class="kv-form-select"
+                >
+                  <option value="openai" <%= @default_provider == 'openai' ? 'selected' : '' %>>OpenAI</option>
+                  <option value="anthropic" <%= @default_provider == 'anthropic' ? 'selected' : '' %>>Anthropic</option>
+                  <option value="local" <%= @default_provider == 'local' ? 'selected' : '' %>>Local LLM</option>
+                </select>
+              </div>
+              <p class="kv-form-help-text">
+                This provider will be used by default when no specific provider is selected
+              </p>
+            </div>
+            
+            <!-- Restart Service -->
+            <div class="sm:col-span-6 animate-fade-in" style="animation-delay: 0.65s">
+              <div class="kv-form-checkbox-group">
+                <div class="kv-form-checkbox">
+                  <input 
+                    id="restart_haystack" 
+                    name="restart_haystack" 
+                    type="checkbox" 
+                    value="1"
+                    class="kv-form-checkbox-input"
+                  >
+                </div>
+                <div class="kv-form-checkbox-label">
+                  <label for="restart_haystack" class="kv-form-label">Restart Haystack Service</label>
+                  <p class="kv-text-secondary text-sm">Check this to restart the Haystack service after updating settings. This may be necessary for some changes to take effect.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+            
+            <div class="flex justify-end mt-8 animate-fade-in" style="animation-delay: 0.7s">
+              <%= render 'shared/button', 
+                    text: 'Save Settings', 
+                    variant: 'primary',
+                    type: 'submit',
+                    icon: 'save',
+                    animate: true,
+                    animation_delay: 0.1 %>
+            </div>
+          <% end %>
+        <% end %>
+      <% end %>
+      
+      <!-- Important Notes Card -->
+      <%= render 'shared/card', animation_delay: 0.8 do |notes_card| %>
+        <% notes_card.with_header do %>
+          <div class="flex items-center">
+            <div class="mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-medium kv-text-primary">Important Notes</h2>
+              <p class="text-sm kv-text-secondary">Security and configuration information</p>
+            </div>
+          </div>
+        <% end %>
+        
+        <% notes_card.with_body do %>
+          <ul class="pl-5 space-y-3 mt-2 list-disc animate-fade-in" style="animation-delay: 0.85s">
+            <li class="kv-text-secondary">API keys are stored in environment files and are not encrypted in the database.</li>
+            <li class="kv-text-secondary">After updating API keys, you may need to restart the Haystack service for changes to take effect.</li>
+            <li class="kv-text-secondary">Local LLM usage requires appropriate hardware setup and model configuration.</li>
+            <li class="kv-text-secondary">These settings affect all organizations using the system.</li>
+          </ul>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

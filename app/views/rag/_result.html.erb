@@ -1,0 +1,59 @@
+<div class="mt-6" id="rag-answer">
+  <%= render 'shared/card',
+            title: "Answer",
+            subtitle: "Generated in #{number_with_precision(result["processing_time"], precision: 2)} seconds #{result["metadata"]["provider"].present? ? "using #{result["metadata"]["provider"].capitalize}" : ""}",
+            animate: "fade-in",
+            animate_delay: "150ms",
+            classes: "mb-6 shadow-md hover:shadow-lg transition-all duration-200" do %>
+    <div class="prose prose-primary dark:prose-invert max-w-none transition-colors duration-200">
+      <%= simple_format(result["answer"], class: "kv-text-primary") %>
+    </div>
+  <% end %>
+  
+  <% if result["context"].present? %>
+    <div class="mb-4 animate-in fade-in duration-300 ease-out" style="animation-delay: 250ms;">
+      <h3 class="text-lg font-medium kv-text-primary mb-3">Source Documents (<%= result["context"].size %>)</h3>
+      <p class="text-sm kv-text-secondary mb-4">These documents were used to generate the answer above.</p>
+      
+      <div class="space-y-4">
+        <% result["context"].each_with_index do |doc, index| %>
+          <% 
+            title = doc["title"].present? ? doc["title"] : "Document #{index + 1}"
+            subtitle = doc["source"].present? ? "Source: #{doc["source"]}" : nil
+            
+            # Prepare header actions (score badge and document link)
+            score_class = doc["score"] >= 0.8 ? 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-300' : 
+                        (doc["score"] >= 0.6 ? 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-300' : 
+                        'bg-gray-100 kv-text-secondary dark:bg-gray-800')
+            
+            header_actions_content = capture do 
+          %>
+            <div class="text-right">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= score_class %> transition-colors duration-200">
+                Score: <%= number_with_precision(doc["score"], precision: 2) %>
+              </span>
+              
+              <% if doc["document_id"].present? && defined?(Document) && (document = Document.find_by(id: doc["document_id"])) %>
+                <%= link_to "View Document", organization_document_path(@organization, document), 
+                          class: "text-xs kv-text-accent hover:underline ml-2",
+                          target: "_blank" %>
+              <% end %>
+            </div>
+          <% end %>
+          
+          <%= render 'shared/card',
+                    title: title,
+                    subtitle: subtitle,
+                    header_actions: header_actions_content,
+                    animate: "fade-in",
+                    animate_delay: "#{300 + (index * 50)}ms",
+                    classes: "shadow-sm hover:shadow transition-all duration-200" do %>
+            <div class="prose prose-sm max-w-none transition-colors duration-200">
+              <%= simple_format(doc["text"], class: "kv-text-secondary") %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

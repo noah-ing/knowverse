@@ -1,0 +1,69 @@
+<% content_for :title, "Edit Conversation - #{@organization.name}" %>
+
+<%= render 'shared/card', 
+  title: "Edit Conversation",
+  animate: "fade-in",
+  header_actions: capture do %>
+    <%= render 'shared/button', 
+          variant: 'secondary',
+          icon: 'arrow-left',
+          href: organization_conversation_path(@organization, @conversation),
+          text: 'Back to Conversation' %>
+  <% end %>
+  <%= form_with model: @conversation, url: organization_conversation_path(@organization, @conversation), method: :patch, class: "space-y-6" do |f| %>
+    <div class="space-y-6">
+      <div>
+        <%= f.label :title, "Conversation Title", class: "kv-label" %>
+        <div class="mt-1">
+          <%= f.text_field :title, 
+                        required: true,
+                        class: "kv-input" %>
+        </div>
+        <p class="mt-2 kv-text-secondary text-sm">Choose a descriptive title for this conversation</p>
+      </div>
+      
+      <div class="flex items-center">
+        <%= f.check_box :pinned, class: "kv-checkbox" %>
+        <%= f.label :pinned, "Pin this conversation", class: "ml-2 block text-sm kv-text-primary" %>
+        <p class="ml-4 text-sm kv-text-secondary">Pinned conversations appear at the top of your conversation list</p>
+      </div>
+    </div>
+    
+    <div class="flex justify-end space-x-3 mt-6">
+      <%= render 'shared/button', 
+            variant: 'secondary',
+            text: 'Cancel',
+            href: organization_conversation_path(@organization, @conversation),
+            animate: 'fade-in', 
+            animate_delay: '100ms' %>
+      
+      <%= render 'shared/button', 
+            variant: 'primary',
+            text: 'Save Changes',
+            type: 'submit',
+            animate: 'fade-in', 
+            animate_delay: '150ms' %>
+    </div>
+  <% end %>
+<% end %>
+
+<!-- Delete Section -->
+<%= render 'shared/card', 
+  title: "Delete Conversation",
+  animate: "fade-in",
+  animate_delay: "300ms",
+  classes: "mt-6" do %>
+  
+  <p class="kv-text-secondary text-sm mb-4">
+    Permanently delete this conversation and all associated messages. This action cannot be undone.
+  </p>
+  
+  <div class="flex justify-end">
+    <%= button_to organization_conversation_path(@organization, @conversation),
+                method: :delete,
+                class: "kv-btn kv-btn-danger",
+                data: { turbo_confirm: "Are you sure you want to delete this conversation? This action cannot be undone." } do %>
+      Delete Conversation
+    <% end %>
+  </div>
+<% end %>

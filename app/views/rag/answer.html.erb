@@ -1,0 +1,55 @@
+<% content_for :title, "KnowVerse RAG Results - #{@organization.name}" %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-200">
+  <%= render 'shared/card', 
+             title: "Answer to Your Question",
+             animate: "fade-in",
+             classes: "mb-8 transition-all duration-200 hover:shadow-lg",
+             header_actions: (render 'shared/button',
+                              text: "Ask Another Question",
+                              variant: "primary",
+                              href: organization_rag_index_path(@organization),
+                              animate: "fade") do %>
+    <div class="mb-6 bg-primary-50 dark:bg-primary-900 p-4 rounded-lg transition-colors duration-200 animate-in fade-in duration-300 ease-out">
+      <h2 class="font-medium text-primary-700 dark:text-primary-300 mb-2 transition-colors duration-200">Your Question:</h2>
+      <p class="kv-text-primary italic"><%= @query %></p>
+    </div>
+    
+    <% if @result&.success? %>
+      <%= render partial: 'rag/result', locals: { result: @result.data } %>
+    <% else %>
+      <%= render partial: 'rag/error', locals: { message: @result&.error || "Unknown error" } %>
+    <% end %>
+    
+    <%= render 'shared/card', 
+               title: "RAG Settings Used",
+               animate: "fade-in",
+               animate_delay: "100ms",
+               classes: "mt-8 transition-all duration-200 hover:shadow-md" do %>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h4 class="font-medium kv-text-primary mb-2">Retrieval Options:</h4>
+          <ul class="list-disc list-inside kv-text-secondary space-y-1">
+            <li>Strategy: <%= @retrieval_options[:strategy].capitalize %></li>
+            <li>Max Documents: <%= @retrieval_options[:max_documents] %></li>
+            <li>Similarity Threshold: <%= @retrieval_options[:min_similarity] %></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="font-medium kv-text-primary mb-2">Generation Options:</h4>
+          <ul class="list-disc list-inside kv-text-secondary space-y-1">
+            <li>Temperature: <%= @generation_options[:temperature] %></li>
+            <li>Max Tokens: <%= @generation_options[:max_tokens] %></li>
+            <% if @generation_options[:model].present? %>
+              <li>Model: <%= @generation_options[:model] %></li>
+            <% end %>
+            <% if @result&.success? && @result.data["metadata"]["provider"].present? %>
+              <li>Provider: <%= @result.data["metadata"]["provider"] || "Default" %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>
