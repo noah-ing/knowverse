@@ -1,0 +1,281 @@
+<div class="px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-8 animate-in fade-in duration-300 ease-out">
+    <div class="mb-4 md:mb-0">
+      <h1 class="text-2xl font-bold kv-text-primary">Search Metrics & Analytics</h1>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Monitor search performance and user feedback across the platform</p>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <%= render 'shared/button', 
+          text: "Provider Comparison", 
+          variant: "secondary", 
+          href: admin_search_metrics_provider_comparison_path,
+          icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>' %>
+          
+      <%= render 'shared/button', 
+          text: "Feedback Analysis", 
+          variant: "secondary", 
+          href: admin_search_metrics_feedback_analysis_path,
+          icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>' %>
+      
+      <%= render 'shared/button', 
+          text: "Problem Queries", 
+          variant: "danger", 
+          href: admin_search_metrics_problem_queries_path,
+          icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>' %>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+    <!-- Total Queries -->
+    <%= render 'shared/card', 
+      animate: "fade-in", 
+      animate_delay: "50ms", 
+      classes: "overflow-hidden",
+      full_width: true do %>
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-indigo-500 dark:bg-indigo-600 rounded-md p-3">
+          <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+            Total Queries
+          </dt>
+          <dd class="flex items-baseline">
+            <div class="text-2xl font-semibold kv-text-primary">
+              <%= number_with_delimiter(@stats[:total_queries]) %>
+            </div>
+            <div class="ml-2 text-sm">
+              <span class="font-medium text-green-500 dark:text-green-400">+<%= @stats[:queries_today] %></span>
+              <span class="text-gray-500 dark:text-gray-400">today</span>
+            </div>
+          </dd>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Feedback Rate -->
+    <%= render 'shared/card', 
+      animate: "fade-in", 
+      animate_delay: "100ms", 
+      classes: "overflow-hidden",
+      full_width: true do %>
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-green-500 dark:bg-green-600 rounded-md p-3">
+          <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+            Feedback Rate
+          </dt>
+          <dd class="flex items-baseline">
+            <div class="text-2xl font-semibold kv-text-primary">
+              <%= number_to_percentage(@stats[:feedback_percentage], precision: 1) %>
+            </div>
+            <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+              <span><%= number_with_delimiter(@stats[:total_feedback]) %> total feedback</span>
+            </div>
+          </dd>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Average Relevance Score -->
+    <%= render 'shared/card', 
+      animate: "fade-in", 
+      animate_delay: "150ms", 
+      classes: "overflow-hidden",
+      full_width: true do %>
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-yellow-500 dark:bg-yellow-600 rounded-md p-3">
+          <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+            Average Relevance Score
+          </dt>
+          <dd class="flex items-baseline">
+            <div class="text-2xl font-semibold kv-text-primary">
+              <%= @stats[:average_relevance] %> / 5
+            </div>
+            <% score_class = @stats[:average_relevance] >= 4 ? 'text-green-500 dark:text-green-400 bg-green-100 dark:bg-green-900' : (@stats[:average_relevance] >= 3 ? 'text-yellow-500 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900' : 'text-red-500 dark:text-red-400 bg-red-100 dark:bg-red-900') %>
+            <div class="ml-2">
+              <span class="inline-flex items-baseline px-2.5 py-0.5 rounded-full text-sm font-medium <%= score_class %>">
+                <%= @stats[:average_relevance] >= 4 ? 'Great' : (@stats[:average_relevance] >= 3 ? 'Good' : 'Needs Improvement') %>
+              </span>
+            </div>
+          </dd>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Provider Distribution -->
+    <%= render 'shared/card', 
+      animate: "fade-in", 
+      animate_delay: "200ms", 
+      classes: "overflow-hidden",
+      full_width: true do %>
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-purple-500 dark:bg-purple-600 rounded-md p-3">
+          <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+            Top Search Provider
+          </dt>
+          <dd>
+            <% top_provider = @stats[:queries_by_provider].max_by { |_, count| count } %>
+            <% if top_provider %>
+              <div class="text-lg font-semibold kv-text-primary">
+                <%= top_provider.first.humanize %>
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                <%= number_to_percentage(top_provider.last.to_f / @stats[:total_queries] * 100, precision: 1) %> of all queries
+              </div>
+            <% else %>
+              <div class="text-lg font-semibold text-gray-400 dark:text-gray-500">No data yet</div>
+            <% end %>
+          </dd>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <!-- Recent Queries -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+      <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Recent Search Queries
+        </h3>
+      </div>
+      <ul class="divide-y divide-gray-200">
+        <% if @recent_queries.any? %>
+          <% @recent_queries.each do |query| %>
+            <li>
+              <div class="px-4 py-4 sm:px-6">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-indigo-600 truncate">
+                    <%= query.query_text %>
+                  </div>
+                  <div class="ml-2 flex-shrink-0 flex">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                      <%= case query.search_provider
+                          when 'hybrid' then 'bg-purple-100 text-purple-800'
+                          when 'pgvector_cosine' then 'bg-blue-100 text-blue-800'
+                          when 'pgvector_l2' then 'bg-cyan-100 text-cyan-800'
+                          when 'haystack' then 'bg-indigo-100 text-indigo-800'
+                          when 'hnsw' then 'bg-green-100 text-green-800'
+                          else 'bg-gray-100 text-gray-800'
+                          end %>">
+                      <%= query.search_provider&.humanize || 'Unknown' %>
+                    </span>
+                  </div>
+                </div>
+                <div class="mt-2 flex justify-between">
+                  <div class="sm:flex">
+                    <div class="mr-6 flex items-center text-sm text-gray-500">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h6v4H7V5zm8 8v2h1v1H4v-1h1v-2a7.001 7.001 0 0113 0zm-7-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      <%= query.organization&.name || 'Unknown Organization' %>
+                    </div>
+                    <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                      </svg>
+                      <%= query.user&.email || 'Anonymous' %>
+                    </div>
+                  </div>
+                  <div class="flex items-center text-sm text-gray-500">
+                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    <%= time_ago_in_words(query.created_at) %> ago
+                  </div>
+                </div>
+                <div class="mt-2 sm:flex sm:justify-between">
+                  <div class="sm:flex">
+                    <div class="flex items-center text-sm text-gray-500">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      <%= query.result_count %> results
+                    </div>
+                    <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                      </svg>
+                      <%= number_with_precision(query.latency / 1000.0, precision: 2) %>s
+                    </div>
+                  </div>
+                  <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                    <% feedback_count = query.search_feedbacks.count %>
+                    <% if feedback_count > 0 %>
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                      </svg>
+                      <%= feedback_count %> feedback
+                    <% else %>
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                      </svg>
+                      No feedback
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </li>
+          <% end %>
+        <% else %>
+          <li class="px-4 py-6 sm:px-6 text-center text-gray-500">
+            <p>No search queries recorded yet.</p>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+    
+    <!-- Top Organizations -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+      <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Top Organizations by Search Volume
+        </h3>
+      </div>
+      <div class="bg-white px-4 py-5 sm:p-6">
+        <div class="space-y-6">
+          <% if @top_organizations.any? %>
+            <% @top_organizations.each do |org| %>
+              <div class="relative pt-1">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-sm font-medium text-gray-900"><%= org.name %></span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-sm font-semibold text-indigo-700"><%= number_with_delimiter(org.query_count) %> queries</span>
+                  </div>
+                </div>
+                <div class="overflow-hidden h-2 mt-2 text-xs flex rounded bg-indigo-200">
+                  <% percentage = @top_organizations.first.query_count > 0 ? (org.query_count.to_f / @top_organizations.first.query_count * 100) : 0 %>
+                  <div style="width: <%= percentage %>%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-600"></div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="text-center text-gray-500 py-6">
+              <p>No search data recorded yet.</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

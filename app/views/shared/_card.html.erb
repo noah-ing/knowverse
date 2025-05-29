@@ -1,0 +1,102 @@
+<!--
+  Card Component
+  A versatile component for consistent card styling with optional animations
+  
+  Usage examples:
+  
+  Basic card with title:
+  render partial: "shared/card", locals: {
+    title: "Card Title"
+  } do
+    Your content here
+  end
+  
+  Card with title and subtitle:
+  render partial: "shared/card", locals: {
+    title: "Card Title",
+    subtitle: "This is a subtitle"
+  } do
+    Your content here
+  end
+  
+  Card with animation:
+  render partial: "shared/card", locals: {
+    title: "Animated Card",
+    animate: "fade-in", 
+    animate_delay: "200ms"
+  } do
+    Your content here
+  end
+  
+  Card with custom classes and ID:
+  render partial: "shared/card", locals: {
+    title: "Customized Card",
+    classes: "mt-6 special-card",
+    id: "special-card-1"
+  } do
+    Your content here
+  end
+  
+  Card with header actions:
+  render partial: "shared/card", locals: {
+    title: "Card with Actions",
+    header_actions: capture do
+      render partial: "shared/button", locals: {
+        text: "Action",
+        variant: "primary",
+        size: "sm"
+      }
+    end
+  } do
+    Your content here
+  end
+-->
+
+<%
+  # Default values
+  title ||= nil
+  subtitle ||= nil
+  animate ||= nil
+  animate_delay ||= nil
+  classes ||= ""
+  id ||= nil
+  border ||= false
+  header_actions ||= nil
+  data ||= {}
+  header_class ||= nil
+  body_class ||= nil
+%>
+
+<div 
+  class="kv-card <%= border ? 'kv-card-bordered' : '' %> <%= classes %> <%= animate ? "animate-in #{animate}" : '' %>"
+  <%= "style=\"animation-delay: #{animate_delay}\"".html_safe if animate && animate_delay %>
+  <%= "id=\"#{id}\"".html_safe if id %>
+  <% if data.is_a?(Hash) %>
+    <%= data.map { |key, value| "data-#{key.to_s.dasherize}=\"#{value}\"" }.join(" ").html_safe %>
+  <% elsif data.present? %>
+    <% # Handle non-hash data values safely %>
+    <%= "data-value=\"#{data}\"".html_safe %>
+  <% end %>
+>
+  <% if title || subtitle || header_actions %>
+    <div class="kv-card-header <%= header_class %>">
+      <div class="kv-card-header-content">
+        <% if title %>
+          <h3 class="kv-card-title"><%= title %></h3>
+        <% end %>
+        <% if subtitle %>
+          <p class="kv-card-subtitle"><%= subtitle %></p>
+        <% end %>
+      </div>
+      <% if header_actions %>
+        <div class="kv-card-header-actions">
+          <%= header_actions %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+  
+  <div class="kv-card-body <%= body_class %>">
+    <%= yield %>
+  </div>
+</div>

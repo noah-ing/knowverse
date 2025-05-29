@@ -1,0 +1,30 @@
+class CreateDocuments < ActiveRecord::Migration[8.0]
+  def change
+    create_table :documents do |t|
+      t.string :title, null: false
+      t.text :description
+      t.string :file_type
+      t.string :status, default: 'pending', null: false
+      t.text :content
+      t.string :embedding_status, default: 'pending', null: false
+      t.references :organization, null: false, foreign_key: true
+      t.integer :word_count, default: 0
+      t.jsonb :metadata, default: {}
+      t.vector :embedding, dimension: 768
+
+      t.timestamps
+    end
+    
+    # Add indexes for better query performance
+    add_index :documents, :status
+    add_index :documents, :embedding_status
+    add_index :documents, :file_type
+    add_index :documents, [:organization_id, :status]
+    add_index :documents, [:organization_id, :embedding_status]
+    add_index :documents, :title, using: :gin, opclass: :gin_trgm_ops, where: "title IS NOT NULL"
+    add_index :documents, :content, using: :gin, opclass: :gin_trgm_ops, where: "content IS NOT NULL"
+    
+    # Create vector index for similarity search
+    execute "CREATE INDEX ON documents USING hnsw (embedding vector_l2_ops);"
+  end
+end

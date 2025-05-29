@@ -1,0 +1,38 @@
+<div id="<%= dom_id(message) %>" class="kv-message <%= message.user_message? ? 'kv-message-user' : (message.system_message? ? 'kv-message-system' : 'kv-message-assistant') %>">
+  <div class="kv-message-header">
+    <span class="kv-message-name"><%= message.display_role %></span>
+    <span class="kv-message-time"><%= message.created_at.strftime("%I:%M %p") %></span>
+  </div>
+  
+  <div class="kv-message-content">
+    <%= simple_format(message.content) %>
+  </div>
+  
+  <% if message.assistant_message? && message.source_references.present? %>
+    <div class="kv-message-sources">
+      <div class="kv-message-sources-title">Sources:</div>
+      <ul class="kv-sources-list">
+        <% message.source_references.each do |source| %>
+          <li class="kv-source-item">
+            <%= link_to source["title"] || "Document #{source['id']}", 
+                       organization_document_path(organization, source["id"]), 
+                       class: "kv-link",
+                       target: "_blank" %>
+            <% if source["score"] %>
+              <span class="kv-text-secondary ml-1">
+                (<%= (source["score"].to_f * 100).round %>% match)
+              </span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+  
+  <% if message.metadata.present? && message.metadata["metrics"].present? %>
+    <div class="kv-message-metrics">
+      <span title="Time to first token"><%= message.metadata["metrics"]["time_to_first_token"] || 0 %>ms TTF</span>
+      <span title="Tokens per second"><%= message.metadata["metrics"]["tokens_per_second"] || 0 %> tokens/s</span>
+    </div>
+  <% end %>
+</div>

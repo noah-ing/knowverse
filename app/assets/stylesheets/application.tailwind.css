@@ -1,0 +1,13 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* Import custom stylesheets */
+@import "knowverse_design_system.css";
+@import "streaming.css";
+
+/* Add any other custom base styles here */
+body {
+  /* Example: Add a default font if needed */
+  /* font-family: var(--kv-font-sans); */
+}

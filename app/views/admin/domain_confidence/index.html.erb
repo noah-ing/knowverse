@@ -1,0 +1,82 @@
+<div class="kv-card-container">
+  <!-- Main Overview Card -->
+  <%= render partial: 'shared/card', locals: { 
+       title: 'Domain Confidence Management', 
+       animate: 'fade-in',
+       animate_delay: '0ms',
+       id: 'domain-confidence-overview'
+     } do %>
+    <p class="kv-text-secondary mb-6">
+      Configure and analyze domain confidence thresholds across your organizations to optimize search relevance and performance.
+    </p>
+    
+    <% if @organizations.present? %>
+      <div class="my-6">
+        <h2 class="kv-text-primary text-lg font-medium mb-3">Select Organization</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <% @organizations.each_with_index do |org, index| %>
+            <%= render partial: 'shared/card', locals: { 
+                 clickable: true,
+                 href: admin_domain_confidence_path(org),
+                 animate: 'fade-in',
+                 animate_delay: "#{(index + 1) * 100}ms",
+                 data: { organization_id: org.id },
+                 border: true
+               } do %>
+              <div class="kv-text-primary font-medium"><%= org.name %></div>
+              <div class="kv-text-secondary text-sm mt-1">
+                <div class="flex items-center justify-between">
+                  <span>Primary Threshold:</span>
+                  <span class="font-medium"><%= org.domain_confidence_primary_threshold || 0.7 %></span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span>Secondary Threshold:</span>
+                  <span class="font-medium"><%= org.domain_confidence_secondary_threshold || 0.4 %></span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span>Fallback:</span>
+                  <span class="font-medium"><%= org.enable_domain_fallback ? 'Enabled' : 'Disabled' %></span>
+                </div>
+              </div>
+              <div class="mt-3 flex justify-between items-center">
+                <div>
+                  <span class="text-xs rounded-full px-2 py-1 kv-badge-primary">
+                    <%= org.domain_embedding_models.count %> domain models
+                  </span>
+                </div>
+                <span class="text-sm kv-text-accent">View Details →</span>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="kv-empty-state" data-animate="fade-in" data-delay="200ms">
+        <svg class="kv-empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="kv-empty-state-title">No organizations found</h3>
+        <p class="kv-empty-state-description">You don't have access to any organizations to manage domain confidence.</p>
+      </div>
+    <% end %>
+  <% end %>
+  
+  <!-- About Domain Confidence Card -->
+  <%= render partial: 'shared/card', locals: { 
+       title: 'About Domain Confidence Thresholds', 
+       animate: 'fade-in',
+       animate_delay: '300ms',
+       id: 'domain-confidence-info'
+     } do %>
+    <div class="kv-info-panel">
+      <p class="kv-text-secondary mb-4">The Confidence Threshold System provides sophisticated domain detection with optimal confidence scoring to improve search relevance and performance. Key features include:</p>
+      <ul class="kv-list">
+        <li class="kv-list-item"><strong>Multi-factor confidence scoring</strong> - Combines semantic similarity, corpus coverage, query characteristics, and historical performance</li>
+        <li class="kv-list-item"><strong>Configurable thresholds</strong> - Customize primary and secondary confidence thresholds per organization</li>
+        <li class="kv-list-item"><strong>Waterfall fallback system</strong> - Automatically tries alternative domains when confidence is low</li>
+        <li class="kv-list-item"><strong>Performance analytics</strong> - Track and analyze domain confidence metrics over time</li>
+      </ul>
+      <p class="kv-text-secondary mt-4">Configure thresholds for each organization to balance precision vs. recall in domain detection.</p>
+    </div>
+  <% end %>
+</div>

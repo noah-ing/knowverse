@@ -1,0 +1,614 @@
+<%# 
+  Reusable form components that follow the KnowVerse design system
+  Updated with enhanced styling, animations, and accessibility features
+  Part of the UI/UX refactoring initiative (April 2025)
+%>
+
+<%# Text Input Field %>
+<%# 
+  Parameters:
+  - form: The form builder object
+  - field: The field name (symbol or string)
+  - label: Label text (optional)
+  - placeholder: Placeholder text (optional)
+  - required: Whether the field is required (default: false)
+  - help_text: Help text to display below the field (optional)
+  - error: Error message to display (optional)
+  - classes: Additional CSS classes (optional)
+  - type: Input type (default: 'text')
+  - data: Data attributes hash (optional)
+  - id: Optional input ID (defaults to field name)
+  - disabled: Whether the field is disabled (default: false)
+%>
+
+<% def text_field_component(form, field, 
+                            label: nil, 
+                            placeholder: nil, 
+                            required: false, 
+                            help_text: nil, 
+                            error: nil, 
+                            classes: '', 
+                            type: 'text',
+                            data: {},
+                            id: nil,
+                            disabled: false)
+   
+   field_id = id || "#{form.object_name}_#{field}"
+   has_error = error.present? || (form.object.respond_to?(:errors) && form.object.errors[field].any?)
+   error_message = error || (form.object.respond_to?(:errors) ? form.object.errors[field].first : nil)
+   
+   # Convert data hash to data attributes
+   data_attrs = data.is_a?(Hash) ? data.map { |k, v| "data-#{k}=\"#{v}\"" }.join(" ") : ""
+%>
+  <div class="mb-4 animate-in fade-in duration-300" style="animation-delay: 0.1s">
+    <% if label.present? %>
+      <%= form.label field, label, class: "kv-label block text-sm font-medium kv-text-primary mb-1 #{'required' if required}" %>
+    <% end %>
+    
+    <div class="relative rounded-md shadow-sm">
+      <%= form.text_field field, 
+          type: type,
+          class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200 #{'border-red-500 dark:border-red-400 focus:border-red-500 focus:ring-red-500' if has_error} #{classes}",
+          placeholder: placeholder,
+          required: required,
+          disabled: disabled,
+          id: field_id,
+          "aria-describedby": "#{field_id}_help #{'#{field_id}_error' if has_error}".strip,
+          "aria-invalid": has_error
+      %>
+      <% if has_error %>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+          <svg class="h-5 w-5 text-red-500 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      <% end %>
+    </div>
+    
+    <% if help_text.present? %>
+      <p id="<%= field_id %>_help" class="mt-1 text-xs kv-text-secondary"><%= help_text %></p>
+    <% end %>
+    
+    <% if has_error %>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+    <% end %>
+  </div>
+<% end %>
+
+<%# Textarea Field %>
+<%# 
+  Parameters:
+  - Same as text_field_component plus:
+  - rows: Number of rows (default: 4)
+%>
+
+<% def textarea_component(form, field, 
+                          label: nil, 
+                          placeholder: nil, 
+                          required: false, 
+                          help_text: nil, 
+                          error: nil, 
+                          classes: '', 
+                          rows: 4,
+                          data: {},
+                          id: nil,
+                          disabled: false)
+   
+   field_id = id || "#{form.object_name}_#{field}"
+   has_error = error.present? || (form.object.respond_to?(:errors) && form.object.errors[field].any?)
+   error_message = error || (form.object.respond_to?(:errors) ? form.object.errors[field].first : nil)
+   
+   # Convert data hash to data attributes
+   data_attrs = data.is_a?(Hash) ? data.map { |k, v| "data-#{k}=\"#{v}\"" }.join(" ") : ""
+%>
+  <div class="mb-4 animate-in fade-in duration-300" style="animation-delay: 0.1s">
+    <% if label.present? %>
+      <%= form.label field, label, class: "kv-label block text-sm font-medium kv-text-primary mb-1 #{'required' if required}" %>
+    <% end %>
+    
+    <div class="relative rounded-md shadow-sm">
+      <%= form.text_area field, 
+          class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200 #{'border-red-500 dark:border-red-400 focus:border-red-500 focus:ring-red-500' if has_error} #{classes}",
+          placeholder: placeholder,
+          required: required,
+          rows: rows,
+          disabled: disabled,
+          id: field_id,
+          "aria-describedby": "#{field_id}_help #{'#{field_id}_error' if has_error}".strip,
+          "aria-invalid": has_error
+      %>
+    </div>
+    
+    <% if help_text.present? %>
+      <p id="<%= field_id %>_help" class="mt-1 text-xs kv-text-secondary"><%= help_text %></p>
+    <% end %>
+    
+    <% if has_error %>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+    <% end %>
+  </div>
+<% end %>
+
+<%# Select Field %>
+<%# 
+  Parameters:
+  - Same as text_field_component plus:
+  - options: Array of options or hash of option text to values
+  - include_blank: Whether to include a blank option (default: false)
+  - selected: The selected value (optional)
+%>
+
+<% def select_component(form, field, 
+                        options:,
+                        label: nil, 
+                        required: false, 
+                        help_text: nil, 
+                        error: nil, 
+                        classes: '', 
+                        include_blank: false,
+                        selected: nil,
+                        data: {},
+                        id: nil,
+                        disabled: false)
+   
+   field_id = id || "#{form.object_name}_#{field}"
+   has_error = error.present? || (form.object.respond_to?(:errors) && form.object.errors[field].any?)
+   error_message = error || (form.object.respond_to?(:errors) ? form.object.errors[field].first : nil)
+   
+   # Convert data hash to data attributes
+   data_attrs = data.is_a?(Hash) ? data.map { |k, v| "data-#{k}=\"#{v}\"" }.join(" ") : ""
+%>
+  <div class="mb-4 animate-in fade-in duration-300" style="animation-delay: 0.1s">
+    <% if label.present? %>
+      <%= form.label field, label, class: "kv-label block text-sm font-medium kv-text-primary mb-1 #{'required' if required}" %>
+    <% end %>
+    
+    <div class="relative rounded-md shadow-sm">
+      <%= form.select field, 
+          options,
+          { include_blank: include_blank, selected: selected },
+          { 
+            class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm transition-colors duration-200 #{'border-red-500 dark:border-red-400 focus:border-red-500 focus:ring-red-500' if has_error} #{classes}",
+            required: required,
+            disabled: disabled,
+            id: field_id,
+            "aria-describedby": "#{field_id}_help #{'#{field_id}_error' if has_error}".strip,
+            "aria-invalid": has_error
+          }
+      %>
+      <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </div>
+    </div>
+    
+    <% if help_text.present? %>
+      <p id="<%= field_id %>_help" class="mt-1 text-xs kv-text-secondary"><%= help_text %></p>
+    <% end %>
+    
+    <% if has_error %>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+    <% end %>
+  </div>
+<% end %>
+
+<%# Checkbox Field %>
+<%# 
+  Parameters:
+  - form: The form builder object
+  - field: The field name (symbol or string)
+  - label: Label text (required)
+  - help_text: Help text to display below the field (optional)
+  - error: Error message to display (optional)
+  - checked: Whether the checkbox is checked (default: false)
+  - classes: Additional CSS classes (optional)
+  - data: Data attributes hash (optional)
+  - id: Optional input ID (defaults to field name)
+  - disabled: Whether the field is disabled (default: false)
+%>
+
+<% def checkbox_component(form, field, 
+                          label:, 
+                          help_text: nil, 
+                          error: nil, 
+                          checked: false, 
+                          classes: '', 
+                          data: {},
+                          id: nil,
+                          disabled: false)
+   
+   field_id = id || "#{form.object_name}_#{field}"
+   has_error = error.present? || (form.object.respond_to?(:errors) && form.object.errors[field].any?)
+   error_message = error || (form.object.respond_to?(:errors) ? form.object.errors[field].first : nil)
+   
+   # Convert data hash to data attributes
+   data_attrs = data.is_a?(Hash) ? data.map { |k, v| "data-#{k}=\"#{v}\"" }.join(" ") : ""
+%>
+  <div class="mb-4 animate-in fade-in duration-300" style="animation-delay: 0.1s">
+    <div class="flex items-start">
+      <div class="flex items-center h-5">
+        <%= form.check_box field, 
+            class: "h-4 w-4 rounded border-gray-300 dark:border-gray-600 focus:ring-offset-0 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 dark:bg-gray-700 dark:checked:bg-blue-500 transition-colors duration-200 #{'border-red-500 dark:border-red-400' if has_error} #{classes}",
+            checked: checked,
+            disabled: disabled,
+            id: field_id,
+            "aria-describedby": "#{field_id}_help #{'#{field_id}_error' if has_error}".strip,
+            "aria-invalid": has_error
+        %>
+      </div>
+      <div class="ml-3 text-sm">
+        <%= form.label field, label, class: "kv-text-primary text-sm font-medium ml-2" %>
+        
+        <% if help_text.present? %>
+          <p id="<%= field_id %>_help" class="kv-text-secondary text-xs mt-1"><%= help_text %></p>
+        <% end %>
+      </div>
+    </div>
+    
+    <% if has_error %>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+    <% end %>
+  </div>
+<% end %>
+
+<%# Radio Button Group %>
+<%# 
+  Parameters:
+  - form: The form builder object
+  - field: The field name (symbol or string)
+  - options: Array of [label, value] pairs
+  - legend: Legend text for the fieldset (required)
+  - help_text: Help text to display below the field (optional)
+  - error: Error message to display (optional)
+  - checked: The checked value (optional)
+  - classes: Additional CSS classes for the container (optional)
+  - option_classes: Additional CSS classes for each option (optional)
+  - vertical: Whether to stack options vertically (default: false)
+  - required: Whether the field group is required (default: false)
+%>
+
+<% def radio_group_component(form, field, 
+                             options:,
+                             legend:, 
+                             help_text: nil, 
+                             error: nil, 
+                             checked: nil, 
+                             classes: '', 
+                             option_classes: '',
+                             vertical: false,
+                             required: false)
+   
+   field_id = "#{form.object_name}_#{field}"
+   has_error = error.present? || (form.object.respond_to?(:errors) && form.object.errors[field].any?)
+   error_message = error || (form.object.respond_to?(:errors) ? form.object.errors[field].first : nil)
+%>
+  <fieldset class="mb-4 <%= classes %> animate-in fade-in duration-300" style="animation-delay: 0.1s">
+    <legend class="kv-label block text-sm font-medium kv-text-primary mb-2 <%= 'required' if required %>"><%= legend %></legend>
+    
+    <div class="<%= vertical ? 'space-y-2' : 'flex flex-wrap gap-4' %>">
+      <% options.each_with_index do |option, index| %>
+        <% option_label, option_value = option.is_a?(Array) ? option : [option, option] %>
+        <% option_id = "#{field_id}_#{index}" %>
+        
+        <div class="flex items-center <%= option_classes %>">
+          <%= form.radio_button field, 
+              option_value, 
+              id: option_id, 
+              checked: checked == option_value,
+              class: "h-4 w-4 border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-600 dark:bg-gray-700 transition-colors duration-200 #{'border-red-500 dark:border-red-400' if has_error}"
+          %>
+          <%= form.label "#{field}_#{option_value}", option_label, class: "ml-2 kv-text-primary text-sm" %>
+        </div>
+      <% end %>
+    </div>
+    
+    <% if help_text.present? %>
+      <p id="<%= field_id %>_help" class="mt-1 text-xs kv-text-secondary"><%= help_text %></p>
+    <% end %>
+    
+    <% if has_error %>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+    <% end %>
+  </fieldset>
+<% end %>
+
+<%# Enhanced File Upload Field with Drag-and-Drop, Progress Indicators, and Preview %>
+<%# 
+  Parameters:
+  - form: The form builder object
+  - field: The field name (symbol or string)
+  - label: Label text (optional)
+  - required: Whether the field is required (default: false)
+  - help_text: Help text to display below the field (optional)
+  - error: Error message to display (optional)
+  - classes: Additional CSS classes (optional)
+  - dropzone_classes: Additional CSS classes for the dropzone (optional)
+  - accept: MIME types to accept (optional)
+  - multiple: Whether to accept multiple files (default: false)
+  - max_size: Maximum file size in MB (default: 10)
+  - max_files: Maximum number of files (default: 10)
+  - preview: Whether to show image previews (default: true)
+  - show_file_list: Whether to show file list (default: true for multiple, false for single)
+  - data: Data attributes hash (optional)
+  - id: Optional input ID (defaults to field name)
+  - disabled: Whether the field is disabled (default: false)
+%>
+
+<% def file_field_component(form, field, 
+                            label: nil, 
+                            required: false, 
+                            help_text: nil, 
+                            error: nil, 
+                            classes: '', 
+                            dropzone_classes: '',
+                            accept: nil,
+                            multiple: false,
+                            max_size: 10,
+                            max_files: 10,
+                            preview: true,
+                            show_file_list: nil,
+                            data: {},
+                            id: nil,
+                            disabled: false)
+   
+   field_id = id || "#{form.object_name}_#{field}"
+   has_error = error.present? || (form.object.respond_to?(:errors) && form.object.errors[field].any?)
+   error_message = error || (form.object.respond_to?(:errors) ? form.object.errors[field].first : nil)
+   show_file_list = multiple if show_file_list.nil?
+   
+   # Build controller data attributes
+   controller_data = {
+     controller: "file-upload",
+     file_upload_max_files_value: max_files,
+     file_upload_max_size_value: max_size,
+     file_upload_preview_images_value: preview,
+   }
+   
+   if accept.present?
+     controller_data[:file_upload_accepted_types_value] = accept
+   end
+   
+   # Merge with user data
+   data = controller_data.merge(data)
+   
+   # Convert data hash to data attributes
+   data_attrs = data.is_a?(Hash) ? data.map { |k, v| "data-#{k}=\"#{v}\"" }.join(" ") : ""
+%>
+  <div class="mb-4 <%= classes %> animate-in fade-in duration-300" style="animation-delay: 0.1s" <%= data_attrs.html_safe %>>
+    <% if label.present? %>
+      <%= form.label field, label, class: "kv-label block text-sm font-medium kv-text-primary mb-1 #{'required' if required}" %>
+    <% end %>
+    
+    <div class="relative">
+      <%# Hidden file input %>
+      <%= form.file_field field, 
+          class: "sr-only",
+          accept: accept,
+          multiple: multiple,
+          required: required,
+          disabled: disabled,
+          id: field_id,
+          "data-file-upload-target": "input",
+          "aria-describedby": "#{field_id}_help #{'#{field_id}_error' if has_error}".strip,
+          "aria-invalid": has_error
+      %>
+      
+      <%# Dropzone %>
+      <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md transition-all duration-300 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer group <%= dropzone_classes %>"
+           data-file-upload-target="dropzone"
+           aria-label="<%= multiple ? 'Drop files here or click to select files' : 'Drop file here or click to select file' %>"
+           role="button" 
+           tabindex="0">
+        <div class="space-y-1 text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-300" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <div class="flex flex-col sm:flex-row items-center justify-center text-sm text-gray-600 dark:text-gray-400">
+            <span class="relative font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors duration-200">
+              <%= multiple ? 'Upload files' : 'Upload a file' %>
+            </span>
+            <span class="px-1">or drag and drop</span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            <%= accept ? "#{accept.split(',').join(', ')}" : "Any file type" %> up to <%= max_size %>MB <%= multiple ? "(#{max_files} max)" : "" %>
+          </p>
+        </div>
+      </div>
+      
+      <%# Error message %>
+      <div data-file-upload-target="error" class="hidden mt-1 text-sm text-red-600 dark:text-red-400 animate-in fade-in duration-200"></div>
+      
+      <%# Help text %>
+      <% if help_text.present? %>
+      <p id="<%= field_id %>_help" class="mt-1 text-xs kv-text-secondary"><%= help_text %></p>
+      <% end %>
+      
+      <%# Server-side error message %>
+      <% if has_error %>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+      <% end %>
+      
+      <%# Image preview area %>
+      <% if preview %>
+        <div data-file-upload-target="preview" class="mt-2 flex flex-wrap"></div>
+      <% end %>
+      
+      <%# File list %>
+      <% if show_file_list %>
+        <div class="mt-2">
+          <div data-file-upload-target="fileList" class="text-sm"></div>
+          
+          <template data-file-upload-target="template">
+            <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+              <div class="flex items-center">
+                <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center mr-2 text-gray-500">
+                  <svg data-file-icon class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div class="truncate">
+                  <div data-file-name class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"></div>
+                  <div class="text-xs kv-text-secondary">
+                    <span data-file-size></span> • <span data-file-type></span>
+                  </div>
+                </div>
+              </div>
+              <button type="button" 
+                      data-action="file-upload#removeFile" 
+                      class="ml-4 flex-shrink-0 text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                      aria-label="Remove file">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </template>
+        </div>
+      <% end %>
+      
+      <%# Progress bar for uploads %>
+      <div data-file-upload-target="progress" class="hidden mt-2 animate-in fade-in slide-in-from-top duration-300">
+        <div class="flex justify-between mb-1">
+          <span data-file-upload-target="progressText" class="text-xs kv-text-secondary">Uploading...</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+          <div data-file-upload-target="progressBar" class="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%# Range Input Field %>
+<%# 
+  Parameters:
+  - form: The form builder object
+  - field: The field name (symbol or string)
+  - label: Label text (optional)
+  - min: Minimum value (default: 0)
+  - max: Maximum value (default: 100)
+  - step: Step increment (default: 1)
+  - value: Current value (optional)
+  - help_text: Help text to display below the field (optional)
+  - error: Error message to display (optional)
+  - classes: Additional CSS classes (optional)
+  - show_value: Whether to display the current value (default: true)
+  - id: Optional input ID (defaults to field name)
+  - disabled: Whether the field is disabled (default: false)
+%>
+
+<% def range_field_component(form, field, 
+                             label: nil, 
+                             min: 0, 
+                             max: 100, 
+                             step: 1, 
+                             value: nil, 
+                             help_text: nil, 
+                             error: nil, 
+                             classes: '', 
+                             show_value: true,
+                             id: nil,
+                             disabled: false)
+   
+   field_id = id || "#{form.object_name}_#{field}"
+   has_error = error.present? || (form.object.respond_to?(:errors) && form.object.errors[field].any?)
+   error_message = error || (form.object.respond_to?(:errors) ? form.object.errors[field].first : nil)
+%>
+  <div class="mb-4 animate-in fade-in duration-300" style="animation-delay: 0.1s">
+    <div class="flex justify-between items-center">
+      <% if label.present? %>
+        <%= form.label field, label, class: "kv-label block text-sm font-medium kv-text-primary" %>
+      <% end %>
+      
+      <% if show_value %>
+        <output for="<%= field_id %>" id="<%= field_id %>_value" class="kv-text-secondary text-sm font-semibold">
+          <%= value || form.object.send(field) || min %>
+        </output>
+      <% end %>
+    </div>
+    
+    <%= form.range_field field, 
+        min: min,
+        max: max,
+        step: step,
+        value: value,
+        class: "w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500 mt-2 transition-colors duration-200 #{classes}",
+        disabled: disabled,
+        id: field_id,
+        oninput: show_value ? "document.getElementById('#{field_id}_value').textContent = this.value" : nil,
+        "aria-describedby": "#{field_id}_help #{'#{field_id}_error' if has_error}".strip,
+        "aria-invalid": has_error
+    %>
+    
+    <% if min != 0 || max != 100 %>
+      <div class="flex justify-between text-xs kv-text-secondary mt-1">
+        <span><%= min %></span>
+        <span><%= max %></span>
+      </div>
+    <% end %>
+    
+    <% if help_text.present? %>
+      <p id="<%= field_id %>_help" class="mt-1 text-xs kv-text-secondary"><%= help_text %></p>
+    <% end %>
+    
+    <% if has_error %>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+    <% end %>
+  </div>
+<% end %>
+
+<%# Submit Button %>
+<%# 
+  Parameters:
+  - form: The form builder object
+  - text: Button text (default: "Submit")
+  - variant: Button style variant (default: 'primary')
+  - size: Button size (default: 'md')
+  - classes: Additional CSS classes (optional)
+  - disabled: Whether the button is disabled (default: false)
+  - data: Data attributes hash (optional)
+  - id: Optional button ID
+%>
+
+<% def submit_button_component(form, 
+                              text: "Submit", 
+                              variant: 'primary', 
+                              size: 'md', 
+                              classes: '', 
+                              disabled: false,
+                              data: {},
+                              id: nil)
+   
+   # Determine base class based on variant
+   base_class = case variant
+     when 'primary' then 'kv-btn kv-btn-primary'
+     when 'secondary' then 'kv-btn kv-btn-secondary'
+     when 'outline' then 'kv-btn kv-btn-outline'
+     when 'danger' then 'kv-btn kv-btn-danger'
+     when 'success' then 'kv-btn kv-btn-success'
+     else 'kv-btn kv-btn-primary'
+   end
+   
+   # Add size modifier
+   size_class = case size
+     when 'sm' then 'kv-btn-sm'
+     when 'lg' then 'kv-btn-lg'
+     else ''
+   end
+   
+   # Combine all classes
+   all_classes = [base_class, size_class, classes].reject(&:blank?).join(' ')
+   
+   # Convert data hash to data attributes
+   data_attrs = data.is_a?(Hash) ? data.map { |k, v| "data-#{k}=\"#{v}\"" }.join(" ") : ""
+%>
+  <div class="mt-6 animate-in fade-in duration-300" style="animation-delay: 0.15s">
+    <%= form.submit text, 
+        class: all_classes, 
+        disabled: disabled,
+        id: id,
+        data: data
+    %>
+  </div>
+<% end %>

@@ -1,0 +1,23 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+farm-haystack==1.20.0
+psycopg2-binary==2.9.9
+python-dotenv==1.0.0
+pydantic==2.4.2
+httpx==0.25.1
+numpy==1.26.1
+pandas==2.1.2
+sentence-transformers==2.2.2
+gunicorn==21.2.0
+pytest==7.4.3
+uvloop==0.19.0
+httptools==0.6.1
+
+# Visualization dependencies
+scikit-learn>=1.2.2
+umap-learn>=0.5.3
+hdbscan>=0.8.29
+matplotlib>=3.7.1
+
+# Optional: GPU acceleration via RAPIDS (comment out if not using GPU)
+# cuml>=23.04.0

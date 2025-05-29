@@ -1,0 +1,98 @@
+<% content_for :title, "New Conversation - #{@organization.name}" %>
+
+<%= render 'shared/card', 
+  title: "New Conversation",
+  animate: "fade-in",
+  header_actions: capture do %>
+    <%= render 'shared/button', 
+          variant: 'secondary',
+          icon: 'arrow-left',
+          href: organization_conversations_path(@organization),
+          text: 'Back to Conversations' %>
+  <% end %>
+  <%= form_with model: @conversation, url: organization_conversations_path(@organization), method: :post, class: "space-y-6" do |f| %>
+    <div class="space-y-6">
+      <div>
+        <%= f.label :title, "Conversation Title", class: "kv-label" %>
+        <div class="mt-1">
+          <%= f.text_field :title, 
+                        required: true,
+                        placeholder: "Enter a descriptive title for this conversation...",
+                        class: "kv-input" %>
+        </div>
+        <p class="mt-2 kv-text-secondary text-sm">Choose a descriptive title for this conversation</p>
+      </div>
+      
+      <div>
+        <label for="system_message" class="kv-label">Initial System Message (Optional)</label>
+        <div class="mt-1">
+          <textarea id="system_message" name="system_message" rows="3" 
+                   placeholder="Provide initial instructions or context for the AI..."
+                   class="kv-input kv-textarea"></textarea>
+        </div>
+        <p class="mt-2 kv-text-secondary text-sm">Optional instructions to guide the AI's behavior in this conversation</p>
+      </div>
+      
+      <div class="flex items-center">
+        <%= f.check_box :pinned, class: "kv-checkbox" %>
+        <%= f.label :pinned, "Pin this conversation", class: "ml-2 block text-sm kv-text-primary" %>
+        <p class="ml-4 text-sm kv-text-secondary">Pinned conversations appear at the top of your conversation list</p>
+      </div>
+    </div>
+    
+    <div class="flex justify-end space-x-3 mt-6">
+      <%= render 'shared/button', 
+            variant: 'secondary',
+            text: 'Cancel',
+            href: organization_conversations_path(@organization),
+            animate: 'fade-in', 
+            animate_delay: '100ms' %>
+      
+      <div class="flex space-x-3">
+        <%= render 'shared/button', 
+              variant: 'primary',
+              text: 'Create Conversation',
+              type: 'submit',
+              animate: 'fade-in', 
+              animate_delay: '150ms' %>
+        
+        <%= render 'shared/button', 
+              variant: 'accent',
+              text: 'Create & Start RAG',
+              name: 'start_rag',
+              value: 'true',
+              type: 'submit',
+              animate: 'fade-in', 
+              animate_delay: '200ms' %>
+      </div>
+    </div>
+  <% end %>
+<% end %>
+
+<%= render 'shared/card', 
+  title: "About Conversations",
+  animate: "fade-in",
+  animate_delay: "300ms",
+  classes: "mt-6" do %>
+  
+  <div class="prose prose-indigo dark:prose-invert max-w-none">
+    <p>
+      Conversations in KnowVerse allow you to maintain context across multiple interactions with the AI.
+      This enables more natural, multi-turn discussions that build on previous messages.
+    </p>
+    
+    <h3 class="text-base font-medium mt-4">Benefits of conversations:</h3>
+    
+    <ul class="list-disc pl-6 space-y-2 mt-2">
+      <li>Maintain context across multiple questions and answers</li>
+      <li>Refer back to previous information without repetition</li>
+      <li>Develop ideas incrementally with follow-up questions</li>
+      <li>Save and organize discussions for future reference</li>
+    </ul>
+    
+    <p class="mt-4">
+      You can switch between different conversations, pin important ones, or start fresh ones at any time.
+      All conversations are private to your organization.
+    </p>
+  </div>
+<% end %>

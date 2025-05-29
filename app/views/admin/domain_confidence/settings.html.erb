@@ -1,0 +1,133 @@
+<div class="kv-container kv-animation-fade-in" style="--kv-animation-delay: 100ms;">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="kv-text-primary text-2xl font-bold">Domain Confidence Settings</h1>
+      <p class="kv-text-secondary mt-1">Configure confidence threshold settings for domain detection to optimize search relevance and performance.</p>
+    </div>
+    <div>
+      <%= render partial: "shared/button", locals: {
+        text: "Back to Overview",
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" /></svg>',
+        href: admin_domain_confidence_path(@organization),
+        variant: "secondary"
+      } %>
+    </div>
+  </div>
+
+  <%= form_with model: @organization, url: update_settings_admin_domain_confidence_path(@organization), method: :patch do |f| %>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Threshold Settings Card -->
+      <%= render partial: "shared/card", locals: {
+        title: "Threshold Settings",
+        animation_delay: 200,
+        content: capture do %>
+          <div class="space-y-5">
+            <div class="kv-animation-fade-in" style="--kv-animation-delay: 300ms;">
+              <div class="form-group">
+                <%= f.label :domain_confidence_primary_threshold, "Primary Confidence Threshold", class: "block text-sm font-medium kv-text-primary mb-1" %>
+                <div class="flex items-center">
+                  <%= f.range_field :domain_confidence_primary_threshold, min: 0, max: 1, step: 0.05, class: "w-full mr-3 accent-primary", 
+                     data: { controller: "range-slider", action: "input->range-slider#updateValue" } %>
+                  <span data-range-slider-target="value" class="w-12 text-center px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded kv-text-primary">
+                    <%= @organization.domain_confidence_primary_threshold %>
+                  </span>
+                </div>
+                <p class="text-sm kv-text-secondary mt-1">Minimum confidence required to select a domain (0.7 recommended)</p>
+              </div>
+            </div>
+            
+            <div class="kv-animation-fade-in" style="--kv-animation-delay: 400ms;">
+              <div class="form-group">
+                <%= f.label :domain_confidence_secondary_threshold, "Secondary Confidence Threshold", class: "block text-sm font-medium kv-text-primary mb-1" %>
+                <div class="flex items-center">
+                  <%= f.range_field :domain_confidence_secondary_threshold, min: 0, max: 1, step: 0.05, class: "w-full mr-3 accent-primary", 
+                     data: { controller: "range-slider", action: "input->range-slider#updateValue" } %>
+                  <span data-range-slider-target="value" class="w-12 text-center px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded kv-text-primary">
+                    <%= @organization.domain_confidence_secondary_threshold %>
+                  </span>
+                </div>
+                <p class="text-sm kv-text-secondary mt-1">Minimum confidence for fallback domains (0.4 recommended)</p>
+              </div>
+            </div>
+          </div>
+        <% end 
+      } %>
+
+      <!-- Fallback Configuration Card -->
+      <%= render partial: "shared/card", locals: {
+        title: "Fallback Configuration",
+        animation_delay: 300,
+        content: capture do %>
+          <div class="space-y-5">
+            <div class="kv-animation-fade-in" style="--kv-animation-delay: 400ms;">
+              <div class="form-group">
+                <div class="flex items-start">
+                  <div class="flex items-center h-5">
+                    <%= f.check_box :enable_domain_fallback, class: "h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded" %>
+                  </div>
+                  <div class="ml-3 text-sm">
+                    <%= f.label :enable_domain_fallback, "Enable Domain Fallback Chain", class: "font-medium kv-text-primary" %>
+                    <p class="kv-text-secondary mt-1">When enabled, the system will try fallback domains when the primary domain doesn't provide good results</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          
+            <div class="kv-animation-fade-in" style="--kv-animation-delay: 500ms;">
+              <%= render partial: "shared/card", locals: {
+                title: "How Confidence Thresholds Work",
+                background: "bg-gray-50 dark:bg-gray-800",
+                content: capture do %>
+                  <p class="text-sm kv-text-secondary mb-3">
+                    The system calculates confidence scores based on multiple factors including semantic similarity, corpus coverage, and historical performance.
+                  </p>
+                  <ul class="list-disc pl-5 text-sm kv-text-secondary space-y-2">
+                    <li><span class="font-medium">Primary threshold:</span> Only domains with confidence above this level will be primary search domains.</li>
+                    <li><span class="font-medium">Secondary threshold:</span> Domains with confidence between secondary and primary thresholds will be included in the fallback chain.</li>
+                    <li><span class="font-medium">Fallback chain:</span> When enabled, the system will try multiple relevant domains in order of confidence.</li>
+                  </ul>
+                <% end 
+              } %>
+            </div>
+          </div>
+        <% end 
+      } %>
+    </div>
+    
+    <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 kv-animation-fade-in" style="--kv-animation-delay: 600ms;">
+      <div class="flex justify-end gap-3">
+        <%= render partial: "shared/button", locals: {
+          text: "Cancel",
+          href: admin_domain_confidence_path(@organization),
+          variant: "secondary"
+        } %>
+        
+        <%= render partial: "shared/button", locals: {
+          text: "Save Changes",
+          type: "submit",
+          variant: "primary"
+        } %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  document.addEventListener('turbo:load', function() {
+    // Initialize range sliders
+    document.querySelectorAll('[data-controller="range-slider"]').forEach(function(element) {
+      const input = element.querySelector('input[type="range"]');
+      const valueDisplay = element.querySelector('[data-range-slider-target="value"]');
+      
+      if (input && valueDisplay) {
+        // Set initial value
+        valueDisplay.textContent = parseFloat(input.value).toFixed(2);
+        
+        // Update value on input
+        input.addEventListener('input', function() {
+          valueDisplay.textContent = parseFloat(this.value).toFixed(2);
+        });
+      }
+    });
+  });
+</script>

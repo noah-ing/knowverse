@@ -1,2 +1,3 @@
-web: bin/rails server
-css: bin/rails tailwindcss:watch
+ web: ruby bin/rails server
+worker: ruby bin/windows_solid_queue_worker.rb
+css: ruby bin/rails tailwindcss:watch
