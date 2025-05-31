@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  # Health check endpoint for container orchestration
+  get '/health', to: 'health#show'
   root 'home#index'
   get 'dashboard', to: 'home#dashboard'
   

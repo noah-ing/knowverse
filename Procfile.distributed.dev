@@ -1,0 +1,4 @@
+web: ruby bin/rails server
+css: ruby bin/rails tailwindcss:watch
+sidekiq: bundle exec sidekiq -C config/sidekiq.yml
+haystack: cd services/haystack && python -m app.main

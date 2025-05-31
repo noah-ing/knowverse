@@ -39,5 +39,6 @@ Rails.application.configure do
   config.action_controller.raise_on_missing_callback_actions = true
   
   # Configure background job processing
-  config.active_job.queue_adapter = :solid_queue
+  # Job queue adapter is determined by config/initializers/solid_queue_windows_patch.rb
+  # based on environment compatibility (SolidQueue vs Sidekiq)
 end

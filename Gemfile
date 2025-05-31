@@ -63,7 +63,7 @@ gem "ahoy_matey"
 gem "groupdate"
 gem "chartkick"
 
-# KnowVerse additions
+# KnowVerse additions - Enterprise Docker Environment
 gem "sidekiq", "~> 7.2" # Background job processing
 gem "redis", "~> 5.0" # Required for Redis operations and distributed locking
 gem "redis-namespace", "~> 1.11" # Namespace support for Redis
