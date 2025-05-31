@@ -4,16 +4,18 @@ module EmbeddingCache
   # CacheManager provides a unified interface for working with the two-tier embedding cache
   # It orchestrates operations between the in-memory cache and Redis persistence layer
   # Implements the singleton pattern for global access across the application
+  # Universal Docker environment: Full two-tier caching (memory + Redis) on all platforms
   class CacheManager
     include Singleton
     
-    # Initialize cache manager
+    # Initialize cache manager for universal Docker environment
     def initialize
-      # Initialize memory store (LRU cache)
+      # Initialize memory store (LRU cache) - available on all platforms
       @memory_store = MemoryStore.new
       
-      # Initialize Redis store for persistence
+      # Initialize Redis store for persistence - full two-tier caching in Docker
       @redis_store = RedisStore.new
+      Rails.logger.info "CacheManager: Universal Docker environment - using two-tier caching (memory + Redis)"
       
       # Initialize eviction strategy
       @eviction_strategy = EvictionStrategy.new
@@ -24,7 +26,7 @@ module EmbeddingCache
       # Ready state indicator
       @initialized = true
       
-      Rails.logger.info "CacheManager initialized with memory store and Redis store"
+      Rails.logger.info "CacheManager initialized with two-tier (memory + Redis) caching"
     end
     
     # Check if value exists in cache for a specific key
@@ -38,8 +40,8 @@ module EmbeddingCache
       # Check memory store first
       return true if @memory_store.exists?(cache_key)
       
-      # If not in memory, check Redis store
-      @redis_store.exists?(cache_key)
+      # Check Redis store (always available in Docker)
+      return @redis_store.exists?(cache_key)
     end
     
     # Fetch value from cache, computing it if not found
@@ -59,7 +61,7 @@ module EmbeddingCache
         return value
       end
       
-      # Check Redis store (second tier)
+      # Check Redis store (second tier) - always available in Docker
       value = @redis_store.get(cache_key)
       if value
         # Record analytics for Redis hit
@@ -84,7 +86,7 @@ module EmbeddingCache
         # Compute value using provided block
         value = yield
         
-        # Store value in both tiers
+        # Store value in available cache tiers
         store(organization_id, key, value, options)
         
         return value
@@ -104,7 +106,7 @@ module EmbeddingCache
       
       cache_key = build_cache_key(organization_id, key, options)
       
-      # Always store in Redis (second tier)
+      # Store in Redis (second tier) - always available in Docker
       redis_result = @redis_store.set(
         cache_key, 
         value, 
@@ -152,7 +154,7 @@ module EmbeddingCache
       # Clear from memory store (pattern: org:123:*)
       memory_result = @memory_store.delete_pattern("org:#{organization_id}:*")
       
-      # Clear from Redis store
+      # Clear from Redis store - always available in Docker
       redis_result = @redis_store.delete_pattern("org:#{organization_id}:*")
       
       # Return true if cleared from either tier
@@ -170,14 +172,14 @@ module EmbeddingCache
       # Clear from memory store (pattern: org:123:domain:example:*)
       memory_result = @memory_store.delete_pattern("org:#{organization_id}:domain:#{domain}:*")
       
-      # Clear from Redis store
+      # Clear from Redis store - always available in Docker
       redis_result = @redis_store.delete_pattern("org:#{organization_id}:domain:#{domain}:*")
       
       # Return true if cleared from either tier
       memory_result || redis_result
     end
     
-    # Warm the cache for a specific organization
+    # Warm the cache for a specific organization - full background job support in Docker
     # @param organization_id [Integer] Organization ID
     # @param options [Hash] Options including source, limit, etc.
     # @return [Integer] Number of warming jobs enqueued
@@ -216,7 +218,7 @@ module EmbeddingCache
       # Get memory store stats
       memory_stats = @memory_store.stats
       
-      # Get Redis store stats
+      # Get Redis store stats - always available in Docker
       redis_stats = @redis_store.stats
       
       # Get analytics stats
@@ -225,7 +227,9 @@ module EmbeddingCache
       {
         memory: memory_stats,
         redis: redis_stats,
-        analytics: analytics_stats
+        analytics: analytics_stats,
+        platform: 'docker',
+        cache_type: 'two-tier'
       }
     end
     
@@ -236,7 +240,7 @@ module EmbeddingCache
       # Get memory store stats for organization
       memory_stats = @memory_store.organization_stats(organization_id)
       
-      # Get Redis store stats for organization
+      # Get Redis store stats for organization - always available in Docker
       redis_stats = @redis_store.organization_stats(organization_id)
       
       # Get analytics stats for organization
@@ -245,7 +249,9 @@ module EmbeddingCache
       {
         memory: memory_stats,
         redis: redis_stats,
-        analytics: analytics_stats
+        analytics: analytics_stats,
+        platform: 'docker',
+        cache_type: 'two-tier'
       }
     end
     

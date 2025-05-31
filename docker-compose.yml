@@ -1,0 +1,169 @@
+# Knowverse Enterprise Docker Development Environment
+# Multi-service stack for Rails 8 + Python AI/RAG + PostgreSQL + Redis
+version: '3.8'
+
+services:
+  # PostgreSQL 14+ with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg14
+    container_name: knowverse-postgres
+    environment:
+      POSTGRES_DB: knowverse_development
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - knowverse
+
+  # Redis 7+ for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: knowverse-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - knowverse
+
+  # Python Haystack AI/RAG Service (FastAPI)
+  haystack:
+    build:
+      context: ./services/haystack
+      dockerfile: Dockerfile
+    container_name: knowverse-haystack
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/knowverse_development
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=true
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/haystack:/app
+      - haystack_models:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - knowverse
+
+  # Rails 8 Application (Main Service)
+  rails:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: knowverse-rails
+    environment:
+      - RAILS_ENV=development
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/knowverse_development
+      - REDIS_URL=redis://redis:6379/0
+      - HAYSTACK_SERVICE_URL=http://haystack:8000
+      - SOLID_QUEUE_IN_PUMA=true
+      - WEB_CONCURRENCY=1
+      - RAILS_MAX_THREADS=3
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/rails
+      - bundle_cache:/usr/local/bundle
+      - node_modules:/rails/node_modules
+      - rails_tmp:/rails/tmp
+      - rails_log:/rails/log
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      haystack:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    networks:
+      - knowverse
+
+  # Background Job Processor (SolidQueue)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: knowverse-worker
+    environment:
+      - RAILS_ENV=development
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/knowverse_development
+      - REDIS_URL=redis://redis:6379/0
+      - HAYSTACK_SERVICE_URL=http://haystack:8000
+    volumes:
+      - .:/rails
+      - bundle_cache:/usr/local/bundle
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rails:
+        condition: service_started
+    command: bundle exec rails solid_queue:start
+    networks:
+      - knowverse
+
+  # CSS Watcher (Tailwind)
+  css:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: knowverse-css
+    environment:
+      - RAILS_ENV=development
+    volumes:
+      - .:/rails
+      - node_modules:/rails/node_modules
+    command: bundle exec rails tailwindcss:watch
+    profiles:
+      - tools
+    networks:
+      - knowverse
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  bundle_cache:
+    driver: local
+  node_modules:
+    driver: local
+  rails_tmp:
+    driver: local
+  rails_log:
+    driver: local
+  haystack_models:
+    driver: local
+
+networks:
+  knowverse:
+    driver: bridge

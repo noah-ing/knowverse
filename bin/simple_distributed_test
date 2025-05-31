@@ -1,0 +1,218 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# This script demonstrates KnowVerse's distributed architecture without database dependencies
+# It focuses on the core distributed concepts: consensus, replication, and fault tolerance
+
+require 'fileutils'
+require 'optparse'
+require_relative '../config/environment'
+
+# Parse command line options
+options = {
+  nodes: 3,
+  vectors: 1000,
+  operations: 100,
+  simulate_failures: false,
+  verbose: true
+}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: bin/simple_distributed_test [options]"
+  
+  opts.on('-n', '--nodes COUNT', Integer, 'Number of nodes to use') do |n|
+    options[:nodes] = n
+  end
+  
+  opts.on('-v', '--vectors COUNT', Integer, 'Number of test vectors') do |v|
+    options[:vectors] = v
+  end
+  
+  opts.on('-o', '--operations COUNT', Integer, 'Number of test operations') do |o|
+    options[:operations] = o
+  end
+  
+  opts.on('-f', '--[no-]failures', 'Simulate node failures') do |f|
+    options[:simulate_failures] = f
+  end
+  
+  opts.on('-V', '--[no-]verbose', 'Verbose output') do |v|
+    options[:verbose] = v
+  end
+  
+  opts.on('-h', '--help', 'Show this help message') do
+    puts opts
+    exit
+  end
+end.parse!
+
+puts "KnowVerse Distributed Architecture Simple Test"
+puts "==========================================\n\n"
+
+puts "Test Configuration:"
+puts "- Nodes: #{options[:nodes]}"
+puts "- Test vectors: #{options[:vectors]}"
+puts "- Operations: #{options[:operations]}"
+puts "- Simulate failures: #{options[:simulate_failures]}"
+puts "\n"
+
+# Create distributed service instance without database requirements
+begin
+  service = Distributed::DistributedService.instance
+  
+  # Set configuration
+  Rails.configuration.distributed = OpenStruct.new({
+    enabled: true,
+    auto_start: true,
+    node_id: "test-node-1",
+    cluster_nodes: (1..options[:nodes]).map { |i| "test-node-#{i}@localhost:#{3000 + i}" }
+  })
+  
+  # Initialize service without arguments
+  service.initialize_service
+  
+  # Give time for initial setup
+  puts "Initializing distributed system with #{options[:nodes]} nodes..."
+  sleep 2
+  
+  if service.initialized
+    puts "✅ Distributed system initialized successfully"
+    puts "- Node ID: #{service.node_id}"
+    puts "- Cluster size: #{service.cluster_nodes.size} nodes"
+    puts "- Current state: #{service.state}"
+    
+    # Simple test of vector operations without database
+    puts "\nRunning basic vector operations test..."
+    
+    test_vectors = []
+    success_count = 0
+    
+    # Generate test vectors (simplified)
+    puts "Generating #{options[:vectors]} test vectors..."
+    options[:vectors].times do |i|
+      # Create a simple test vector (384 dimensions)
+      vector = Array.new(384) { rand(-1.0..1.0) }
+      test_vectors << vector
+      
+      # Report progress
+      puts "  Generated #{i+1}/#{options[:vectors]} vectors..." if i % 100 == 0 && options[:verbose]
+    end
+    
+    puts "✅ Test vectors generated"
+    
+    # Simulate storing vectors
+    puts "\nSimulating vector storage operations..."
+    store_start_time = Time.now
+    
+    test_vectors.each_with_index do |vector, i|
+      # Simulate storing vector in distributed system
+      if service.operational?
+        success = begin
+          # Simulate a distributed operation (without actual database writes)
+          service.log_adapter&.append_log_entry({
+            operation: 'store_vector',
+            vector_id: "test-vector-#{i}",
+            vector_hash: vector.hash.to_s,
+            timestamp: Time.now.to_i
+          })
+          true
+        rescue => e
+          puts "  Error: #{e.message}" if options[:verbose]
+          false
+        end
+        
+        success_count += 1 if success
+      end
+      
+      # Report progress
+      puts "  Stored #{i+1}/#{options[:vectors]} vectors..." if i % 100 == 0 && options[:verbose]
+      
+      # Simulate a node failure if requested
+      if options[:simulate_failures] && i == options[:vectors] / 2
+        node_to_crash = service.cluster_nodes.sample
+        puts "\n⚠️ Simulating failure of node #{node_to_crash.node_id}..."
+        
+        # Temporarily disconnect the node
+        service.handle_node_disconnect(node_to_crash.node_id)
+        
+        puts "✅ Node disconnected, cluster reconfiguring..."
+        sleep 2
+        
+        # What's the new state?
+        puts "- Current nodes: #{service.cluster_nodes.select { |n| n.status == :online }.size}/#{service.cluster_nodes.size}"
+        puts "- Current state: #{service.state}"
+        
+        # After some operations, recover the node
+        sleep 1
+      end
+    end
+    
+    store_end_time = Time.now
+    store_duration = store_end_time - store_start_time
+    store_rate = options[:vectors] / store_duration
+    
+    puts "✅ Vector storage simulation complete"
+    puts "- Success rate: #{success_count}/#{options[:vectors]} (#{(success_count.to_f / options[:vectors] * 100).round(2)}%)"
+    puts "- Duration: #{store_duration.round(2)} seconds"
+    puts "- Rate: #{store_rate.round(2)} vectors/second"
+    
+    # Simulate search operations
+    puts "\nSimulating distributed search operations..."
+    search_start_time = Time.now
+    
+    search_success = 0
+    options[:operations].times do |i|
+      # Pick a random vector to search for
+      query_vector = test_vectors.sample
+      
+      # Simulate search in distributed system
+      if service.operational?
+        success = begin
+          # Simulate a distributed search operation
+          service.log_adapter&.append_log_entry({
+            operation: 'search_vector',
+            vector_hash: query_vector.hash.to_s,
+            timestamp: Time.now.to_i
+          })
+          true
+        rescue => e
+          puts "  Error: #{e.message}" if options[:verbose]
+          false
+        end
+        
+        search_success += 1 if success
+      end
+      
+      # Report progress
+      puts "  Completed #{i+1}/#{options[:operations]} search operations..." if i % 10 == 0 && options[:verbose]
+    end
+    
+    search_end_time = Time.now
+    search_duration = search_end_time - search_start_time
+    search_rate = options[:operations] / search_duration
+    
+    puts "✅ Search simulation complete"
+    puts "- Success rate: #{search_success}/#{options[:operations]} (#{(search_success.to_f / options[:operations] * 100).round(2)}%)"
+    puts "- Duration: #{search_duration.round(2)} seconds"
+    puts "- Rate: #{search_rate.round(2)} queries/second"
+    
+    # Final status report
+    puts "\nCluster Status:"
+    puts "- Nodes: #{service.cluster_nodes.size}"
+    puts "- Online nodes: #{service.cluster_nodes.count { |n| n.status == :online }}"
+    puts "- Current leader: #{service.cluster_nodes.find { |n| n.state == 'leader' }&.node_id || 'None'}"
+    puts "- System operational: #{service.operational? ? 'Yes' : 'No'}"
+    
+    puts "\n✅ Distributed system test completed successfully"
+  else
+    puts "❌ Failed to initialize distributed system"
+  end
+  
+rescue => e
+  puts "❌ Error: #{e.message}"
+  puts e.backtrace.join("\n") if options[:verbose]
+ensure
+  # Cleanup
+  service.shutdown if service&.initialized
+  puts "\nDistributed system shut down"
+end

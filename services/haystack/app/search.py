@@ -4,11 +4,15 @@ from functools import lru_cache
 from typing import Dict, List, Any, Optional, Union, Tuple
 import numpy as np
 
-from haystack.nodes import EmbeddingRetriever, FARMReader, BM25Retriever
-from haystack.pipelines import SearchPipeline, ExtractiveQAPipeline
-from haystack.schema import Document
-from config.settings import RETRIEVER_TOP_K, MAX_SEARCH_TIME_MS
+# Haystack 2.x Core imports - Official API structure
+from haystack import Pipeline, Document
+from haystack.document_stores.in_memory import InMemoryDocumentStore
+from haystack.components.retrievers.in_memory import InMemoryBM25Retriever, InMemoryEmbeddingRetriever
+from haystack.components.readers import ExtractiveReader
+from haystack.components.builders import PromptBuilder
+from haystack.components.generators import OpenAIGenerator
 
+from config.settings import RETRIEVER_TOP_K, MAX_SEARCH_TIME_MS
 from app.document_store import get_document_store
 from app.embeddings import get_embedding_model, get_embedding_dimension
 from app.query_parser import QueryParser
@@ -18,8 +22,7 @@ logger = logging.getLogger(__name__)
 class HybridSearcher:
     """
     Hybrid search implementation that combines vector search with keyword search
-    for more accurate results. Provides configurable weighting between search methods
-    and implements early termination for performance optimization.
+    for more accurate results. Uses Haystack 2.x API with pipeline architecture.
     """
     
     def __init__(self, document_store=None, embedding_model=None):
@@ -34,7 +37,7 @@ class HybridSearcher:
         self.embedding_model = embedding_model or get_embedding_model()
         self.query_parser = QueryParser()
         
-        # Initialize retrievers
+        # Initialize retrievers with new Haystack 2.x API
         self.vector_retriever = self._create_vector_retriever()
         self.keyword_retriever = self._create_keyword_retriever()
         
@@ -43,14 +46,11 @@ class HybridSearcher:
         self.max_search_time_ms = MAX_SEARCH_TIME_MS
         
     def _create_vector_retriever(self):
-        """Create vector retriever using embedding model"""
+        """Create vector retriever using embedding model with Haystack 2.x API"""
         try:
-            retriever = EmbeddingRetriever(
+            retriever = InMemoryEmbeddingRetriever(
                 document_store=self.document_store,
-                embedding_model=self.embedding_model,
-                model_format="sentence_transformers",
-                top_k=self.default_top_k,
-                use_gpu=False  # Set to True if GPU is available
+                top_k=self.default_top_k
             )
             return retriever
         except Exception as e:
@@ -58,9 +58,9 @@ class HybridSearcher:
             raise RuntimeError(f"Failed to initialize vector retriever: {str(e)}")
     
     def _create_keyword_retriever(self):
-        """Create keyword retriever using BM25"""
+        """Create keyword retriever using BM25 with Haystack 2.x API"""
         try:
-            retriever = BM25Retriever(
+            retriever = InMemoryBM25Retriever(
                 document_store=self.document_store,
                 top_k=self.default_top_k
             )
@@ -118,7 +118,6 @@ class HybridSearcher:
         }
         
         # Fast path for simple queries: try vector search first
-        # This implements early termination for performance optimization
         if early_termination and query_complexity == "simple" and vector_weight > 0.7:
             try:
                 vector_results = self._vector_search(
@@ -141,8 +140,7 @@ class HybridSearcher:
             except Exception as e:
                 logger.warning(f"Early vector search failed, continuing with hybrid: {str(e)}")
         
-        # Run both search methods in parallel (in practice, we'd use asyncio or threads)
-        # For simplicity, we'll run them sequentially here
+        # Run both search methods
         vector_results = []
         keyword_results = []
         vector_time_ms = 0
@@ -152,7 +150,6 @@ class HybridSearcher:
         if vector_weight > 0:
             vector_start = time.time()
             try:
-                # Scale up top_k based on weight to ensure we get enough candidates
                 scaled_top_k = min(int(top_k * (1.5 / vector_weight)), top_k * 4)
                 vector_results = self._vector_search(
                     parsed["vector_query"], filters=filters, top_k=scaled_top_k
@@ -160,7 +157,6 @@ class HybridSearcher:
                 vector_time_ms = (time.time() - vector_start) * 1000
             except Exception as e:
                 logger.error(f"Vector search failed: {str(e)}")
-                # If vector search fails, adjust weights to rely more on keyword search
                 if keyword_weight > 0:
                     keyword_weight = 1.0
         
@@ -168,7 +164,6 @@ class HybridSearcher:
         if keyword_weight > 0:
             keyword_start = time.time()
             try:
-                # Scale up top_k based on weight to ensure we get enough candidates
                 scaled_top_k = min(int(top_k * (1.5 / keyword_weight)), top_k * 4)
                 keyword_results = self._keyword_search(
                     parsed["keyword_query"], filters=filters, top_k=scaled_top_k
@@ -176,7 +171,6 @@ class HybridSearcher:
                 keyword_time_ms = (time.time() - keyword_start) * 1000
             except Exception as e:
                 logger.error(f"Keyword search failed: {str(e)}")
-                # If keyword search fails but we have vector results, continue
                 if not vector_results:
                     raise RuntimeError("Both search methods failed") from e
         
@@ -203,38 +197,40 @@ class HybridSearcher:
     
     def _vector_search(self, query: str, filters: Optional[Dict[str, Any]] = None, 
                      top_k: int = None) -> List[Document]:
-        """Perform vector search using the embedding retriever"""
+        """Perform vector search using the embedding retriever with Haystack 2.x API"""
         top_k = top_k or self.default_top_k
-        return self.vector_retriever.retrieve(
-            query=query, 
-            top_k=top_k,
-            filters=filters
-        )
+        try:
+            # Haystack 2.x uses run() method
+            result = self.vector_retriever.run(
+                query=query, 
+                top_k=top_k,
+                filters=filters
+            )
+            return result.get("documents", [])
+        except Exception as e:
+            logger.error(f"Vector search error: {str(e)}")
+            return []
     
     def _keyword_search(self, query: str, filters: Optional[Dict[str, Any]] = None, 
                        top_k: int = None) -> List[Document]:
-        """Perform keyword search using the BM25 retriever"""
+        """Perform keyword search using the BM25 retriever with Haystack 2.x API"""
         top_k = top_k or self.default_top_k
-        return self.keyword_retriever.retrieve(
-            query=query, 
-            top_k=top_k,
-            filters=filters
-        )
+        try:
+            # Haystack 2.x uses run() method
+            result = self.keyword_retriever.run(
+                query=query, 
+                top_k=top_k,
+                filters=filters
+            )
+            return result.get("documents", [])
+        except Exception as e:
+            logger.error(f"Keyword search error: {str(e)}")
+            return []
     
     def _merge_results(self, vector_results: List[Document], keyword_results: List[Document], 
                      vector_weight: float, keyword_weight: float, top_k: int) -> List[Document]:
         """
         Merge results from vector and keyword search with weighted scoring.
-        
-        Args:
-            vector_results: Results from vector search
-            keyword_results: Results from keyword search
-            vector_weight: Weight for vector search scores (0.0-1.0)
-            keyword_weight: Weight for keyword search scores (0.0-1.0)
-            top_k: Number of results to return
-        
-        Returns:
-            List of merged Document objects
         """
         # Create dictionaries for O(1) lookups
         vector_dict = {doc.id: doc for doc in vector_results}
@@ -260,6 +256,8 @@ class HybridSearcher:
                 merged_doc = vector_doc
                 merged_doc.score = weighted_score
                 # Add a flag to indicate it was found by both methods
+                if not hasattr(merged_doc, 'meta'):
+                    merged_doc.meta = {}
                 merged_doc.meta["search_method"] = "hybrid"
                 
             elif vector_doc:
@@ -268,6 +266,8 @@ class HybridSearcher:
                 # If only from one source, reduce score slightly to prefer matches from both
                 if hasattr(merged_doc, 'score'):
                     merged_doc.score = merged_doc.score * vector_weight * 0.95
+                if not hasattr(merged_doc, 'meta'):
+                    merged_doc.meta = {}
                 merged_doc.meta["search_method"] = "vector_only"
                 
             else:
@@ -276,6 +276,8 @@ class HybridSearcher:
                 # If only from one source, reduce score slightly to prefer matches from both
                 if hasattr(merged_doc, 'score'):
                     merged_doc.score = merged_doc.score * keyword_weight * 0.95
+                if not hasattr(merged_doc, 'meta'):
+                    merged_doc.meta = {}
                 merged_doc.meta["search_method"] = "keyword_only"
             
             merged_docs.append(merged_doc)
@@ -288,19 +290,15 @@ class HybridSearcher:
 def get_retriever():
     """
     Get a retriever instance (cached for efficiency).
-    Uses DensePassageRetriever with our embedding model.
+    Uses InMemoryEmbeddingRetriever with Haystack 2.x API.
     """
     try:
         logger.info("Initializing retriever")
         document_store = get_document_store()
-        embedding_model = get_embedding_model()
         
-        retriever = EmbeddingRetriever(
+        retriever = InMemoryEmbeddingRetriever(
             document_store=document_store,
-            embedding_model=embedding_model,
-            model_format="sentence_transformers",
-            top_k=RETRIEVER_TOP_K,
-            use_gpu=False  # Set to True if GPU is available
+            top_k=RETRIEVER_TOP_K
         )
         
         logger.info("Retriever initialized successfully")
@@ -313,13 +311,12 @@ def get_retriever():
 def get_reader():
     """
     Get a reader instance (cached for efficiency).
-    Uses FARM-based reader for extractive QA.
+    Uses ExtractiveReader with Haystack 2.x API.
     """
     try:
         logger.info("Initializing reader")
-        reader = FARMReader(
-            model_name_or_path="deepset/roberta-base-squad2",
-            use_gpu=False,  # Set to True if GPU is available
+        reader = ExtractiveReader(
+            model="deepset/roberta-base-squad2",
             top_k=4
         )
         logger.info("Reader initialized successfully")
@@ -352,13 +349,16 @@ def get_hybrid_searcher():
 @lru_cache(maxsize=1)
 def get_search_pipeline():
     """
-    Get a search pipeline instance (cached for efficiency).
+    Get a search pipeline instance using Haystack 2.x Pipeline API.
     """
     try:
         logger.info("Initializing search pipeline")
         retriever = get_retriever()
         
-        pipeline = SearchPipeline(retriever=retriever)
+        # Haystack 2.x uses Pipeline class with add_component
+        pipeline = Pipeline()
+        pipeline.add_component("retriever", retriever)
+        
         logger.info("Search pipeline initialized successfully")
         return pipeline
     except Exception as e:
@@ -368,16 +368,43 @@ def get_search_pipeline():
 @lru_cache(maxsize=1)
 def get_qa_pipeline():
     """
-    Get a question answering pipeline instance (cached for efficiency).
+    Get a question answering pipeline instance using Haystack 2.x Pipeline API.
     """
     try:
         logger.info("Initializing QA pipeline")
         retriever = get_retriever()
         reader = get_reader()
         
-        pipeline = ExtractiveQAPipeline(reader=reader, retriever=retriever)
+        # Haystack 2.x uses Pipeline class with add_component and connect
+        pipeline = Pipeline()
+        pipeline.add_component("retriever", retriever)
+        pipeline.add_component("reader", reader)
+        
+        # Connect components
+        pipeline.connect("retriever", "reader")
+        
         logger.info("QA pipeline initialized successfully")
         return pipeline
     except Exception as e:
         logger.error(f"Error initializing QA pipeline: {str(e)}")
         raise RuntimeError(f"Failed to initialize QA pipeline: {str(e)}")
+
+# Wrapper functions for compatibility with retrieval.py
+def search_documents(query: str, filters: Optional[Dict[str, Any]] = None, top_k: int = None) -> List[Document]:
+    """Simple document search wrapper using hybrid searcher"""
+    searcher = get_hybrid_searcher()
+    results, _ = searcher.search(query=query, filters=filters, top_k=top_k)
+    return results
+
+def hybrid_search_documents(query: str, filters: Optional[Dict[str, Any]] = None, top_k: int = None, 
+                           vector_weight: float = 0.7, keyword_weight: float = 0.3) -> List[Document]:
+    """Hybrid document search wrapper with configurable weights"""
+    searcher = get_hybrid_searcher()
+    results, _ = searcher.search(
+        query=query, 
+        filters=filters, 
+        top_k=top_k,
+        vector_weight=vector_weight,
+        keyword_weight=keyword_weight
+    )
+    return results

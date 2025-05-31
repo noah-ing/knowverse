@@ -1,0 +1,137 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# This script runs the comprehensive distributed architecture test suite
+# It provides a simple interface for running fault tolerance and performance tests
+
+require 'fileutils'
+require 'optparse'
+
+# Get the Rails root
+rails_root = File.expand_path('..', __dir__)
+
+# Parse command line options
+options = {
+  mode: 'all',
+  nodes: 5,
+  vectors: 100_000,
+  queries: 1_000,
+  organizations: 5,
+  dimensions: [384, 1536],
+  report: true,
+  verbose: true
+}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: bin/test_distributed [options]"
+  
+  opts.on('-m', '--mode MODE', 'Test mode (all, fault, perf, latency, throughput, memory, sharding)') do |m|
+    options[:mode] = m
+  end
+  
+  opts.on('-n', '--nodes COUNT', Integer, 'Number of nodes in test cluster') do |n|
+    options[:nodes] = n
+  end
+  
+  opts.on('-v', '--vectors COUNT', Integer, 'Number of test vectors') do |v|
+    options[:vectors] = v
+  end
+  
+  opts.on('-q', '--queries COUNT', Integer, 'Number of test queries') do |q|
+    options[:queries] = q
+  end
+  
+  opts.on('-o', '--organizations COUNT', Integer, 'Number of test organizations') do |o|
+    options[:organizations] = o
+  end
+  
+  opts.on('-d', '--dimensions LIST', 'Comma-separated list of dimensions') do |d|
+    options[:dimensions] = d.split(',').map(&:to_i)
+  end
+  
+  opts.on('-r', '--[no-]report', 'Generate detailed report') do |r|
+    options[:report] = r
+  end
+  
+  opts.on('-V', '--[no-]verbose', 'Verbose output') do |v|
+    options[:verbose] = v
+  end
+  
+  opts.on('-h', '--help', 'Show this help message') do
+    puts opts
+    exit
+  end
+end.parse!
+
+# Set environment variables based on options
+ENV['DISTRIBUTED_NODE_COUNT'] = options[:nodes].to_s
+ENV['VECTOR_COUNT'] = options[:vectors].to_s
+ENV['QUERY_COUNT'] = options[:queries].to_s
+ENV['ORG_COUNT'] = options[:organizations].to_s
+ENV['DIMENSIONS'] = options[:dimensions].join(',')
+ENV['DISPLAY_REPORT'] = options[:report].to_s
+
+if options[:verbose]
+  puts "Running distributed tests with:"
+  puts "- Mode: #{options[:mode]}"
+  puts "- Nodes: #{options[:nodes]}"
+  puts "- Vectors: #{options[:vectors]}"
+  puts "- Queries: #{options[:queries]}"
+  puts "- Organizations: #{options[:organizations]}"
+  puts "- Dimensions: #{options[:dimensions].join(', ')}"
+  puts "- Generate report: #{options[:report]}"
+end
+
+# Run the appropriate test based on mode
+case options[:mode]
+when 'fault', 'fault_tolerance'
+  puts "Running fault tolerance tests..."
+  system("cd #{rails_root} && bundle exec rake distributed:test:fault_tolerance")
+  
+when 'perf', 'performance'
+  puts "Running all performance benchmarks..."
+  system("cd #{rails_root} && bundle exec rake distributed:test:performance")
+  
+when 'latency'
+  puts "Running latency benchmarks..."
+  ENV['BENCHMARK_TYPE'] = 'latency'
+  system("cd #{rails_root} && bundle exec rake distributed:test:performance")
+  
+when 'throughput'
+  puts "Running throughput benchmarks..."
+  ENV['BENCHMARK_TYPE'] = 'throughput'
+  system("cd #{rails_root} && bundle exec rake distributed:test:performance")
+  
+when 'memory'
+  puts "Running memory usage benchmarks..."
+  ENV['BENCHMARK_TYPE'] = 'memory'
+  system("cd #{rails_root} && bundle exec rake distributed:test:performance")
+  
+when 'sharding'
+  puts "Running sharding benchmarks..."
+  ENV['BENCHMARK_TYPE'] = 'sharding'
+  system("cd #{rails_root} && bundle exec rake distributed:test:performance")
+  
+else # 'all'
+  puts "Running all tests..."
+  puts "\n=== Fault Tolerance Tests ===\n"
+  system("cd #{rails_root} && bundle exec rake distributed:test:fault_tolerance")
+  
+  puts "\n=== Performance Benchmarks ===\n"
+  system("cd #{rails_root} && bundle exec rake distributed:test:performance")
+end
+
+# Open report if available
+if options[:report]
+  if options[:mode] == 'fault' || options[:mode] == 'fault_tolerance' || options[:mode] == 'all'
+    fault_report = File.join(rails_root, 'tmp', 'fault_tolerance_report.md')
+    puts "\nFault tolerance report available at: #{fault_report}" if File.exist?(fault_report)
+  end
+  
+  if options[:mode] != 'fault' && options[:mode] != 'fault_tolerance'
+    perf_report = File.join(rails_root, 'tmp', 'benchmarks', 'performance_report.md')
+    puts "\nPerformance report available at: #{perf_report}" if File.exist?(perf_report)
+  end
+end
+
+puts "\nDistributed architecture testing completed."

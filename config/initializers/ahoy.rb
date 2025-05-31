@@ -12,7 +12,8 @@ Ahoy.api = true
 Ahoy.geocode = false
 
 # Track visits in background to maintain performance
-Ahoy.job_queue = :solid_queue
+# Use the same job queue adapter as Rails is configured to use
+Ahoy.job_queue = Rails.application.config.active_job.queue_adapter
 
 # Mask IP addresses for privacy
 Ahoy.mask_ips = true

@@ -1,0 +1,110 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Script for running RAG performance benchmarks
+# Usage: bin/rag_performance_benchmark [options]
+
+require_relative '../config/environment'
+require 'optparse'
+
+options = {
+  organization_id: nil,
+  query_count: 30,
+  query_types: [],
+  providers: [],
+  output_file: 'tmp/rag_benchmark_results',
+  test_hallucination: true,
+  test_citation_quality: true,
+  test_multi_round: true,
+  verbose: true
+}
+
+# Parse command line options
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: bin/rag_performance_benchmark [options]"
+  
+  opts.on('-o', '--organization-id ID', Integer, 'Organization ID for benchmark tests') do |id|
+    options[:organization_id] = id
+  end
+  
+  opts.on('-q', '--query-count COUNT', Integer, 'Number of queries to test (default: 30)') do |count|
+    options[:query_count] = count
+  end
+  
+  opts.on('-t', '--query-types a,b,c', Array, 'Query types to test (comma-separated)') do |types|
+    options[:query_types] = types.map(&:to_sym)
+  end
+  
+  opts.on('-p', '--providers a,b,c', Array, 'Providers to test (comma-separated)') do |providers|
+    options[:providers] = providers.map(&:to_sym)
+  end
+  
+  opts.on('-f', '--output-file PATH', 'Output file path (default: tmp/rag_benchmark_results)') do |path|
+    options[:output_file] = path
+  end
+  
+  opts.on('--[no-]hallucination', 'Test hallucination detection (default: true)') do |val|
+    options[:test_hallucination] = val
+  end
+  
+  opts.on('--[no-]citation', 'Test citation quality (default: true)') do |val|
+    options[:test_citation_quality] = val
+  end
+  
+  opts.on('--[no-]multi-round', 'Test multi-round conversations (default: true)') do |val|
+    options[:test_multi_round] = val
+  end
+  
+  opts.on('--[no-]verbose', 'Verbose output (default: true)') do |val|
+    options[:verbose] = val
+  end
+  
+  opts.on('-h', '--help', 'Show this help message') do
+    puts opts
+    exit
+  end
+end
+
+# Parse arguments
+parser.parse!(ARGV)
+
+# Validate organization_id
+if options[:organization_id].nil?
+  puts "ERROR: Organization ID (--organization-id) is required"
+  puts parser
+  exit 1
+end
+
+# Use default query types if none specified
+if options[:query_types].empty?
+  options[:query_types] = Distributed::Benchmark::RagPerformanceBenchmark::QUERY_TYPES.keys
+end
+
+# Use default providers if none specified
+if options[:providers].empty?
+  options[:providers] = Distributed::Benchmark::RagPerformanceBenchmark::PROVIDERS.keys
+end
+
+puts "=" * 80
+puts "KnowVerse RAG Performance Benchmark"
+puts "=" * 80
+puts "Running with options:"
+puts "- Organization ID: #{options[:organization_id]}"
+puts "- Query count: #{options[:query_count]}"
+puts "- Query types: #{options[:query_types].join(', ')}"
+puts "- Providers: #{options[:providers].join(', ')}"
+puts "- Output file: #{options[:output_file]}"
+puts "=" * 80
+
+# Create and run the benchmark
+benchmark = Distributed::Benchmark::RagPerformanceBenchmark.new(options)
+results = benchmark.run_all
+
+# Generate report
+report = benchmark.generate_report
+report_path = "#{options[:output_file]}_report.md"
+File.write(report_path, report)
+
+puts "Benchmark complete!"
+puts "Results saved to: #{options[:output_file]}_*.json"
+puts "Report saved to: #{report_path}"

@@ -391,6 +391,31 @@ def fine_tune_domain_model(
     """
     return model_registry.fine_tune_model(base_model_name, domain, training_data, organization_id)
 
+def get_embedding(text: str, model_name: str = 'base', domain: str = DEFAULT_DOMAIN, organization_id: Optional[int] = None) -> np.ndarray:
+    """
+    Generate embedding for a single text string.
+    Compatibility wrapper for single text embedding generation.
+    
+    Args:
+        text: Text string to generate embedding for
+        model_name: Base model name (mini, small, base, large, xl)
+        domain: Domain name for domain-specific models
+        organization_id: Organization ID for tenant-specific models
+        
+    Returns:
+        Embedding vector as numpy array
+    """
+    if not text:
+        logger.warning("Empty text provided to get_embedding")
+        # Return zero vector with proper dimension
+        model = get_embedding_model(model_name, domain, organization_id)
+        dim = model.get_sentence_embedding_dimension()
+        return np.zeros(dim)
+    
+    model = get_embedding_model(model_name, domain, organization_id)
+    embedding = model.encode([text])[0]  # encode returns array, get first element
+    return embedding
+
 def get_available_domains(organization_id: Optional[int] = None) -> List[str]:
     """
     Get list of available domains for an organization

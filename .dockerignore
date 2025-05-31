@@ -1,51 +1,110 @@
-# See https://docs.docker.com/engine/reference/builder/#dockerignore-file for more about ignoring files.
+# Docker ignore file for Knowverse enterprise development environment
+# Excludes unnecessary files from Docker build context for faster builds
 
-# Ignore git directory.
-/.git/
-/.gitignore
+# Git files
+.git
+.gitignore
+.gitattributes
 
-# Ignore bundler config.
-/.bundle
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+docs/
+testing/README.md
 
-# Ignore all environment files.
-/.env*
+# Development files
+.env*
+!.env.example
+docker-compose*.yml
+Dockerfile*
 
-# Ignore all default key files.
-/config/master.key
-/config/credentials/*.key
+# Rails development files
+log/*
+tmp/*
+storage/*
+public/packs*
+public/assets*
+node_modules/
+.bundle/
+vendor/bundle/
 
-# Ignore all logfiles and tempfiles.
-/log/*
-/tmp/*
-!/log/.keep
-!/tmp/.keep
+# Database files
+*.sqlite3
+*.db
+db/*.sqlite3
 
-# Ignore pidfiles, but keep the directory.
-/tmp/pids/*
-!/tmp/pids/.keep
+# Cache and temporary files
+.cache/
+.tmp/
+*.tmp
+*.cache
+.DS_Store
+Thumbs.db
 
-# Ignore storage (uploaded files in development and any SQLite databases).
-/storage/*
-!/storage/.keep
-/tmp/storage/*
-!/tmp/storage/.keep
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Ignore assets.
-/node_modules/
-/app/assets/builds/*
-!/app/assets/builds/.keep
-/public/assets
+# Windows platform-specific files (being removed)
+bin/windows_*
+*.bat
 
-# Ignore CI service files.
-/.github
+# Cline documentation (contains sensitive analysis)
+cline_docs/
 
-# Ignore Kamal files.
-/config/deploy*.yml
-/.kamal
+# Test files
+spec/
+test/
+.rspec
+coverage/
 
-# Ignore development files
-/.devcontainer
+# Ruby/Rails specific
+*.gem
+*.rbc
+/.config
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/.yardoc/
+/_yardoc/
+/doc/
+/rdoc/
+/.bundle/
+/lib/bundler/man/
 
-# Ignore Docker-related files
-/.dockerignore
-/Dockerfile*
+# Python cache (for Haystack service)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

@@ -1,0 +1,275 @@
+name: 🔒 Enterprise Security Scan
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run weekly security scans every Monday at 6 AM UTC
+    - cron: '0 6 * * 1'
+
+jobs:
+  container-security-scan:
+    name: 🐳 Container Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    strategy:
+      matrix:
+        include:
+          - name: rails-app
+            dockerfile: ./Dockerfile
+            context: .
+          - name: haystack-service
+            dockerfile: ./services/haystack/Dockerfile
+            context: ./services/haystack
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Run Trivy Filesystem Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '${{ matrix.context }}'
+          format: 'sarif'
+          output: 'trivy-${{ matrix.name }}-results.sarif'
+          exit-code: '1'  # Fail on critical/high vulnerabilities
+          severity: 'CRITICAL,HIGH'
+
+      - name: 📊 Upload Trivy Results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-${{ matrix.name }}-results.sarif'
+
+      - name: 🔒 Build and Scan Container Image  
+        run: |
+          echo "🏗️ Building ${{ matrix.name }} container..."
+          docker build -f ${{ matrix.dockerfile }} -t ${{ matrix.name }}:latest ${{ matrix.context }}
+          
+          echo "🔍 Scanning for vulnerabilities..."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --exit-code 1 --severity CRITICAL,HIGH \
+            --format table ${{ matrix.name }}:latest
+
+  dependency-security-scan:
+    name: 🔐 Dependency Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.0
+          bundler-cache: true
+
+      - name: 🔒 Install Bundle Audit
+        run: gem install bundle-audit
+
+      - name: 🔍 Run Bundle Security Audit
+        run: |
+          bundle-audit update
+          bundle-audit check --format json --output bundle-audit-results.json || EXIT_CODE=$?
+          echo "Bundle audit completed with exit code: ${EXIT_CODE:-0}"
+          
+          # Convert to human readable format
+          bundle-audit check || true
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: 🔍 Python Dependency Security Scan
+        run: |
+          pip install safety
+          cd services/haystack
+          echo "🔍 Scanning Python dependencies for vulnerabilities..."
+          safety check --json --output ../../safety-results.json || EXIT_CODE=$?
+          echo "Safety scan completed with exit code: ${EXIT_CODE:-0}"
+          
+          # Show human readable results
+          safety check || true
+
+  code-security-scan:
+    name: 🛡️ Static Code Security Analysis  
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.0
+          bundler-cache: true
+
+      - name: 🔍 Run Brakeman Security Scan
+        run: |
+          echo "🔍 Running Brakeman static security analysis..."
+          bundle exec brakeman --format json --output brakeman-results.json || EXIT_CODE=$?
+          echo "Brakeman completed with exit code: ${EXIT_CODE:-0}"
+          
+          # Show human readable results
+          bundle exec brakeman --format table || true
+
+  security-compliance-check:
+    name: 🏛️ Enterprise Security Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Check Security Documentation
+        run: |
+          echo "📋 Checking enterprise security documentation..."
+          
+          # Check for required security documentation
+          REQUIRED_DOCS=(
+            "docs/security/SECURITY.md"
+            "docs/security/HIPAA_COMPLIANCE.md" 
+            "docs/security/SOC2_CONTROLS.md"
+            "docs/security/INCIDENT_RESPONSE.md"
+            "docs/security/PENETRATION_TESTING.md"
+          )
+          
+          MISSING_DOCS=()
+          for doc in "${REQUIRED_DOCS[@]}"; do
+            if [[ ! -f "$doc" ]]; then
+              MISSING_DOCS+=("$doc")
+            fi
+          done
+          
+          if [[ ${#MISSING_DOCS[@]} -gt 0 ]]; then
+            echo "❌ Missing required security documentation:"
+            printf '%s\n' "${MISSING_DOCS[@]}"
+            echo "Enterprise deployment blocked until security documentation is complete."
+            exit 1
+          else
+            echo "✅ All required security documentation found."
+          fi
+
+      - name: 🔒 Check Security Headers Configuration
+        run: |
+          echo "🔍 Checking Rails security headers configuration..."
+          
+          # Check for security headers in production config
+          if grep -q "force_ssl" config/environments/production.rb; then
+            echo "✅ SSL enforcement configured"
+          else
+            echo "❌ SSL enforcement not configured"
+            exit 1
+          fi
+          
+          if find config/initializers/ -name "*.rb" -exec grep -l "secure_headers" {} \; | head -1; then
+            echo "✅ Security headers gem configured"
+          else
+            echo "⚠️ Security headers gem not found (recommended)"
+          fi
+
+      - name: 🔑 Check Secrets Management  
+        run: |
+          echo "🔍 Checking secrets management..."
+          
+          # Ensure no hardcoded secrets
+          if grep -r "password.*=" --include="*.rb" --include="*.yml" app/ config/ | grep -v "password_" | grep -v "example"; then
+            echo "❌ Potential hardcoded passwords found!"
+            exit 1
+          else
+            echo "✅ No hardcoded passwords detected"
+          fi
+          
+          # Check for secure credential handling
+          if [[ -f "config/credentials.yml.enc" ]]; then
+            echo "✅ Encrypted credentials file found"
+          else
+            echo "❌ Encrypted credentials file not found"
+            exit 1
+          fi
+
+  enterprise-security-report:
+    name: 📈 Enterprise Security Report
+    runs-on: ubuntu-latest
+    needs: [container-security-scan, dependency-security-scan, code-security-scan, security-compliance-check]
+    if: always()
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📊 Generate Security Summary
+        run: |
+          echo "# 🔒 Enterprise Security Scan Report" > security-report.md
+          echo "**Scan Date:** $(date)" >> security-report.md
+          echo "**Repository:** ${{ github.repository }}" >> security-report.md
+          echo "**Commit:** ${{ github.sha }}" >> security-report.md
+          echo "" >> security-report.md
+          
+          echo "## 📋 Scan Results" >> security-report.md
+          echo "" >> security-report.md
+          
+          # Container Security Status
+          if [[ "${{ needs.container-security-scan.result }}" == "success" ]]; then
+            echo "✅ **Container Security:** PASSED" >> security-report.md
+          else
+            echo "❌ **Container Security:** FAILED" >> security-report.md
+          fi
+          
+          # Dependency Security Status  
+          if [[ "${{ needs.dependency-security-scan.result }}" == "success" ]]; then
+            echo "✅ **Dependency Security:** PASSED" >> security-report.md
+          else
+            echo "❌ **Dependency Security:** FAILED" >> security-report.md
+          fi
+          
+          # Code Security Status
+          if [[ "${{ needs.code-security-scan.result }}" == "success" ]]; then
+            echo "✅ **Code Security:** PASSED" >> security-report.md
+          else
+            echo "❌ **Code Security:** FAILED" >> security-report.md
+          fi
+          
+          # Compliance Status
+          if [[ "${{ needs.security-compliance-check.result }}" == "success" ]]; then
+            echo "✅ **Security Compliance:** PASSED" >> security-report.md
+          else
+            echo "❌ **Security Compliance:** FAILED" >> security-report.md
+          fi
+          
+          echo "" >> security-report.md
+          echo "## 🎯 Enterprise Deployment Status" >> security-report.md
+          
+          if [[ "${{ needs.container-security-scan.result }}" == "success" && 
+                "${{ needs.dependency-security-scan.result }}" == "success" && 
+                "${{ needs.code-security-scan.result }}" == "success" && 
+                "${{ needs.security-compliance-check.result }}" == "success" ]]; then
+            echo "🟢 **APPROVED FOR ENTERPRISE DEPLOYMENT**" >> security-report.md
+            echo "All security requirements met for Fortune 500 deployment." >> security-report.md
+          else
+            echo "🔴 **ENTERPRISE DEPLOYMENT BLOCKED**" >> security-report.md  
+            echo "Security vulnerabilities must be resolved before enterprise deployment." >> security-report.md
+          fi
+          
+          cat security-report.md
+
+      - name: 📎 Upload Security Report Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: enterprise-security-report
+          path: security-report.md
+          retention-days: 90

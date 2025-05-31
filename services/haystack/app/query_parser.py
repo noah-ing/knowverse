@@ -2,7 +2,6 @@ import logging
 import re
 from typing import Dict, List, Tuple, Any
 import numpy as np
-from haystack.nodes import PreProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +30,9 @@ class QueryParser:
     BOOST_TERM_PATTERN = re.compile(r'(\w+)\^(\d+(?:\.\d+)?)')
     
     def __init__(self):
-        self.preprocessor = PreProcessor(
-            clean_empty_lines=True,
-            clean_whitespace=True,
-            clean_header_footer=False,
-            split_by="word",
-            split_length=200,
-            split_respect_sentence_boundary=True
-        )
+        # Simple text splitter parameters
+        self.split_length = 200
+        self.respect_sentence_boundary = True
     
     def parse_query(self, query_text: str) -> Dict[str, Any]:
         """
@@ -224,5 +218,53 @@ class QueryParser:
     
     def split_into_chunks(self, text: str, chunk_size: int = 100) -> List[str]:
         """Split text into smaller chunks for processing"""
-        result = self.preprocessor.process({"content": text})
-        return [doc.content for doc in result]
+        if not text or not text.strip():
+            return []
+        
+        # Clean whitespace and empty lines
+        cleaned_text = re.sub(r'\n\s*\n', '\n', text.strip())
+        
+        # Split by words
+        words = cleaned_text.split()
+        
+        if len(words) <= chunk_size:
+            return [cleaned_text]
+        
+        chunks = []
+        current_chunk = []
+        current_length = 0
+        
+        for word in words:
+            if current_length + 1 > chunk_size and current_chunk:
+                # Try to respect sentence boundaries if enabled
+                if self.respect_sentence_boundary and not word.endswith(('.', '!', '?')):
+                    # Look back for a sentence ending
+                    sentence_end = -1
+                    for i in range(len(current_chunk) - 1, max(0, len(current_chunk) - 20), -1):
+                        if current_chunk[i].endswith(('.', '!', '?')):
+                            sentence_end = i
+                            break
+                    
+                    if sentence_end > 0:
+                        # Split at sentence boundary
+                        chunk_text = ' '.join(current_chunk[:sentence_end + 1])
+                        chunks.append(chunk_text)
+                        current_chunk = current_chunk[sentence_end + 1:] + [word]
+                        current_length = len(current_chunk)
+                        continue
+                
+                # Standard split
+                chunk_text = ' '.join(current_chunk)
+                chunks.append(chunk_text)
+                current_chunk = [word]
+                current_length = 1
+            else:
+                current_chunk.append(word)
+                current_length += 1
+        
+        # Add remaining chunk
+        if current_chunk:
+            chunk_text = ' '.join(current_chunk)
+            chunks.append(chunk_text)
+        
+        return chunks
