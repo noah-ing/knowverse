@@ -423,10 +423,10 @@ GEM
       net-ssh (>= 2.8.0)
       ostruct
     stringio (3.1.6)
-    stripe (9.4.0)
-    stripe_event (2.11.0)
+    stripe (17.1.0)
+    stripe_event (2.13.0)
       activesupport (>= 3.1)
-      stripe (>= 2.8, < 14)
+      stripe (>= 2.8, < 18)
     tailwindcss-rails (4.2.1)
       railties (>= 7.0.0)
       tailwindcss-ruby (~> 4.0)
@@ -526,7 +526,7 @@ DEPENDENCIES
   solid_cache
   solid_queue
   sqlite3 (~> 1.4)
-  stripe (~> 9.0)
+  stripe (~> 17.1)
   stripe_event
   tailwindcss-rails
   thruster
