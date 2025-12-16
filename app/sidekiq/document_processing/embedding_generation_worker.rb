@@ -1,7 +1,19 @@
 module DocumentProcessing
   class EmbeddingGenerationWorker < ActiveJob::Base
     queue_as :embedding_generation
-    
+
+    # Custom error class for embedding generation failures
+    class EmbeddingGenerationError < StandardError; end
+
+    # Retry configuration: exponential backoff for transient failures
+    # Haystack service might be temporarily unavailable
+    retry_on EmbeddingGenerationError,
+             wait: :polynomially_longer,
+             attempts: 5
+
+    # Don't retry on permanent failures
+    discard_on ActiveRecord::RecordNotFound
+
     # For backwards compatibility with existing code that might still use Sidekiq API
     def self.perform_async(document_id, model_name = 'small')
       perform_later(document_id, model_name)
@@ -57,31 +69,55 @@ module DocumentProcessing
         embedding_record.mark_as_processing!
         
         # Generate embeddings using the HaystackClient
+        # CRITICAL: We must get real embeddings - random vectors corrupt the search index
         embedding_vector = nil
+        haystack_error = nil
+
         begin
-          # Try to use the HaystackClient first
           client = HaystackClient.new
           embedding_vector = client.generate_embeddings(
             document.content,
             model_name: model_name,
-            dimension: dimension
+            dimension: dimension,
+            organization_id: document.organization_id,
+            use_cache: true
           )
-          
+
           Rails.logger.info("Generated embeddings for document #{document_id} with model #{model_name}")
-        rescue => haystack_error
-          # Log Haystack error
-          Rails.logger.error("Haystack service error: #{haystack_error.message}")
-          Rails.logger.error(haystack_error.backtrace.join("\n"))
+        rescue => e
+          haystack_error = e
+          Rails.logger.error("Haystack service error: #{e.message}")
+          Rails.logger.error(e.backtrace.first(5).join("\n"))
         end
-        
-        # Use mock embeddings if we couldn't get real ones
+
+        # FAIL FAST: Do not use random/mock embeddings - they corrupt search results
+        # If we couldn't generate real embeddings, fail the job so it can be retried
         if embedding_vector.nil? || embedding_vector.empty?
-          Rails.logger.warn("Using mock embeddings for document #{document.id} with model #{model_name}")
-          embedding_vector = Array.new(dimension) { rand(-1.0..1.0) }
-          
-          # Normalize the mock embedding vector
-          magnitude = Math.sqrt(embedding_vector.map { |x| x * x }.sum)
-          embedding_vector = embedding_vector.map { |x| x / magnitude }
+          error_msg = if haystack_error
+            "Embedding generation failed: #{haystack_error.message}"
+          else
+            "Embedding generation returned empty result"
+          end
+
+          Rails.logger.error(
+            "CRITICAL: Cannot generate embeddings for document #{document.id}. " \
+            "Refusing to use mock embeddings as they would corrupt search results. " \
+            "Error: #{error_msg}"
+          )
+
+          # Mark as failed so it can be retried
+          embedding_record.mark_as_error!(error_msg)
+
+          # Raise to trigger job retry with exponential backoff
+          raise EmbeddingGenerationError, error_msg
+        end
+
+        # Validate embedding vector
+        unless embedding_vector.is_a?(Array) && embedding_vector.size == dimension
+          error_msg = "Invalid embedding: expected array of size #{dimension}, got #{embedding_vector.class} of size #{embedding_vector&.size}"
+          Rails.logger.error("Embedding validation failed for document #{document.id}: #{error_msg}")
+          embedding_record.mark_as_error!(error_msg)
+          raise EmbeddingGenerationError, error_msg
         end
         
         # Store in vector_embeddings table
