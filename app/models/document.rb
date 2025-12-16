@@ -10,7 +10,7 @@ class Document < ApplicationRecord
   has_one_attached :file
   
   # Constants
-  VALID_FILE_TYPES = %w[pdf docx doc txt rtf md].freeze
+  VALID_FILE_TYPES = %w[pdf docx doc txt rtf md xlsx xls].freeze
   STATUSES = %w[pending processing processed error].freeze
   EMBEDDING_STATUSES = %w[pending processing processed error].freeze
   
@@ -86,10 +86,11 @@ class Document < ApplicationRecord
   def determine_file_type
     ext = file_extension
     return nil unless ext
-    
+
     case ext
     when 'pdf' then 'pdf'
     when 'docx', 'doc' then 'docx'
+    when 'xlsx', 'xls' then 'xlsx'
     when 'txt', 'md', 'rtf' then ext
     else 'unknown'
     end

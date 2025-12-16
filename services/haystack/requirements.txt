@@ -40,3 +40,14 @@ httptools==0.6.1           # Fast HTTP parsing
 umap-learn>=0.5.3          # Dimensionality reduction
 hdbscan>=0.8.29            # Clustering algorithms
 matplotlib>=3.7.1          # Plotting and visualization
+
+# Document extraction - Enterprise grade
+pdfplumber>=0.10.0         # PDF extraction with layout and table support
+pypdf>=4.0.0               # PDF extraction fallback
+python-docx>=1.1.0         # Word document extraction
+fastexcel>=0.10.0          # Excel extraction (Rust/calamine, 10-100x faster than openpyxl)
+polars>=0.20.0             # DataFrame library for fastexcel (Arrow-based, zero-copy)
+openpyxl>=3.1.0            # Excel fallback for complex features
+
+# File handling
+python-multipart>=0.0.6    # File upload support for FastAPI

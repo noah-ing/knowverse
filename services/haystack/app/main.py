@@ -1,5 +1,7 @@
 import logging
-from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
+import tempfile
+import os
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -262,6 +264,454 @@ def health_check():
 def root():
     """Root endpoint for basic connectivity test"""
     return {"message": "KnowVerse Haystack Service is running", "status": "healthy"}
+
+
+# =============================================================================
+# DOCUMENT EXTRACTION ENDPOINTS
+# Enterprise-grade document text extraction with PDF, DOCX, and Excel support
+# =============================================================================
+
+class ExtractionResponse(BaseModel):
+    """Response model for document extraction."""
+    success: bool
+    content: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    extraction_method: Optional[str] = None
+    total_chars: int = 0
+    total_words: int = 0
+    errors: List[str] = Field(default_factory=list)
+    processing_time: float = 0.0
+
+
+class ChunkingRequest(BaseModel):
+    """Request model for text chunking."""
+    content: str = Field(..., description="Text content to chunk")
+    chunk_size: int = Field(default=512, description="Target chunk size in tokens")
+    chunk_overlap: int = Field(default=64, description="Overlap between chunks in tokens")
+    chunking_strategy: str = Field(default="semantic", description="Chunking strategy: semantic, fixed, or sentence")
+
+
+class ChunkingResponse(BaseModel):
+    """Response model for text chunking."""
+    chunks: List[Dict[str, Any]]
+    total_chunks: int
+    avg_chunk_size: float
+    strategy_used: str
+    processing_time: float
+
+
+@app.post("/extract/pdf", response_model=ExtractionResponse, tags=["extraction"])
+async def extract_pdf(
+    file: UploadFile = File(..., description="PDF file to extract text from"),
+    extract_tables: bool = Form(default=True, description="Whether to extract tables"),
+    preserve_layout: bool = Form(default=True, description="Whether to preserve text layout")
+):
+    """
+    Extract text and tables from a PDF document.
+
+    Uses pdfplumber for layout-aware extraction with table detection,
+    falling back to pypdf for simpler documents.
+
+    Returns:
+        ExtractionResponse with extracted content and metadata
+    """
+    start_time = time.time()
+
+    try:
+        from app.extractors import extract_text_from_pdf
+
+        # Read file content
+        content = await file.read()
+
+        # Extract text
+        result = extract_text_from_pdf(
+            content,
+            extract_tables=extract_tables,
+            preserve_layout=preserve_layout
+        )
+
+        processing_time = time.time() - start_time
+
+        return ExtractionResponse(
+            success=result.get("success", False),
+            content=result.get("content", ""),
+            metadata={
+                "filename": file.filename,
+                "total_pages": result.get("total_pages", 0),
+                "total_tables": result.get("total_tables", 0),
+                "pdf_metadata": result.get("metadata", {}),
+            },
+            extraction_method=result.get("extraction_method", "unknown"),
+            total_chars=result.get("total_chars", 0),
+            total_words=result.get("total_words", 0),
+            errors=result.get("errors", []),
+            processing_time=processing_time
+        )
+
+    except ImportError as e:
+        logger.error(f"PDF extraction library not available: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="PDF extraction not available. Install pdfplumber or pypdf."
+        )
+    except Exception as e:
+        logger.error(f"PDF extraction failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"PDF extraction failed: {str(e)}"
+        )
+
+
+@app.post("/extract/docx", response_model=ExtractionResponse, tags=["extraction"])
+async def extract_docx(
+    file: UploadFile = File(..., description="Word document to extract text from"),
+    extract_tables: bool = Form(default=True, description="Whether to extract tables"),
+    preserve_structure: bool = Form(default=True, description="Whether to preserve document structure")
+):
+    """
+    Extract text and tables from a Word document (.docx).
+
+    Uses python-docx for structure-aware extraction with heading,
+    list, and table preservation.
+
+    Returns:
+        ExtractionResponse with extracted content and metadata
+    """
+    start_time = time.time()
+
+    try:
+        from app.extractors import extract_text_from_docx
+
+        # Read file content
+        content = await file.read()
+
+        # Extract text
+        result = extract_text_from_docx(
+            content,
+            extract_tables=extract_tables,
+            preserve_structure=preserve_structure
+        )
+
+        processing_time = time.time() - start_time
+
+        return ExtractionResponse(
+            success=result.get("success", False),
+            content=result.get("content", ""),
+            metadata={
+                "filename": file.filename,
+                "total_paragraphs": result.get("total_paragraphs", 0),
+                "total_tables": result.get("total_tables", 0),
+                "docx_metadata": result.get("metadata", {}),
+            },
+            extraction_method="python-docx",
+            total_chars=result.get("total_chars", 0),
+            total_words=result.get("total_words", 0),
+            errors=result.get("errors", []),
+            processing_time=processing_time
+        )
+
+    except ImportError as e:
+        logger.error(f"DOCX extraction library not available: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="DOCX extraction not available. Install python-docx."
+        )
+    except Exception as e:
+        logger.error(f"DOCX extraction failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"DOCX extraction failed: {str(e)}"
+        )
+
+
+@app.post("/extract/excel", response_model=ExtractionResponse, tags=["extraction"])
+async def extract_excel(
+    file: UploadFile = File(..., description="Excel file to extract text from"),
+    max_preview_rows: int = Form(default=100, description="Maximum rows to include in preview"),
+    include_empty_sheets: bool = Form(default=False, description="Whether to include empty sheets")
+):
+    """
+    Extract text and data from an Excel workbook (.xlsx, .xls).
+
+    Uses fastexcel (Rust/calamine) for high-performance extraction,
+    10-100x faster than openpyxl. Handles large files with 30+ tabs.
+
+    Returns:
+        ExtractionResponse with extracted content and metadata
+    """
+    start_time = time.time()
+
+    try:
+        from app.extractors import extract_text_from_excel
+
+        # Read file content
+        content = await file.read()
+
+        # Extract text
+        result = extract_text_from_excel(
+            content,
+            max_preview_rows=max_preview_rows,
+            include_empty_sheets=include_empty_sheets
+        )
+
+        processing_time = time.time() - start_time
+
+        return ExtractionResponse(
+            success=result.get("success", False),
+            content=result.get("content", ""),
+            metadata={
+                "filename": file.filename,
+                "total_sheets": result.get("total_sheets", 0),
+                "total_rows": result.get("total_rows", 0),
+                "total_tables": result.get("total_tables", 0),
+                "sheet_names": result.get("metadata", {}).get("sheet_names", []),
+            },
+            extraction_method=result.get("extraction_method", "unknown"),
+            total_chars=len(result.get("content", "")),
+            total_words=len(result.get("content", "").split()),
+            errors=result.get("errors", []),
+            processing_time=processing_time
+        )
+
+    except ImportError as e:
+        logger.error(f"Excel extraction library not available: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Excel extraction not available. Install fastexcel and polars."
+        )
+    except Exception as e:
+        logger.error(f"Excel extraction failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Excel extraction failed: {str(e)}"
+        )
+
+
+@app.post("/extract/auto", response_model=ExtractionResponse, tags=["extraction"])
+async def extract_auto(
+    file: UploadFile = File(..., description="Document to extract text from (auto-detect type)")
+):
+    """
+    Auto-detect document type and extract text.
+
+    Supports: PDF, DOCX, XLSX, XLS, TXT, MD, RTF
+
+    Returns:
+        ExtractionResponse with extracted content and metadata
+    """
+    start_time = time.time()
+
+    filename = file.filename or ""
+    ext = filename.lower().split('.')[-1] if '.' in filename else ""
+
+    try:
+        content = await file.read()
+
+        if ext == "pdf":
+            from app.extractors import extract_text_from_pdf
+            result = extract_text_from_pdf(content)
+            extraction_method = "pdf"
+        elif ext in ("docx", "doc"):
+            from app.extractors import extract_text_from_docx
+            result = extract_text_from_docx(content)
+            extraction_method = "docx"
+        elif ext in ("xlsx", "xls"):
+            from app.extractors import extract_text_from_excel
+            result = extract_text_from_excel(content)
+            extraction_method = "excel"
+        elif ext in ("txt", "md", "rtf"):
+            # Plain text - just decode
+            try:
+                text_content = content.decode('utf-8')
+            except UnicodeDecodeError:
+                text_content = content.decode('latin-1')
+
+            result = {
+                "success": True,
+                "content": text_content,
+                "total_chars": len(text_content),
+                "total_words": len(text_content.split()),
+                "errors": []
+            }
+            extraction_method = "text"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=f"Unsupported file type: {ext}. Supported: pdf, docx, xlsx, xls, txt, md, rtf"
+            )
+
+        processing_time = time.time() - start_time
+
+        return ExtractionResponse(
+            success=result.get("success", False),
+            content=result.get("content", ""),
+            metadata={
+                "filename": filename,
+                "detected_type": ext,
+                **{k: v for k, v in result.get("metadata", {}).items() if k != "filename"}
+            },
+            extraction_method=extraction_method,
+            total_chars=result.get("total_chars", len(result.get("content", ""))),
+            total_words=result.get("total_words", len(result.get("content", "").split())),
+            errors=result.get("errors", []),
+            processing_time=processing_time
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Auto extraction failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Extraction failed: {str(e)}"
+        )
+
+
+@app.post("/chunk", response_model=ChunkingResponse, tags=["extraction"])
+async def chunk_text(request: ChunkingRequest):
+    """
+    Chunk text content for optimal embedding generation.
+
+    Strategies:
+    - semantic: Split on natural boundaries (paragraphs, sections)
+    - fixed: Fixed-size chunks with overlap
+    - sentence: Split on sentence boundaries
+
+    Returns:
+        ChunkingResponse with list of chunks
+    """
+    start_time = time.time()
+
+    content = request.content
+    chunk_size = request.chunk_size
+    overlap = request.chunk_overlap
+    strategy = request.chunking_strategy
+
+    chunks = []
+
+    if strategy == "semantic":
+        # Split on natural boundaries
+        sections = _split_semantic(content)
+        for i, section in enumerate(sections):
+            if len(section.split()) > chunk_size:
+                # Section too large, split with overlap
+                sub_chunks = _split_with_overlap(section, chunk_size, overlap)
+                for j, sub_chunk in enumerate(sub_chunks):
+                    chunks.append({
+                        "index": len(chunks),
+                        "content": sub_chunk,
+                        "word_count": len(sub_chunk.split()),
+                        "char_count": len(sub_chunk),
+                        "section_index": i,
+                        "sub_index": j
+                    })
+            else:
+                chunks.append({
+                    "index": len(chunks),
+                    "content": section,
+                    "word_count": len(section.split()),
+                    "char_count": len(section),
+                    "section_index": i,
+                    "sub_index": 0
+                })
+
+    elif strategy == "sentence":
+        # Split on sentence boundaries
+        sentences = _split_sentences(content)
+        current_chunk = []
+        current_words = 0
+
+        for sentence in sentences:
+            sentence_words = len(sentence.split())
+            if current_words + sentence_words > chunk_size and current_chunk:
+                chunk_text = " ".join(current_chunk)
+                chunks.append({
+                    "index": len(chunks),
+                    "content": chunk_text,
+                    "word_count": len(chunk_text.split()),
+                    "char_count": len(chunk_text)
+                })
+                # Keep overlap
+                overlap_sentences = []
+                overlap_words = 0
+                for s in reversed(current_chunk):
+                    if overlap_words + len(s.split()) <= overlap:
+                        overlap_sentences.insert(0, s)
+                        overlap_words += len(s.split())
+                    else:
+                        break
+                current_chunk = overlap_sentences
+                current_words = overlap_words
+
+            current_chunk.append(sentence)
+            current_words += sentence_words
+
+        if current_chunk:
+            chunk_text = " ".join(current_chunk)
+            chunks.append({
+                "index": len(chunks),
+                "content": chunk_text,
+                "word_count": len(chunk_text.split()),
+                "char_count": len(chunk_text)
+            })
+
+    else:  # fixed
+        chunks_list = _split_with_overlap(content, chunk_size, overlap)
+        for i, chunk in enumerate(chunks_list):
+            chunks.append({
+                "index": i,
+                "content": chunk,
+                "word_count": len(chunk.split()),
+                "char_count": len(chunk)
+            })
+
+    processing_time = time.time() - start_time
+    avg_size = sum(c["word_count"] for c in chunks) / len(chunks) if chunks else 0
+
+    return ChunkingResponse(
+        chunks=chunks,
+        total_chunks=len(chunks),
+        avg_chunk_size=avg_size,
+        strategy_used=strategy,
+        processing_time=processing_time
+    )
+
+
+def _split_semantic(text: str) -> List[str]:
+    """Split text on semantic boundaries (headers, paragraphs)."""
+    import re
+
+    # Split on markdown headers or double newlines
+    pattern = r'(?=^#{1,6}\s)|(?:\n\n)'
+    sections = re.split(pattern, text, flags=re.MULTILINE)
+
+    # Clean and filter
+    sections = [s.strip() for s in sections if s.strip()]
+    return sections
+
+
+def _split_sentences(text: str) -> List[str]:
+    """Split text into sentences."""
+    import re
+
+    # Simple sentence splitting
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    return [s.strip() for s in sentences if s.strip()]
+
+
+def _split_with_overlap(text: str, chunk_size: int, overlap: int) -> List[str]:
+    """Split text into fixed-size chunks with overlap."""
+    words = text.split()
+    chunks = []
+
+    i = 0
+    while i < len(words):
+        chunk_words = words[i:i + chunk_size]
+        chunks.append(" ".join(chunk_words))
+        i += chunk_size - overlap
+
+    return chunks
+
 
 if __name__ == "__main__":
     import uvicorn
