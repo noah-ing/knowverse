@@ -1,13 +1,27 @@
-# 🏥 HIPAA Compliance Guide - Knowverse Enterprise
+# HIPAA Compliance Guide - Knowverse
 
-**Version:** 1.0  
-**Last Updated:** May 31, 2025  
-**Classification:** HIPAA Compliance Documentation  
+**Version:** 1.1
+**Last Updated:** December 16, 2025
+**Classification:** HIPAA Compliance Documentation
 **Applicable Regulations:** 45 CFR Parts 160 and 164
 
-## 🎯 Executive Summary
+## Important Notice
 
-Knowverse is designed to meet the stringent requirements of the Health Insurance Portability and Accountability Act (HIPAA) for handling Protected Health Information (PHI). This document outlines our comprehensive HIPAA compliance framework, ensuring healthcare organizations can confidently deploy Knowverse for sensitive medical data processing.
+**THIS IS A COMPLIANCE FRAMEWORK DOCUMENT, NOT A CERTIFICATION.**
+
+- Knowverse has NOT been certified as HIPAA compliant
+- No HITRUST certification has been obtained
+- No third-party HIPAA assessment has been completed
+- The controls described are PLANNED/ASPIRATIONAL
+- Healthcare organizations should conduct their own due diligence
+
+This document describes the HIPAA compliance framework Knowverse aims to implement, not current certified compliance status.
+
+---
+
+## Executive Summary
+
+This document outlines the HIPAA compliance framework Knowverse is designed to support. Implementation of these controls is ongoing, and healthcare organizations should independently verify compliance before deploying for PHI handling.
 
 ## 📋 HIPAA Compliance Overview
 
