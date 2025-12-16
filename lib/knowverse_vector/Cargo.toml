@@ -1,0 +1,21 @@
+[package]
+name = "knowverse_vector"
+version = "0.1.0"
+edition = "2021"
+authors = ["Knowverse Team"]
+description = "High-performance vector operations for Knowverse (SIMD-accelerated)"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+magnus = "0.7"
+# SIMD-accelerated math
+simsimd = "5"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
