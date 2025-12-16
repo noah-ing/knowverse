@@ -1,16 +1,26 @@
-# 🔒 Knowverse Enterprise Security Policy
+# Knowverse Security Policy
 
-**Version:** 1.0  
-**Last Updated:** May 31, 2025  
-**Classification:** Enterprise Security Documentation
+**Version:** 1.1
+**Last Updated:** December 16, 2025
+**Classification:** Security Documentation
 
-## 🎯 Executive Summary
+## Important Notice
 
-Knowverse implements enterprise-grade security controls designed to meet Fortune 500 and healthcare industry requirements. This document outlines our comprehensive security framework covering infrastructure, application, and operational security.
+**This document describes security GOALS and FRAMEWORKS, not certified compliance.**
 
-## 🏛️ Security Framework
+- No external SOC2 audit has been completed
+- No HIPAA certification has been obtained
+- No penetration testing by third parties has been conducted
+- The "24/7 SOC" and contact information are placeholders
+- Compliance frameworks below are targets for future implementation
 
-### Compliance Standards
+For actual current security status, see the main README.md.
+
+---
+
+## Security Framework (Planned)
+
+### Compliance Standards (Targets)
 - **HIPAA Compliance:** Healthcare data protection
 - **SOC 2 Type II:** Security, availability, processing integrity
 - **ISO 27001:** Information security management

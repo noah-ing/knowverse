@@ -1,13 +1,27 @@
-# 🏛️ SOC 2 Security Controls - Knowverse Enterprise
+# SOC 2 Security Controls - Knowverse
 
-**Version:** 1.0  
-**Last Updated:** May 31, 2025  
-**Classification:** SOC 2 Compliance Documentation  
+**Version:** 1.1
+**Last Updated:** December 16, 2025
+**Classification:** SOC 2 Compliance Documentation
 **Trust Service Categories:** Security, Availability, Processing Integrity, Confidentiality, Privacy
 
-## 🎯 Executive Summary
+## Important Notice
 
-Knowverse implements comprehensive SOC 2 Type II controls designed to demonstrate our commitment to security, availability, processing integrity, confidentiality, and privacy. This document outlines our control environment and provides evidence of our compliance with the American Institute of Certified Public Accountants (AICPA) Trust Service Criteria.
+**THIS IS A COMPLIANCE FRAMEWORK DOCUMENT, NOT A CERTIFICATION.**
+
+- No SOC 2 Type II audit has been completed
+- No external auditor has been engaged
+- The controls described below are PLANNED/ASPIRATIONAL
+- Metrics and KPIs are targets, not measured values
+- Contact information is placeholder data
+
+This document serves as a roadmap for SOC 2 compliance, not evidence of certification.
+
+---
+
+## Executive Summary
+
+This document outlines the SOC 2 Type II control framework Knowverse aims to implement. It follows AICPA Trust Service Criteria but has not been independently audited or verified.
 
 ## 📋 SOC 2 Framework Overview
 
