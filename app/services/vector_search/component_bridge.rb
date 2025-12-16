@@ -128,25 +128,14 @@ module VectorSearch
     end
     
     # Initialize the search service based on configuration
+    # Now uses UnifiedSearchService backed by Qdrant
     def initialize_search_service
-      if options[:use_distributed] && defined?(Distributed::Search::DistributedSearchService)
-        Distributed::Search::DistributedSearchService.instance
-      else
-        # Fallback to standard search service
-        defined?(SearchService) ? SearchService.new : nil
-      end
+      Search::UnifiedSearchService.new
     end
-    
+
     # Initialize the streaming search service
     def streaming_search_service
-      @streaming_search_service ||= begin
-        if defined?(Distributed::Search::StreamingSearchAdapter)
-          Distributed::Search::StreamingSearchAdapter.new
-        else
-          # Create a basic streaming adapter if not available
-          create_basic_streaming_adapter
-        end
-      end
+      @streaming_search_service ||= create_basic_streaming_adapter
     end
     
     # Create a basic streaming adapter if the distributed one is not available

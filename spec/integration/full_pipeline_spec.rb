@@ -100,15 +100,14 @@ RSpec.describe 'Full Document Pipeline Integration', type: :integration do
       end
     end
 
-    SearchRouter::PROVIDERS.keys.each do |provider|
-      context "with #{provider} provider" do
+    # Test standard search modes (semantic, keyword, hybrid)
+    %i[semantic keyword hybrid].each do |mode|
+      context "with #{mode} mode" do
         it 'returns relevant results for semantic query' do
-          skip 'Provider requires external service' if provider_requires_external?(provider)
-
           results = SearchRouter.route_query(
             'neural network deep learning',
             organization.id,
-            provider: provider,
+            mode: mode,
             limit: 5
           )
 
@@ -122,9 +121,7 @@ RSpec.describe 'Full Document Pipeline Integration', type: :integration do
         end
 
         it 'returns results with required fields' do
-          skip 'Provider requires external service' if provider_requires_external?(provider)
-
-          results = SearchRouter.route_query('database', organization.id, provider: provider)
+          results = SearchRouter.route_query('database', organization.id, mode: mode)
 
           results.each do |result|
             expect(result).to have_key(:document_id)
@@ -159,66 +156,46 @@ RSpec.describe 'Full Document Pipeline Integration', type: :integration do
     end
   end
 
-  describe 'Vector Operations Correctness' do
-    it 'calculates correct Euclidean distance' do
-      vec_a = [1.0, 0.0, 0.0]
-      vec_b = [0.0, 1.0, 0.0]
-
-      # Expected: sqrt(1^2 + 1^2) = sqrt(2) ≈ 1.414
-      require_relative '../../lib/knowverse_vector'
-      distance = KnowverseVector::Distance.euclidean(vec_a, vec_b)
-
-      expect(distance).to be_within(0.001).of(Math.sqrt(2))
-    end
-
-    it 'calculates correct cosine similarity' do
-      vec_a = [1.0, 0.0]
-      vec_b = [1.0, 0.0]
-      vec_c = [0.0, 1.0]
-
-      require_relative '../../lib/knowverse_vector'
-
-      # Same direction = 1.0
-      expect(KnowverseVector::Distance.cosine_similarity(vec_a, vec_b)).to be_within(0.001).of(1.0)
-
-      # Orthogonal = 0.0
-      expect(KnowverseVector::Distance.cosine_similarity(vec_a, vec_c)).to be_within(0.001).of(0.0)
-    end
-
-    it 'finds correct nearest neighbors' do
-      require_relative '../../lib/knowverse_vector'
-
-      query = [1.0, 0.0, 0.0]
-      candidates = [
-        [0.9, 0.1, 0.0],  # Closest to query
-        [0.0, 1.0, 0.0],  # Orthogonal
-        [0.5, 0.5, 0.0],  # Middle
-        [-1.0, 0.0, 0.0]  # Opposite
-      ]
-
-      results = KnowverseVector::Batch.find_nearest(query, candidates, 2, 'euclidean')
-
-      # Index 0 should be closest
-      expect(results.first[0]).to eq(0)
-    end
-  end
-
-  describe 'Distributed Search (when enabled)' do
+  describe 'Qdrant Integration (when available)' do
     before do
-      skip 'Distributed mode not configured' unless distributed_mode_enabled?
+      skip 'Qdrant not available' unless qdrant_available?
     end
 
-    it 'aggregates results from multiple shards' do
-      # This test validates the RemoteShardClient and DistributedSearchService
+    it 'indexes documents in Qdrant' do
+      skip 'Haystack service not running' unless haystack_available?
+
+      document = create(:document,
+                        organization: organization,
+                        content: 'Test document for Qdrant indexing')
+
+      # Generate embedding and index
+      DocumentProcessing::EmbeddingGenerationWorker.new.perform(document.id)
+      document.reload
+
+      # Document should be indexed in Qdrant
+      expect(document.indexed_in_hnsw).to be true
+    end
+
+    it 'performs semantic search via Qdrant' do
+      skip 'Haystack service not running' unless haystack_available?
+
+      # Create and index a document
+      document = create(:document,
+                        organization: organization,
+                        content: 'Quantum computing uses qubits for parallel processing')
+
+      DocumentProcessing::EmbeddingGenerationWorker.new.perform(document.id)
+
+      # Search should use Qdrant
       results = SearchRouter.route_query(
-        'test query',
+        'quantum parallel processing',
         organization.id,
-        provider: :distributed,
+        mode: :semantic,
         limit: 10
       )
 
-      expect(results).to be_an(Array)
-      # Results should have shard metadata in distributed mode
+      expect(results).to be_present
+      expect(results.first[:document_id]).to eq(document.id)
     end
   end
 
@@ -231,11 +208,10 @@ RSpec.describe 'Full Document Pipeline Integration', type: :integration do
     false
   end
 
-  def provider_requires_external?(provider)
-    %i[haystack distributed].include?(provider)
-  end
-
-  def distributed_mode_enabled?
-    ENV['DISTRIBUTED_MODE'] == 'true' || Rails.configuration.respond_to?(:distributed_enabled)
+  def qdrant_available?
+    response = Net::HTTP.get_response(URI('http://localhost:6333/readiness'))
+    response.is_a?(Net::HTTPSuccess)
+  rescue Errno::ECONNREFUSED, SocketError
+    false
   end
 end

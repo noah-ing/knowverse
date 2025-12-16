@@ -1,131 +1,151 @@
 # frozen_string_literal: true
 
 module Admin
+  # DistributedController - Qdrant cluster management
+  #
+  # Provides admin dashboard for monitoring and managing the Qdrant vector cluster.
+  # Replaces the old Ruby-based distributed system with Qdrant's native cluster management.
+  #
   class DistributedController < ApplicationController
     before_action :require_admin
-    before_action :initialize_distributed_service, only: [:dashboard, :status, :add_node, :remove_node, :snapshot, :rollback]
-    
+
     # Show the distributed system dashboard
     def dashboard
-      @cluster_status = distributed_service.get_cluster_status
-      @search_metrics = Distributed::Search::DistributedSearchService.instance.get_metrics
+      @cluster_status = qdrant_adapter.cluster_status
+      @healthy = SearchRouter.healthy?
+      @collections = collection_stats
     end
-    
+
     # Show detailed cluster status
     def status
-      @cluster_status = distributed_service.get_cluster_status
-      @shard_manager = Distributed::Sharding::ShardingManager.instance
-      @shard_metadata = @shard_manager.get_shard_metadata
-      
-      # Get organization to shard mapping
-      @organization_shards = {}
-      Organization.all.each do |org|
-        @organization_shards[org.id] = @shard_manager.get_shard_for_organization(org.id)
-      end
-      
+      @cluster_status = qdrant_adapter.cluster_status
+      @collections = collection_stats_detailed
+
       respond_to do |format|
         format.html
-        format.json { render json: @cluster_status }
+        format.json { render json: { cluster: @cluster_status, collections: @collections } }
       end
     end
-    
-    # Add a node to the cluster
-    def add_node
-      node_id = params[:node_id]
-      
-      if node_id.blank?
-        flash[:error] = "Node ID cannot be blank"
-        redirect_to admin_distributed_dashboard_path
-        return
-      end
-      
-      result = distributed_service.add_node(node_id)
-      
-      if result[:success]
-        flash[:notice] = "Node #{node_id} added successfully"
-      else
-        flash[:error] = "Failed to add node: #{result[:error]}"
-      end
-      
-      redirect_to admin_distributed_dashboard_path
-    end
-    
-    # Remove a node from the cluster
-    def remove_node
-      node_id = params[:node_id]
-      
-      if node_id.blank?
-        flash[:error] = "Node ID cannot be blank"
-        redirect_to admin_distributed_dashboard_path
-        return
-      end
-      
-      result = distributed_service.remove_node(node_id)
-      
-      if result[:success]
-        flash[:notice] = "Node #{node_id} removed successfully"
-      else
-        flash[:error] = "Failed to remove node: #{result[:error]}"
-      end
-      
-      redirect_to admin_distributed_dashboard_path
-    end
-    
-    # Create a snapshot of the current state
+
+    # Create a snapshot for backup
     def snapshot
-      result = distributed_service.create_snapshot
-      
+      collection = params[:collection]
+
+      if collection.blank?
+        flash[:error] = "Collection name required"
+        redirect_to admin_distributed_dashboard_path
+        return
+      end
+
+      result = qdrant_adapter.create_snapshot(collection)
+
       if result[:success]
-        flash[:notice] = "Snapshot created successfully: Version #{result[:state][:version]}"
+        flash[:notice] = "Snapshot created: #{result[:snapshot]}"
       else
         flash[:error] = "Failed to create snapshot: #{result[:error]}"
       end
-      
+
       redirect_to admin_distributed_dashboard_path
     end
-    
-    # Rollback to a previous state
-    def rollback
-      version = params[:version].to_i
-      
-      if version <= 0
-        flash[:error] = "Invalid version number"
+
+    # Trigger index optimization
+    def optimize
+      collection = params[:collection]
+
+      if collection.blank?
+        flash[:error] = "Collection name required"
         redirect_to admin_distributed_dashboard_path
         return
       end
-      
-      result = distributed_service.rollback(version)
-      
+
+      result = qdrant_adapter.optimize(collection)
+
       if result[:success]
-        flash[:notice] = "Rolled back to version #{version} successfully"
+        flash[:notice] = "Optimization triggered for #{collection}"
       else
-        flash[:error] = "Failed to rollback: #{result[:error]}"
+        flash[:error] = "Failed to optimize: #{result[:error]}"
       end
-      
+
       redirect_to admin_distributed_dashboard_path
     end
-    
+
+    # Health check endpoint
+    def health
+      healthy = SearchRouter.healthy?
+
+      render json: {
+        status: healthy ? 'healthy' : 'unhealthy',
+        cluster: qdrant_adapter.cluster_status,
+        timestamp: Time.current.iso8601
+      }, status: healthy ? :ok : :service_unavailable
+    end
+
+    # Metrics endpoint
+    def metrics
+      render json: {
+        qdrant: qdrant_adapter.metrics,
+        search: search_metrics,
+        timestamp: Time.current.iso8601
+      }
+    end
+
     private
-    
-    # Ensure the user is an admin
+
     def require_admin
       unless current_user&.admin?
         flash[:error] = "You must be an admin to access this page"
         redirect_to root_path
       end
     end
-    
-    # Initialize the distributed service
-    def initialize_distributed_service
-      unless Distributed::DistributedService.instance.initialized
-        flash[:notice] = "Initializing distributed service..."
-        Distributed::DistributedService.instance.initialize_service
-      end
+
+    def qdrant_adapter
+      @qdrant_adapter ||= VectorStore::QdrantClusterAdapter.new(
+        cluster_urls: ENV.fetch('QDRANT_CLUSTER_URLS', 'http://localhost:6333').split(','),
+        api_key: ENV['QDRANT_API_KEY']
+      )
     end
-    
-    # Get the distributed service instance
-    def distributed_service
-      Distributed::DistributedService.instance
+
+    def collection_stats
+      Organization.all.map do |org|
+        stats = SearchRouter.stats(org.id)
+        {
+          organization_id: org.id,
+          organization_name: org.name,
+          collection: "org_#{org.id}_documents",
+          exists: stats[:exists],
+          vectors_count: stats[:vectors_count] || 0,
+          status: stats[:status] || 'unknown'
+        }
+      end
+    rescue StandardError => e
+      Rails.logger.error("Failed to get collection stats: #{e.message}")
+      []
+    end
+
+    def collection_stats_detailed
+      Organization.all.map do |org|
+        collection_name = "org_#{org.id}_documents"
+        info = qdrant_adapter.collection_info(collection_name)
+        shard_info = qdrant_adapter.shard_info(collection_name)
+
+        {
+          organization_id: org.id,
+          organization_name: org.name,
+          collection: collection_name,
+          info: info,
+          shards: shard_info
+        }
+      end
+    rescue StandardError => e
+      Rails.logger.error("Failed to get detailed stats: #{e.message}")
+      []
+    end
+
+    def search_metrics
+      {
+        total_searches: 0, # Would come from metrics tracking
+        avg_latency_ms: 0
+      }
     end
   end
 end
