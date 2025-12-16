@@ -91,71 +91,174 @@ module DocumentProcessing
     end
     
     private
-    
+
+    # Initialize Haystack client for document extraction
+    def haystack_client
+      @haystack_client ||= HaystackClient.new
+    end
+
     def extract_text(document)
-      # Temporary file path
-      file_path = download_to_tempfile(document)
-      
-      extracted_text = case document.file_extension
-      when 'pdf'
-        extract_text_from_pdf(file_path)
-      when 'docx', 'doc'
-        extract_text_from_docx(file_path)
-      when 'txt', 'md', 'rtf'
-        extract_text_from_text_file(file_path)
-      else
-        # For other file types, use a generic placeholder
-        "Content from #{document.file_extension || 'unknown'} file: #{document.title || 'Untitled'}"
-      end
-      
-      # If extraction produced no text, use a placeholder
-      if extracted_text.blank?
-        Rails.logger.warn("Empty text extracted from document #{document.id}, using placeholder")
-        extracted_text = "Placeholder content for document: #{document.title || 'Untitled'}"
-      end
-      
-      extracted_text
-    rescue => e
-      Rails.logger.error("Error extracting text: #{e.message}")
-      "Error extracting text: #{e.message}. Please try re-uploading this document."
-    ensure
-      # Clean up temporary file
-      File.unlink(file_path) if file_path && File.exist?(file_path)
-    end
-    
-    def download_to_tempfile(document)
+      file_content = document.file.download
+      filename = document.file.filename.to_s
       extension = document.file_extension
-      tempfile = Tempfile.new(['document', ".#{extension || 'bin'}"])
-      tempfile.binmode
-      tempfile.write(document.file.download)
-      tempfile.close
-      tempfile.path
-    rescue => e
-      Rails.logger.error("Error downloading to tempfile: #{e.message}")
+
+      Rails.logger.info("Extracting text from #{extension} file: #{filename}")
+
+      extracted_text = case extension
+      when 'pdf'
+        extract_text_from_pdf(file_content, filename)
+      when 'docx', 'doc'
+        extract_text_from_docx(file_content, filename)
+      when 'xlsx', 'xls'
+        extract_text_from_excel(file_content, filename)
+      when 'txt', 'md', 'rtf'
+        extract_text_from_text_file(file_content)
+      else
+        # Try auto-detection via Haystack service
+        extract_text_auto(file_content, filename)
+      end
+
+      # Validate extraction result
+      if extracted_text.blank?
+        Rails.logger.warn("Empty text extracted from document #{document.id}")
+        raise ExtractionError, "No text content could be extracted from document"
+      end
+
+      extracted_text
+    rescue ExtractionError => e
+      Rails.logger.error("Extraction error for document #{document.id}: #{e.message}")
       raise e
-    end
-    
-    def extract_text_from_pdf(file_path)
-      # This is a placeholder - in a real implementation, we would use a
-      # PDF parsing library like pdf-reader or external tools via system calls
-      Rails.logger.info("Extracting text from PDF: #{File.basename(file_path)}")
-      "Extracted text from PDF document. File: #{File.basename(file_path)}"
-    end
-    
-    def extract_text_from_docx(file_path)
-      # This is a placeholder - in a real implementation, we would use a
-      # library like docx or external tools
-      Rails.logger.info("Extracting text from DOCX: #{File.basename(file_path)}")
-      "Extracted text from Word document. File: #{File.basename(file_path)}"
-    end
-    
-    def extract_text_from_text_file(file_path)
-      # For text files, simply read the content
-      Rails.logger.info("Reading text file: #{File.basename(file_path)}")
-      File.read(file_path).force_encoding('UTF-8')
     rescue => e
-      Rails.logger.error("Error reading text file: #{e.message}")
-      "Error reading text file: #{e.message}"
+      Rails.logger.error("Unexpected error extracting text from document #{document.id}: #{e.message}")
+      Rails.logger.error(e.backtrace.first(10).join("\n"))
+      raise ExtractionError, "Text extraction failed: #{e.message}"
     end
+
+    # Extract text from PDF using Haystack service (pdfplumber/pypdf)
+    def extract_text_from_pdf(file_content, filename)
+      Rails.logger.info("Extracting PDF via Haystack service: #{filename}")
+
+      response = haystack_client.extract_pdf(
+        file_content,
+        filename: filename,
+        extract_tables: true,
+        preserve_layout: true
+      )
+
+      if response.success? && response.data['content'].present?
+        log_extraction_metadata(response.data, 'PDF')
+        response.data['content']
+      else
+        error_msg = response.error || response.data&.dig('errors')&.join(', ') || 'Unknown error'
+        raise ExtractionError, "PDF extraction failed: #{error_msg}"
+      end
+    end
+
+    # Extract text from DOCX using Haystack service (python-docx)
+    def extract_text_from_docx(file_content, filename)
+      Rails.logger.info("Extracting DOCX via Haystack service: #{filename}")
+
+      response = haystack_client.extract_docx(
+        file_content,
+        filename: filename,
+        extract_tables: true,
+        preserve_structure: true
+      )
+
+      if response.success? && response.data['content'].present?
+        log_extraction_metadata(response.data, 'DOCX')
+        response.data['content']
+      else
+        error_msg = response.error || response.data&.dig('errors')&.join(', ') || 'Unknown error'
+        raise ExtractionError, "DOCX extraction failed: #{error_msg}"
+      end
+    end
+
+    # Extract text from Excel using Haystack service (fastexcel/calamine)
+    def extract_text_from_excel(file_content, filename)
+      Rails.logger.info("Extracting Excel via Haystack service: #{filename}")
+
+      response = haystack_client.extract_excel(
+        file_content,
+        filename: filename,
+        max_preview_rows: 1000,  # More rows for comprehensive extraction
+        include_empty_sheets: false
+      )
+
+      if response.success? && response.data['content'].present?
+        log_extraction_metadata(response.data, 'Excel')
+        response.data['content']
+      else
+        error_msg = response.error || response.data&.dig('errors')&.join(', ') || 'Unknown error'
+        raise ExtractionError, "Excel extraction failed: #{error_msg}"
+      end
+    end
+
+    # Extract text from plain text files (local processing)
+    def extract_text_from_text_file(file_content)
+      Rails.logger.info("Processing plain text file locally")
+
+      # Try UTF-8 first, fall back to Latin-1
+      begin
+        file_content.force_encoding('UTF-8')
+        unless file_content.valid_encoding?
+          file_content = file_content.encode('UTF-8', 'ISO-8859-1', invalid: :replace, undef: :replace)
+        end
+      rescue Encoding::InvalidByteSequenceError
+        file_content = file_content.encode('UTF-8', 'ISO-8859-1', invalid: :replace, undef: :replace)
+      end
+
+      file_content
+    end
+
+    # Auto-detect file type and extract via Haystack service
+    def extract_text_auto(file_content, filename)
+      Rails.logger.info("Auto-detecting and extracting: #{filename}")
+
+      response = haystack_client.extract_auto(file_content, filename: filename)
+
+      if response.success? && response.data['content'].present?
+        detected_type = response.data.dig('metadata', 'detected_type') || 'unknown'
+        log_extraction_metadata(response.data, detected_type.upcase)
+        response.data['content']
+      else
+        error_msg = response.error || response.data&.dig('errors')&.join(', ') || 'Unknown error'
+        raise ExtractionError, "Auto extraction failed: #{error_msg}"
+      end
+    end
+
+    # Log extraction metadata for debugging and monitoring
+    def log_extraction_metadata(data, doc_type)
+      metadata = data['metadata'] || {}
+      processing_time = data['processing_time'] || 0
+      total_chars = data['total_chars'] || 0
+      total_words = data['total_words'] || 0
+      extraction_method = data['extraction_method'] || 'unknown'
+
+      Rails.logger.info(
+        "#{doc_type} extraction complete: " \
+        "#{total_words} words, #{total_chars} chars, " \
+        "method=#{extraction_method}, time=#{processing_time.round(3)}s"
+      )
+
+      # Log additional metadata based on document type
+      case doc_type
+      when 'PDF'
+        pages = metadata['total_pages'] || 0
+        tables = metadata['total_tables'] || 0
+        Rails.logger.info("  PDF details: #{pages} pages, #{tables} tables")
+      when 'DOCX'
+        paragraphs = metadata['total_paragraphs'] || 0
+        tables = metadata['total_tables'] || 0
+        Rails.logger.info("  DOCX details: #{paragraphs} paragraphs, #{tables} tables")
+      when 'EXCEL'
+        sheets = metadata['total_sheets'] || 0
+        rows = metadata['total_rows'] || 0
+        Rails.logger.info("  Excel details: #{sheets} sheets, #{rows} total rows")
+      end
+    end
+
+    # Custom error class for extraction failures
+    class ExtractionError < StandardError; end
   end
 end

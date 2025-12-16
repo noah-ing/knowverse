@@ -616,8 +616,156 @@ class HaystackClient
   rescue => e
     { status: 'error', message: e.message }
   end
-  
+
+  # =============================================================================
+  # DOCUMENT EXTRACTION METHODS
+  # Enterprise-grade document text extraction with PDF, DOCX, and Excel support
+  # =============================================================================
+
+  # Extract text from a PDF document
+  # @param file_content [String] Binary content of the PDF file
+  # @param filename [String] Original filename for content-type detection
+  # @param extract_tables [Boolean] Whether to extract tables (default: true)
+  # @param preserve_layout [Boolean] Whether to preserve text layout (default: true)
+  # @return [Hash] Extraction result with content, metadata, and errors
+  def extract_pdf(file_content, filename: 'document.pdf', extract_tables: true, preserve_layout: true)
+    extract_document(
+      file_content,
+      filename: filename,
+      endpoint: '/extract/pdf',
+      options: {
+        extract_tables: extract_tables,
+        preserve_layout: preserve_layout
+      }
+    )
+  end
+
+  # Extract text from a Word document (.docx)
+  # @param file_content [String] Binary content of the DOCX file
+  # @param filename [String] Original filename for content-type detection
+  # @param extract_tables [Boolean] Whether to extract tables (default: true)
+  # @param preserve_structure [Boolean] Whether to preserve document structure (default: true)
+  # @return [Hash] Extraction result with content, metadata, and errors
+  def extract_docx(file_content, filename: 'document.docx', extract_tables: true, preserve_structure: true)
+    extract_document(
+      file_content,
+      filename: filename,
+      endpoint: '/extract/docx',
+      options: {
+        extract_tables: extract_tables,
+        preserve_structure: preserve_structure
+      }
+    )
+  end
+
+  # Extract text from an Excel workbook (.xlsx, .xls)
+  # @param file_content [String] Binary content of the Excel file
+  # @param filename [String] Original filename for content-type detection
+  # @param max_preview_rows [Integer] Maximum rows to include in preview (default: 100)
+  # @param include_empty_sheets [Boolean] Whether to include empty sheets (default: false)
+  # @return [Hash] Extraction result with content, metadata, and errors
+  def extract_excel(file_content, filename: 'document.xlsx', max_preview_rows: 100, include_empty_sheets: false)
+    extract_document(
+      file_content,
+      filename: filename,
+      endpoint: '/extract/excel',
+      options: {
+        max_preview_rows: max_preview_rows,
+        include_empty_sheets: include_empty_sheets
+      }
+    )
+  end
+
+  # Auto-detect document type and extract text
+  # Supports: PDF, DOCX, XLSX, XLS, TXT, MD, RTF
+  # @param file_content [String] Binary content of the document
+  # @param filename [String] Original filename for type detection
+  # @return [Hash] Extraction result with content, metadata, and errors
+  def extract_auto(file_content, filename:)
+    extract_document(
+      file_content,
+      filename: filename,
+      endpoint: '/extract/auto',
+      options: {}
+    )
+  end
+
+  # Chunk text content for optimal embedding generation
+  # @param content [String] Text content to chunk
+  # @param chunk_size [Integer] Target chunk size in tokens (default: 512)
+  # @param chunk_overlap [Integer] Overlap between chunks (default: 64)
+  # @param strategy [String] Chunking strategy: semantic, fixed, or sentence (default: semantic)
+  # @return [Hash] Chunking result with chunks array and metadata
+  def chunk_text(content, chunk_size: 512, chunk_overlap: 64, strategy: 'semantic')
+    payload = {
+      content: content,
+      chunk_size: chunk_size,
+      chunk_overlap: chunk_overlap,
+      chunking_strategy: strategy
+    }
+
+    response = post_request('/chunk', payload)
+    result = parse_response(response)
+
+    Response.new(true, result, nil)
+  rescue => e
+    Rails.logger.error("Text chunking failed: #{e.message}")
+    Response.new(false, nil, e.message)
+  end
+
   private
+
+  # Generic document extraction via multipart form upload
+  # @param file_content [String] Binary content of the document
+  # @param filename [String] Original filename
+  # @param endpoint [String] API endpoint to call
+  # @param options [Hash] Additional form options
+  # @return [Hash] Extraction result
+  def extract_document(file_content, filename:, endpoint:, options: {})
+    uri = URI.parse("#{@config[:base_url]}#{endpoint}")
+    http = setup_http_client(uri)
+
+    # Build multipart form data
+    boundary = "----RubyFormBoundary#{SecureRandom.hex(16)}"
+
+    body = build_multipart_body(boundary, file_content, filename, options)
+
+    request = Net::HTTP::Post.new(uri.path)
+    request['Content-Type'] = "multipart/form-data; boundary=#{boundary}"
+    request.body = body
+
+    response = with_retries { http.request(request) }
+    result = parse_response(response)
+
+    Response.new(result['success'], result, nil)
+  rescue => e
+    Rails.logger.error("Document extraction failed: #{e.message}")
+    Response.new(false, nil, e.message)
+  end
+
+  # Build multipart form body for file upload
+  def build_multipart_body(boundary, file_content, filename, options)
+    parts = []
+
+    # File part
+    parts << "--#{boundary}\r\n"
+    parts << "Content-Disposition: form-data; name=\"file\"; filename=\"#{filename}\"\r\n"
+    parts << "Content-Type: application/octet-stream\r\n\r\n"
+    parts << file_content
+    parts << "\r\n"
+
+    # Option parts
+    options.each do |key, value|
+      parts << "--#{boundary}\r\n"
+      parts << "Content-Disposition: form-data; name=\"#{key}\"\r\n\r\n"
+      parts << value.to_s
+      parts << "\r\n"
+    end
+
+    parts << "--#{boundary}--\r\n"
+
+    parts.join
+  end
   
   # Helper for POST requests
   def post_request(endpoint, payload)
