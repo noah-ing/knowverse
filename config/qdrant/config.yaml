@@ -1,0 +1,67 @@
+# Qdrant Configuration - Optimized for Enterprise Scale
+# https://qdrant.tech/documentation/guides/configuration/
+
+# Service configuration
+service:
+  http_port: 6333
+  grpc_port: 6334
+  enable_tls: false  # Enable in production with proper certs
+
+# Cluster configuration (Raft consensus)
+cluster:
+  enabled: true
+  p2p:
+    port: 6335
+
+# Storage configuration
+storage:
+  # Storage path
+  storage_path: /qdrant/storage
+
+  # Performance tuning for 100M+ vectors
+  performance:
+    # Number of parallel indexing threads (0 = auto)
+    max_search_threads: 0
+    max_optimization_threads: 2
+
+  # WAL configuration for durability
+  wal:
+    wal_capacity_mb: 256
+    wal_segments_ahead: 2
+
+  # On-disk storage for large collections
+  on_disk_payload: true
+
+# HNSW index configuration (this is where the Rust speed comes from)
+hnsw_index:
+  # Max connections per element
+  m: 16
+  # Size of dynamic candidate list for construction
+  ef_construct: 200
+  # Threshold for switching to full scan
+  full_scan_threshold: 10000
+  # Number of parallel threads for HNSW graph construction
+  max_indexing_threads: 0
+
+# Optimizer configuration
+optimizers:
+  # Minimal fraction of deleted vectors in a segment to trigger deletion cleanup
+  deleted_threshold: 0.2
+  # Minimum number of vectors for vacuum
+  vacuum_min_vector_number: 1000
+  # Target segment size
+  default_segment_number: 4
+  # Maximum segment size before splitting
+  max_segment_size: 200000
+  # Threshold for memory-mapping
+  memmap_threshold: 50000
+  # Threshold for indexing
+  indexing_threshold: 20000
+  # Flush interval
+  flush_interval_sec: 5
+
+# Telemetry (disable in production if needed)
+telemetry_disabled: false
+
+# Logging
+log_level: INFO

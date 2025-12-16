@@ -1,0 +1,215 @@
+version: '3.8'
+
+# Knowverse Production Infrastructure
+# Qdrant cluster provides Rust-based vector search with built-in Raft consensus
+
+services:
+  # =============================================================================
+  # QDRANT CLUSTER (Rust-based vector database with native Raft)
+  # This replaces: Ruby HNSW, Ruby Raft, custom distributed consensus
+  # =============================================================================
+
+  qdrant-node-1:
+    image: qdrant/qdrant:v1.12.0
+    container_name: knowverse-qdrant-1
+    ports:
+      - "6333:6333"   # HTTP API
+      - "6334:6334"   # gRPC API
+    environment:
+      - QDRANT__CLUSTER__ENABLED=true
+      - QDRANT__CLUSTER__P2P__PORT=6335
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    volumes:
+      - qdrant-node-1-data:/qdrant/storage
+      - ./config/qdrant/config.yaml:/qdrant/config/config.yaml
+    networks:
+      - knowverse-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  qdrant-node-2:
+    image: qdrant/qdrant:v1.12.0
+    container_name: knowverse-qdrant-2
+    environment:
+      - QDRANT__CLUSTER__ENABLED=true
+      - QDRANT__CLUSTER__P2P__PORT=6335
+      - QDRANT__CLUSTER__BOOTSTRAP=http://qdrant-node-1:6335
+    volumes:
+      - qdrant-node-2-data:/qdrant/storage
+      - ./config/qdrant/config.yaml:/qdrant/config/config.yaml
+    networks:
+      - knowverse-network
+    depends_on:
+      qdrant-node-1:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  qdrant-node-3:
+    image: qdrant/qdrant:v1.12.0
+    container_name: knowverse-qdrant-3
+    environment:
+      - QDRANT__CLUSTER__ENABLED=true
+      - QDRANT__CLUSTER__P2P__PORT=6335
+      - QDRANT__CLUSTER__BOOTSTRAP=http://qdrant-node-1:6335
+    volumes:
+      - qdrant-node-3-data:/qdrant/storage
+      - ./config/qdrant/config.yaml:/qdrant/config/config.yaml
+    networks:
+      - knowverse-network
+    depends_on:
+      qdrant-node-1:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # =============================================================================
+  # RAILS API (What Rails is good at: auth, multi-tenancy, API routing)
+  # =============================================================================
+
+  rails:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: knowverse-rails
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/knowverse_production
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_CLUSTER_URLS=http://qdrant-node-1:6333,http://qdrant-node-2:6333,http://qdrant-node-3:6333
+      - HAYSTACK_URL=http://haystack:8000
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+    volumes:
+      - rails-storage:/rails/storage
+    networks:
+      - knowverse-network
+    depends_on:
+      - postgres
+      - redis
+      - qdrant-node-1
+      - haystack
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # SIDEKIQ (Background jobs)
+  # =============================================================================
+
+  sidekiq:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: knowverse-sidekiq
+    command: bundle exec sidekiq
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/knowverse_production
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_CLUSTER_URLS=http://qdrant-node-1:6333,http://qdrant-node-2:6333,http://qdrant-node-3:6333
+      - HAYSTACK_URL=http://haystack:8000
+      - RAILS_ENV=production
+    volumes:
+      - rails-storage:/rails/storage
+    networks:
+      - knowverse-network
+    depends_on:
+      - postgres
+      - redis
+      - qdrant-node-1
+
+  # =============================================================================
+  # HAYSTACK (Python - document extraction and embeddings)
+  # =============================================================================
+
+  haystack:
+    build:
+      context: ./services/haystack
+      dockerfile: Dockerfile
+    container_name: knowverse-haystack
+    ports:
+      - "8000:8000"
+    environment:
+      - EMBEDDING_MODEL=sentence-transformers/all-mpnet-base-v2
+      - MAX_WORKERS=4
+    volumes:
+      - haystack-models:/app/models
+    networks:
+      - knowverse-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # =============================================================================
+  # SUPPORTING SERVICES
+  # =============================================================================
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: knowverse-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=knowverse_production
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - knowverse-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: knowverse-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - knowverse-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  qdrant-node-1-data:
+  qdrant-node-2-data:
+  qdrant-node-3-data:
+  postgres-data:
+  redis-data:
+  rails-storage:
+  haystack-models:
+
+networks:
+  knowverse-network:
+    driver: bridge
