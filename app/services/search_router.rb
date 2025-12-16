@@ -107,6 +107,10 @@ class SearchRouter
                search_hybrid_advanced(query_text, organization_id, search_options)
              when :distributed
                search_distributed(query_text, organization_id, search_options)
+             when :domain_aware
+               search_domain_aware(query_text, organization_id, search_options)
+             when :confidence_aware
+               search_confidence_aware(query_text, organization_id, search_options)
              else
                search_hybrid_new(query_text, organization_id, search_options)
              end
@@ -627,7 +631,283 @@ class SearchRouter
     
     results
   end
-  
+
+  # =============================================================================
+  # DOMAIN-AWARE SEARCH PROVIDER
+  # Routes queries to domain-specific indexes based on detected query domain.
+  # Uses DomainConfidenceManager for domain detection and fallback chains.
+  # =============================================================================
+  def self.search_domain_aware(query_text, organization_id, options)
+    Rails.logger.info("Domain-aware search initiated for org #{organization_id}")
+
+    # Get domain detection with fallback chain
+    domain_manager = DomainConfidenceManager.new
+    confidence_scorer = ConfidenceScorer.new
+
+    begin
+      # Determine domain fallback chain
+      fallback_domains = domain_manager.determine_domains(query_text, organization_id, options)
+      primary_domain = fallback_domains.first || DEFAULT_DOMAIN
+
+      # Calculate confidence for primary domain
+      confidence_result = confidence_scorer.calculate_score(
+        query_text, primary_domain, organization_id,
+        skip_tracking: false
+      )
+      confidence = confidence_result[:score]
+
+      Rails.logger.info(
+        "Domain-aware search: primary='#{primary_domain}' confidence=#{confidence.round(3)} " \
+        "fallbacks=#{fallback_domains.join(', ')}"
+      )
+
+      # High confidence: use domain-specific embeddings
+      if confidence >= 0.7 && domain_index_exists?(organization_id, primary_domain)
+        results = search_with_domain_index(query_text, organization_id, primary_domain, options)
+
+        # If we got good results, return them with domain metadata
+        if results.present? && results.size >= (options[:limit] || 10) / 2
+          results.each do |r|
+            r['search_domain'] = primary_domain
+            r['domain_confidence'] = confidence
+            r['domain_strategy'] = 'primary'
+          end
+          return results
+        end
+      end
+
+      # Medium confidence or insufficient results: try fallback domains
+      all_results = []
+      fallback_domains.each_with_index do |domain, idx|
+        next if idx == 0 && confidence >= 0.7  # Skip primary if already tried
+
+        domain_results = search_with_domain_index(query_text, organization_id, domain, options)
+        domain_results.each do |r|
+          r['search_domain'] = domain
+          r['domain_confidence'] = confidence_scorer.calculate_score(
+            query_text, domain, organization_id, skip_tracking: true
+          )[:score]
+          r['domain_strategy'] = idx == 0 ? 'primary' : 'fallback'
+        end
+        all_results.concat(domain_results)
+
+        # Stop if we have enough results
+        break if all_results.size >= (options[:limit] || 10)
+      end
+
+      # Deduplicate by document_id, keeping highest scoring version
+      deduped_results = all_results.group_by { |r| r['document_id'] }
+        .transform_values { |rs| rs.max_by { |r| r['score'].to_f } }
+        .values
+        .sort_by { |r| -r['score'].to_f }
+        .first(options[:limit] || 10)
+
+      deduped_results
+
+    rescue => e
+      Rails.logger.error("Domain-aware search failed: #{e.message}")
+      Rails.logger.error(e.backtrace.first(5).join("\n"))
+      # Fall back to hybrid search
+      search_hybrid_new(query_text, organization_id, options)
+    end
+  end
+
+  # Check if a domain-specific index exists for an organization
+  def self.domain_index_exists?(organization_id, domain)
+    VectorEmbedding
+      .joins(:document)
+      .where(documents: { organization_id: organization_id })
+      .where(domain: domain)
+      .where(status: VectorEmbedding::STATUS_PROCESSED)
+      .exists?
+  end
+
+  # Search using domain-specific embeddings
+  def self.search_with_domain_index(query_text, organization_id, domain, options)
+    client = HaystackClient.new
+
+    # Generate embedding using domain-specific model if available
+    query_embedding = client.generate_embeddings(
+      query_text,
+      model_name: options[:model_name],
+      dimension: options[:dimension],
+      organization_id: organization_id,
+      domain: domain,
+      use_cache: true
+    )
+
+    # Search within domain-specific vectors
+    results = VectorEmbedding
+      .joins(:document)
+      .where(documents: { organization_id: organization_id })
+      .where(domain: domain)
+      .where(status: VectorEmbedding::STATUS_PROCESSED)
+      .select(
+        'documents.*',
+        'vector_embeddings.embedding',
+        "1 - (vector_embeddings.embedding <=> '#{sanitize_vector(query_embedding)}') as similarity"
+      )
+      .order(Arel.sql("vector_embeddings.embedding <=> '#{sanitize_vector(query_embedding)}'"))
+      .limit(options[:limit] || 10)
+
+    # Format results
+    results.map do |doc|
+      score = doc.try(:similarity) || 0.8
+      snippet = doc.content.present? ? doc.content.truncate(300) : "Document content unavailable"
+
+      {
+        'document_id' => doc.id,
+        'score' => score.to_f,
+        'title' => doc.title,
+        'snippet' => snippet,
+        'relevance' => determine_relevance(score.to_f),
+        'query' => query_text,
+        'dimension' => options[:dimension],
+        'model' => options[:model_name]
+      }
+    end
+  end
+
+  # =============================================================================
+  # CONFIDENCE-AWARE SEARCH PROVIDER
+  # Runs multiple search strategies in parallel and merges results using
+  # multi-factor confidence scoring for ranking.
+  # =============================================================================
+  def self.search_confidence_aware(query_text, organization_id, options)
+    Rails.logger.info("Confidence-aware search initiated for org #{organization_id}")
+
+    confidence_scorer = ConfidenceScorer.new
+    strategies = [:pgvector_cosine, :hybrid, :haystack]
+    results_by_strategy = Concurrent::Hash.new
+    strategy_timings = Concurrent::Hash.new
+
+    begin
+      # Run multiple strategies in parallel
+      threads = strategies.map do |strategy|
+        Thread.new do
+          start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          begin
+            results_by_strategy[strategy] = send(
+              "search_#{strategy}",
+              query_text,
+              organization_id,
+              options.merge(limit: 20)  # Fetch more for better merging
+            )
+            strategy_timings[strategy] = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000
+          rescue => e
+            Rails.logger.warn("Strategy #{strategy} failed: #{e.message}")
+            results_by_strategy[strategy] = []
+            strategy_timings[strategy] = -1
+          end
+        end
+      end
+
+      # Wait for all strategies to complete (with timeout)
+      threads.each { |t| t.join(10) }  # 10 second timeout per strategy
+
+      # Merge results from all strategies
+      merged_results = {}
+
+      results_by_strategy.each do |strategy, results|
+        next unless results.is_a?(Array)
+
+        results.each do |result|
+          doc_id = result['document_id']
+          next unless doc_id
+
+          if merged_results[doc_id]
+            # Document found in multiple strategies - combine scores
+            merged_results[doc_id][:sources] << strategy
+            merged_results[doc_id][:scores] << result['score'].to_f
+            merged_results[doc_id][:strategy_scores][strategy] = result['score'].to_f
+          else
+            merged_results[doc_id] = {
+              document_id: doc_id,
+              title: result['title'],
+              snippet: result['snippet'],
+              sources: [strategy],
+              scores: [result['score'].to_f],
+              strategy_scores: { strategy => result['score'].to_f },
+              metadata: result
+            }
+          end
+        end
+      end
+
+      # Calculate confidence scores for merged results
+      final_results = merged_results.values.map do |r|
+        # Multi-factor confidence calculation
+        source_agreement = r[:sources].size.to_f / strategies.size
+        avg_score = r[:scores].sum / r[:scores].size
+        max_score = r[:scores].max
+        score_variance = calculate_variance(r[:scores])
+
+        # Query-document confidence from ConfidenceScorer
+        # (simplified - in production would use document content)
+        semantic_confidence = avg_score
+
+        # Calculate final confidence
+        # High agreement + high scores + low variance = high confidence
+        confidence = (
+          semantic_confidence * 0.4 +
+          source_agreement * 0.3 +
+          max_score * 0.2 +
+          (1.0 - [score_variance, 0.3].min / 0.3) * 0.1  # Penalize high variance
+        )
+
+        final_score = confidence * max_score
+
+        {
+          'document_id' => r[:document_id],
+          'score' => max_score,
+          'title' => r[:title],
+          'snippet' => r[:snippet],
+          'relevance' => determine_relevance(max_score),
+          'query' => query_text,
+          'dimension' => options[:dimension],
+          'model' => options[:model_name],
+          'confidence' => confidence.round(4),
+          'final_score' => final_score.round(4),
+          'source_count' => r[:sources].size,
+          'sources' => r[:sources].map(&:to_s),
+          'strategy_scores' => r[:strategy_scores].transform_keys(&:to_s)
+        }
+      end
+
+      # Sort by final score (confidence-weighted)
+      sorted_results = final_results.sort_by { |r| -r['final_score'] }
+
+      # Log performance metrics
+      Rails.logger.info(
+        "Confidence-aware search complete: #{sorted_results.size} unique results from " \
+        "#{strategies.size} strategies. Timings: #{strategy_timings.to_h}"
+      )
+
+      sorted_results.first(options[:limit] || 10)
+
+    rescue => e
+      Rails.logger.error("Confidence-aware search failed: #{e.message}")
+      Rails.logger.error(e.backtrace.first(5).join("\n"))
+      # Fall back to hybrid search
+      search_hybrid_new(query_text, organization_id, options)
+    end
+  end
+
+  # Calculate variance of an array of numbers
+  def self.calculate_variance(numbers)
+    return 0 if numbers.size < 2
+
+    mean = numbers.sum / numbers.size.to_f
+    sum_of_squares = numbers.map { |n| (n - mean) ** 2 }.sum
+    sum_of_squares / numbers.size
+  end
+
+  # Sanitize vector for SQL queries
+  def self.sanitize_vector(vector)
+    return vector.to_s unless vector.is_a?(Array)
+    "[#{vector.join(',')}]"
+  end
+
   # Format document results to match the expected format
   def self.format_document_results(documents, query, options = {})
     model_name = options[:model_name] || 'base'
