@@ -60,7 +60,7 @@ Enterprise AI knowledge management platform with vector search and RAG capabilit
 | CI/CD Pipeline | Implemented | GitHub Actions, multi-language |
 | Test Suite | Implemented | RSpec, pytest, Rust tests |
 | Frontend | Stale | Needs review and updates |
-| Large Dataset Testing | In Progress | SEC EDGAR 10-K/10-Q ingestion running |
+| Large Dataset Testing | In Progress | SEC EDGAR complete (35K vectors), Wikipedia ingestion running |
 | Production Hardening | Not Started | Load testing, monitoring, alerts |
 
 ## Quick Start
@@ -85,7 +85,7 @@ curl http://localhost:8002/health  # Rust DocProc (if enabled)
 ### Manual Setup
 
 ```bash
-# Prerequisites: Ruby 3.4+, Python 3.11+, PostgreSQL 14+, Redis 7+
+# Prerequisites: Ruby 3.2.2+, Python 3.11+, PostgreSQL 14+, Redis 7+
 
 # Ruby dependencies
 bundle install
@@ -104,6 +104,34 @@ cd services/haystack && uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # Start Rails
 rails server
+```
+
+### macOS Local Development (rbenv)
+
+```bash
+# Install rbenv and Ruby
+brew install rbenv ruby-build
+rbenv install 3.2.2
+rbenv global 3.2.2
+
+# Install libpq for PostgreSQL gem
+brew install libpq
+brew link libpq --force
+
+# Set up environment
+export PATH="$HOME/.rbenv/versions/3.2.2/bin:$(brew --prefix libpq)/bin:$PATH"
+export GEM_HOME="$HOME/.rbenv/versions/3.2.2/lib/ruby/gems/3.2.0"
+export GEM_PATH="$HOME/.rbenv/versions/3.2.2/lib/ruby/gems/3.2.0"
+
+# Install dependencies and set up database
+bundle install
+rails db:create db:migrate
+
+# Build Tailwind CSS
+rails tailwindcss:build
+
+# Start Rails server
+bundle exec rails server
 ```
 
 ## API Endpoints
@@ -308,6 +336,13 @@ PYTHONUNBUFFERED=1 nohup python3 scripts/enterprise_ingest.py --dataset sec-edga
 | text-embedding-3-small | 1536 | $0.00002 | Cost-effective |
 | text-embedding-3-large | 3072 | $0.00013 | Highest quality |
 
+### Completed Ingestion Runs
+
+| Dataset | Documents | Vectors | Model | Collection | Cost |
+|---------|-----------|---------|-------|------------|------|
+| SEC 10-K (2024) | 220 filings | 35,080 | text-embedding-3-small | `sec_10k_v2_openai-3-small` | $1.31 |
+| Wikipedia | In progress | - | all-MiniLM-L6-v2 (local) | `org_1_documents` | $0 |
+
 ### Database Tables
 
 Key tables for the AI/search functionality:
@@ -348,8 +383,9 @@ View workflow runs at: `https://github.com/<owner>/knowverse/actions`
 **Next Steps:**
 - [ ] Frontend review and updates (stale for 7 months)
 - [x] Enterprise SEC EDGAR ingestion pipeline
-- [ ] Complete SEC 10-K/10-Q corpus (~320K filings)
-- [ ] End-to-end testing with real financial data
+- [x] SEC 10-K filings ingestion (220 filings, 35,080 vectors)
+- [x] Wikipedia ingestion pipeline (local embeddings, in progress)
+- [ ] End-to-end testing with real data
 - [ ] Load testing and performance benchmarks
 - [ ] Production monitoring and alerts
 
