@@ -254,8 +254,8 @@ class TokenRateTracker:
 def health_check():
     """Check the health of the service"""
     return {
-        "status": "ok",
-        "version": "1.0.0", 
+        "status": "healthy",
+        "version": "1.1.0",
         "environment": ENVIRONMENT
     }
 
@@ -263,7 +263,12 @@ def health_check():
 @app.get("/")
 def root():
     """Root endpoint for basic connectivity test"""
-    return {"message": "KnowVerse Haystack Service is running", "status": "healthy"}
+    return {
+        "service": "KnowVerse Haystack Service",
+        "message": "KnowVerse Haystack Service is running",
+        "status": "healthy",
+        "version": "1.1.0"
+    }
 
 
 # =============================================================================
