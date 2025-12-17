@@ -11,6 +11,6 @@ class CreateOrganizationUsers < ActiveRecord::Migration[8.0]
     end
     
     # Add unique constraint to ensure a user can only have one role per organization
-    add_index :organization_users, [:organization_id, :user_id], {name: 'idx_organization_users_org_use'}, unique: true
+    add_index :organization_users, [:organization_id, :user_id], name: 'idx_organization_users_org_use', unique: true
   end
 end

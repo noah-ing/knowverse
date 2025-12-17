@@ -1,7 +1,7 @@
 class CreateStreamingElements < ActiveRecord::Migration[8.0]
   def change
     create_table :streaming_elements do |t|
-      t.references :conversation_session_session_session_session, null: false, foreign_key: true
+      t.references :conversation_session, null: false, foreign_key: true
       t.string :token
       t.integer :token_index
       t.boolean :complete, default: false

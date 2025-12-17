@@ -15,6 +15,9 @@ temp_repo/
 KNOWVERSE_DOCS.md
 DATABASE_SETUP.md
 VECTOR_SEARCH_INTEGRATION.md
+CLAUDE_CONTEXT.md
+.claude/
+**/plans/
 **/fix_*.rb
 **/migration_fixer.rb
 **/reconcile_migrations.rb

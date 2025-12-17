@@ -21,6 +21,12 @@ RUN apt-get update -qq && \
         # PostgreSQL client and development headers
         postgresql-client \
         libpq-dev \
+        # SQLite for SolidQueue
+        libsqlite3-dev \
+        sqlite3 \
+        pkg-config \
+        # YAML library for psych gem
+        libyaml-dev \
         # Python for communication with Haystack service
         python3 \
         python3-pip \
@@ -40,11 +46,13 @@ RUN apt-get update -qq && \
 WORKDIR /rails
 
 # Copy dependency files first for better caching
-COPY Gemfile Gemfile.lock ./
+COPY Gemfile ./
 
 # Install Ruby gems with security focus
+# Generate fresh Gemfile.lock for Linux platforms with sqlite3 2.0 support
 RUN bundle config set --local deployment 'false' && \
     bundle config set --local cache_all 'true' && \
+    bundle lock --add-platform aarch64-linux x86_64-linux && \
     bundle install --jobs 4 --retry 3
 
 # CRITICAL SECURITY FIXES - Update vulnerable gems

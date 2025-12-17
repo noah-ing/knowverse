@@ -8,10 +8,12 @@ service:
   enable_tls: false  # Enable in production with proper certs
 
 # Cluster configuration (Raft consensus)
+# Note: Cluster mode disabled for single-node development
+# Enable and configure p2p URIs for production multi-node deployment
 cluster:
-  enabled: true
-  p2p:
-    port: 6335
+  enabled: false
+  # p2p:
+  #   port: 6335
 
 # Storage configuration
 storage:

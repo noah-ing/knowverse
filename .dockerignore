@@ -35,6 +35,9 @@ vendor/bundle/
 *.db
 db/*.sqlite3
 
+# Gemfile.lock - generated fresh in container for platform compatibility
+Gemfile.lock
+
 # Cache and temporary files
 .cache/
 .tmp/

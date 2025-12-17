@@ -713,8 +713,595 @@ def _split_with_overlap(text: str, chunk_size: int, overlap: int) -> List[str]:
     return chunks
 
 
+# =============================================================================
+# SEARCH ENDPOINTS
+# Semantic, keyword, and hybrid search functionality
+# =============================================================================
+
+@app.post("/search", response_model=SearchResponse, tags=["search"])
+async def search(request: SearchRequest):
+    """
+    Perform semantic search using vector embeddings.
+
+    Args:
+        request: Search request with query, filters, and top_k
+
+    Returns:
+        SearchResponse with matching documents and scores
+    """
+    start_time = time.time()
+
+    try:
+        # Get search pipeline
+        search_pipeline = get_search_pipeline()
+
+        # Execute search
+        results = search_pipeline.run(
+            query=request.query,
+            params={
+                "Retriever": {"top_k": request.top_k},
+                "filters": request.filters or {}
+            }
+        )
+
+        # Format results
+        formatted_results = []
+        for doc in results.get("documents", []):
+            formatted_results.append(SearchResult(
+                content=doc.content if hasattr(doc, 'content') else str(doc),
+                score=doc.score if hasattr(doc, 'score') else 0.0,
+                metadata=doc.meta if hasattr(doc, 'meta') else {}
+            ))
+
+        processing_time = time.time() - start_time
+
+        return SearchResponse(
+            query=request.query,
+            results=formatted_results,
+            processing_time=processing_time
+        )
+
+    except Exception as e:
+        logger.error(f"Search failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Search failed: {str(e)}"
+        )
+
+
+@app.post("/hybrid-search", response_model=HybridSearchResponse, tags=["search"])
+async def hybrid_search(request: HybridSearchRequest):
+    """
+    Perform hybrid search combining vector similarity and keyword matching.
+
+    Uses reciprocal rank fusion to combine results from both methods.
+
+    Args:
+        request: Hybrid search request with weights and options
+
+    Returns:
+        HybridSearchResponse with fused results
+    """
+    start_time = time.time()
+
+    try:
+        # Get hybrid searcher
+        hybrid_searcher = get_hybrid_searcher()
+
+        # Execute hybrid search
+        results = hybrid_searcher.search(
+            query=request.query,
+            top_k=request.top_k,
+            filters=request.filters,
+            vector_weight=request.vector_weight,
+            keyword_weight=request.keyword_weight,
+            early_termination=request.early_termination
+        )
+
+        # Format results
+        formatted_results = []
+        for doc in results.get("documents", []):
+            formatted_results.append(SearchResult(
+                content=doc.get("content", ""),
+                score=doc.get("score", 0.0),
+                metadata=doc.get("metadata", {})
+            ))
+
+        processing_time = time.time() - start_time
+
+        return HybridSearchResponse(
+            query=request.query,
+            results=formatted_results,
+            processing_time=processing_time,
+            metadata={
+                "vector_weight": request.vector_weight or 0.5,
+                "keyword_weight": request.keyword_weight or 0.5,
+                "method": "reciprocal_rank_fusion"
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Hybrid search failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Hybrid search failed: {str(e)}"
+        )
+
+
+# =============================================================================
+# EMBEDDING ENDPOINTS
+# Vector embedding generation
+# =============================================================================
+
+@app.post("/embeddings/generate", response_model=EmbeddingResponse, tags=["embeddings"])
+async def generate_embedding(request: EmbeddingRequest):
+    """
+    Generate vector embeddings for text content.
+
+    Args:
+        request: Embedding request with text and model name
+
+    Returns:
+        EmbeddingResponse with embedding vector
+    """
+    start_time = time.time()
+
+    try:
+        # Generate embedding using the specified model
+        embedding = generate_embeddings(
+            text=request.text,
+            model_name=request.model_name or "base"
+        )
+
+        # Convert to list if numpy array
+        if isinstance(embedding, np.ndarray):
+            embedding_list = embedding.tolist()
+        else:
+            embedding_list = list(embedding)
+
+        processing_time = time.time() - start_time
+
+        return EmbeddingResponse(
+            embedding=embedding_list,
+            dimension=len(embedding_list),
+            processing_time=processing_time
+        )
+
+    except Exception as e:
+        logger.error(f"Embedding generation failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Embedding generation failed: {str(e)}"
+        )
+
+
+# =============================================================================
+# RAG ENDPOINTS
+# Retrieval-Augmented Generation functionality
+# =============================================================================
+
+@app.post("/rag/answer", response_model=RAGResponse, tags=["rag"])
+async def rag_answer(request: RAGRequest):
+    """
+    Generate an answer using Retrieval-Augmented Generation.
+
+    Retrieves relevant documents and uses an LLM to generate a response.
+
+    Args:
+        request: RAG request with query, organization ID, and options
+
+    Returns:
+        RAGResponse with answer, context, and metadata
+    """
+    start_time = time.time()
+
+    try:
+        # Retrieve relevant context
+        context_docs = await asyncio.to_thread(
+            retrieve_and_rank,
+            query=request.query,
+            org_id=request.org_id,
+            **request.retrieval_options
+        )
+
+        # Build context string
+        context_items = []
+        for doc in context_docs:
+            context_items.append(RAGContextItem(
+                document_id=doc.get("id"),
+                title=doc.get("title"),
+                source=doc.get("source"),
+                text=doc.get("content", ""),
+                score=doc.get("score", 0.0)
+            ))
+
+        context_text = "\n\n".join([item.text for item in context_items])
+
+        # Generate response using LLM
+        provider = request.provider or "openai"
+        llm = llm_registry.get_llm(provider)
+
+        prompt = f"""Based on the following context, answer the question. If the answer cannot be found in the context, say so.
+
+Context:
+{context_text}
+
+Question: {request.query}
+
+Answer:"""
+
+        answer = await asyncio.to_thread(llm.generate, prompt, **request.generation_options)
+
+        processing_time = time.time() - start_time
+
+        return RAGResponse(
+            answer=answer,
+            context=context_items,
+            metadata={
+                "provider": provider,
+                "num_context_docs": len(context_items),
+                "retrieval_options": request.retrieval_options
+            },
+            query=request.query,
+            processing_time=processing_time
+        )
+
+    except Exception as e:
+        logger.error(f"RAG answer generation failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"RAG answer generation failed: {str(e)}"
+        )
+
+
+@app.post("/rag/stream", tags=["rag"])
+async def rag_stream(request: RAGRequest):
+    """
+    Stream a RAG response using Server-Sent Events.
+
+    Retrieves context and streams the LLM response token by token.
+
+    Args:
+        request: RAG request with query and options
+
+    Returns:
+        StreamingResponse with SSE events
+    """
+    async def generate_stream():
+        tracker = TokenRateTracker()
+
+        try:
+            # Retrieve context
+            context_docs = await asyncio.to_thread(
+                retrieve_and_rank,
+                query=request.query,
+                org_id=request.org_id,
+                **request.retrieval_options
+            )
+
+            # Send context event
+            context_data = {
+                "type": "context",
+                "documents": [
+                    {
+                        "id": doc.get("id"),
+                        "title": doc.get("title"),
+                        "score": doc.get("score", 0.0)
+                    }
+                    for doc in context_docs
+                ]
+            }
+            yield f"data: {json.dumps(context_data)}\n\n"
+
+            # Build context and prompt
+            context_text = "\n\n".join([doc.get("content", "") for doc in context_docs])
+
+            prompt = f"""Based on the following context, answer the question. If the answer cannot be found in the context, say so.
+
+Context:
+{context_text}
+
+Question: {request.query}
+
+Answer:"""
+
+            # Get LLM and stream response
+            provider = request.provider or "openai"
+            llm = llm_registry.get_llm(provider)
+
+            # Stream tokens
+            async for token in llm.stream(prompt, **request.generation_options):
+                tracker.add_token()
+                token_data = {
+                    "type": "token",
+                    "content": token,
+                    "index": tracker.tokens
+                }
+                yield f"data: {json.dumps(token_data)}\n\n"
+
+            # Send completion event
+            completion_data = {
+                "type": "complete",
+                "total_tokens": tracker.tokens,
+                "tokens_per_second": tracker.get_rate()
+            }
+            yield f"data: {json.dumps(completion_data)}\n\n"
+
+        except Exception as e:
+            logger.error(f"RAG stream error: {e}")
+            error_data = {"type": "error", "message": str(e)}
+            yield f"data: {json.dumps(error_data)}\n\n"
+
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@app.get("/rag/providers", response_model=List[LLMProviderInfo], tags=["rag"])
+async def get_rag_providers():
+    """
+    Get list of available LLM providers for RAG.
+
+    Returns:
+        List of LLMProviderInfo with available providers
+    """
+    providers = []
+
+    # Check which providers are available
+    available = llm_registry.get_available_providers()
+    default_provider = llm_registry.get_default_provider()
+
+    for name in available:
+        providers.append(LLMProviderInfo(
+            name=name,
+            default=(name == default_provider)
+        ))
+
+    return providers
+
+
+# =============================================================================
+# QUERY PARSING ENDPOINTS
+# Query analysis and optimization
+# =============================================================================
+
+@app.post("/parse-query", response_model=ParseQueryResponse, tags=["query"])
+async def parse_query(request: ParseQueryRequest):
+    """
+    Parse and analyze a search query.
+
+    Extracts keywords, phrases, and determines optimal search strategy.
+
+    Args:
+        request: Parse query request with query text
+
+    Returns:
+        ParseQueryResponse with parsed query components
+    """
+    try:
+        parser = QueryParser()
+        result = parser.parse(request.query)
+
+        return ParseQueryResponse(
+            vector_query=result.get("vector_query", request.query),
+            keyword_query=result.get("keyword_query", request.query),
+            exact_phrases=result.get("exact_phrases", []),
+            required_terms=result.get("required_terms", []),
+            excluded_terms=result.get("excluded_terms", []),
+            boosted_terms=result.get("boosted_terms", {}),
+            keywords=result.get("keywords", []),
+            complexity=result.get("complexity", "simple"),
+            weights=result.get("weights", {"vector": 0.5, "keyword": 0.5})
+        )
+
+    except Exception as e:
+        logger.error(f"Query parsing failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Query parsing failed: {str(e)}"
+        )
+
+
+# =============================================================================
+# DOMAIN DETECTION ENDPOINTS
+# Domain-aware search and embedding
+# =============================================================================
+
+@app.post("/domains/detect", response_model=DomainDetectionResponse, tags=["domains"])
+async def detect_domain(request: DomainDetectionRequest):
+    """
+    Detect the domain of a query for domain-aware search.
+
+    Args:
+        request: Domain detection request with query text
+
+    Returns:
+        DomainDetectionResponse with detected domain and confidence
+    """
+    start_time = time.time()
+
+    try:
+        result = detect_query_domain(
+            query=request.query,
+            organization_id=request.organization_id
+        )
+
+        processing_time = time.time() - start_time
+
+        return DomainDetectionResponse(
+            domain=result.get("domain", DEFAULT_DOMAIN),
+            confidence=result.get("confidence", 0.0),
+            alternatives=result.get("alternatives"),
+            processing_time=processing_time
+        )
+
+    except Exception as e:
+        logger.error(f"Domain detection failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Domain detection failed: {str(e)}"
+        )
+
+
+@app.get("/domains", response_model=List[DomainInfo], tags=["domains"])
+async def list_domains():
+    """
+    List available domains for domain-aware search.
+
+    Returns:
+        List of DomainInfo with available domains
+    """
+    try:
+        domains = get_available_domains()
+
+        return [
+            DomainInfo(
+                domain=d.get("domain", "general"),
+                description=d.get("description"),
+                model_count=d.get("model_count", 0)
+            )
+            for d in domains
+        ]
+
+    except Exception as e:
+        logger.error(f"Failed to list domains: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list domains: {str(e)}"
+        )
+
+
+# =============================================================================
+# VISUALIZATION ENDPOINTS
+# Dimension reduction and clustering for document visualization
+# =============================================================================
+
+@app.post("/visualization/dimension-reduction", response_model=DimensionReductionResponse, tags=["visualization"])
+async def dimension_reduction(request: DimensionReductionRequest):
+    """
+    Reduce dimensions of vectors for visualization.
+
+    Supports t-SNE and UMAP algorithms.
+
+    Args:
+        request: Dimension reduction request with vectors and algorithm
+
+    Returns:
+        DimensionReductionResponse with reduced vectors
+    """
+    start_time = time.time()
+
+    try:
+        # Convert to numpy array
+        vectors = np.array(request.vectors)
+
+        # Get dimension reducer
+        reducer = DimensionReduction(algorithm=request.algorithm)
+
+        # Reduce dimensions
+        reduced = reducer.reduce(vectors, **request.params)
+
+        processing_time = time.time() - start_time
+
+        return DimensionReductionResponse(
+            reduced_vectors=reduced.tolist(),
+            algorithm=request.algorithm,
+            dimensions=reduced.shape[1] if len(reduced.shape) > 1 else 1,
+            processing_time=processing_time
+        )
+
+    except Exception as e:
+        logger.error(f"Dimension reduction failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Dimension reduction failed: {str(e)}"
+        )
+
+
+@app.post("/visualization/clustering", response_model=ClusteringResponse, tags=["visualization"])
+async def cluster_documents(request: ClusteringRequest):
+    """
+    Cluster documents based on vector similarity.
+
+    Supports k-means, hierarchical, and DBSCAN algorithms.
+
+    Args:
+        request: Clustering request with vectors and algorithm
+
+    Returns:
+        ClusteringResponse with cluster assignments
+    """
+    start_time = time.time()
+
+    try:
+        # Convert to numpy array
+        vectors = np.array(request.vectors)
+
+        # Get cluster analyzer
+        analyzer = ClusterAnalysis(algorithm=request.algorithm)
+
+        # Perform clustering
+        result = analyzer.cluster(
+            vectors=vectors,
+            document_ids=request.document_ids,
+            **request.params
+        )
+
+        processing_time = time.time() - start_time
+
+        return ClusteringResponse(
+            clusters=result.get("clusters", []),
+            num_clusters=result.get("num_clusters", 0),
+            algorithm=request.algorithm,
+            parameters=request.params,
+            processing_time=processing_time
+        )
+
+    except Exception as e:
+        logger.error(f"Clustering failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Clustering failed: {str(e)}"
+        )
+
+
+@app.get("/visualization/gpu-capabilities", response_model=GPUCapabilitiesResponse, tags=["visualization"])
+async def get_gpu_capabilities():
+    """
+    Get GPU capabilities for visualization algorithms.
+
+    Returns:
+        GPUCapabilitiesResponse with GPU status and supported algorithms
+    """
+    try:
+        import torch
+        gpu_available = torch.cuda.is_available()
+
+        supported = ["tsne", "umap", "kmeans", "hierarchical", "dbscan"]
+        gpu_accelerated = ["tsne", "umap"] if gpu_available else None
+
+        return GPUCapabilitiesResponse(
+            gpu_available=gpu_available,
+            supported_algorithms=supported,
+            gpu_accelerated=gpu_accelerated
+        )
+
+    except ImportError:
+        return GPUCapabilitiesResponse(
+            gpu_available=False,
+            supported_algorithms=["tsne", "umap", "kmeans", "hierarchical", "dbscan"],
+            gpu_accelerated=None
+        )
+
+
 if __name__ == "__main__":
     import uvicorn
     from config.settings import API_HOST, API_PORT
-    
+
     uvicorn.run("app.main:app", host=API_HOST, port=API_PORT, reload=DEBUG)
