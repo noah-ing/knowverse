@@ -161,7 +161,7 @@ def list_datasets():
         print(f"  Documents: {config['documents']}")
 
 
-def chunk_text(text: str, chunk_size: int = 512, overlap: int = 64) -> List[str]:
+def chunk_text(text: str, chunk_size: int = 450, overlap: int = 50) -> List[str]:
     """Split text into overlapping chunks."""
     words = text.split()
     chunks = []
