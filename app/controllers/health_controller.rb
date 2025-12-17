@@ -28,12 +28,20 @@ class HealthController < ApplicationController
   private
 
   def check_services
-    {
+    services = {
       database: check_database,
       redis: check_redis,
       haystack: check_haystack,
       solid_queue: check_solid_queue
     }
+
+    # Optional Rust services (don't fail health check if unavailable)
+    if ENV['USE_RUST_SERVICES'] != 'false'
+      services[:rust_embedding] = check_rust_embedding
+      services[:rust_docproc] = check_rust_docproc
+    end
+
+    services
   end
 
   def check_database
@@ -70,6 +78,38 @@ class HealthController < ApplicationController
     { status: "unhealthy", error: e.message }
   end
 
+  def check_rust_embedding
+    rust_url = ENV.fetch('RUST_EMBEDDING_URL', 'http://localhost:8001')
+    uri = URI("#{rust_url}/health")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.open_timeout = 2
+    http.read_timeout = 2
+    response = http.get(uri.path)
+    if response.code == "200"
+      { status: "healthy", response_time_ms: measure_response_time { http.get(uri.path) } }
+    else
+      { status: "degraded", error: "HTTP #{response.code}" }
+    end
+  rescue => e
+    { status: "unavailable", error: e.message, fallback: "python" }
+  end
+
+  def check_rust_docproc
+    rust_url = ENV.fetch('RUST_DOCPROC_URL', 'http://localhost:8002')
+    uri = URI("#{rust_url}/health")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.open_timeout = 2
+    http.read_timeout = 2
+    response = http.get(uri.path)
+    if response.code == "200"
+      { status: "healthy", response_time_ms: measure_response_time { http.get(uri.path) } }
+    else
+      { status: "degraded", error: "HTTP #{response.code}" }
+    end
+  rescue => e
+    { status: "unavailable", error: e.message, fallback: "python" }
+  end
+
   def measure_response_time
     start_time = Time.current
     yield
@@ -77,6 +117,17 @@ class HealthController < ApplicationController
   end
 
   def all_services_healthy?(services)
-    services.values.all? { |service| service[:status] == "healthy" }
+    # Core services must be healthy
+    core_services = [:database, :redis, :haystack, :solid_queue]
+    core_healthy = core_services.all? { |name| services[name]&.dig(:status) == "healthy" }
+
+    # Rust services are optional (have Python fallback) - warn but don't fail
+    rust_services = [:rust_embedding, :rust_docproc]
+    rust_healthy = rust_services.all? { |name|
+      status = services[name]&.dig(:status)
+      status.nil? || status == "healthy" || status == "unavailable"
+    }
+
+    core_healthy && rust_healthy
   end
 end
