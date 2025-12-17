@@ -32,6 +32,11 @@ module DocumentProcessing
       end
     end
 
+    # Chunking configuration aligned with blueprint (400-512 tokens, 10-20% overlap)
+    CHUNK_SIZE = 450
+    CHUNK_OVERLAP = 50
+    CHUNKING_STRATEGY = 'semantic'
+
     def perform(document_id, model_name = 'small')
       document = Document.find_by(id: document_id)
       return unless document
@@ -76,23 +81,27 @@ module DocumentProcessing
         )
         embedding_record.mark_as_processing!
 
-        # Generate embeddings using HaystackClient
-        # CRITICAL: Real embeddings only - no mocks allowed
-        embedding_vector = generate_embedding(document, model_name, dimension)
+        # STEP 1: Chunk the document content
+        chunks = chunk_document(document)
+        Rails.logger.info("Document #{document_id} split into #{chunks.size} chunks")
 
-        # Validate embedding vector
-        validate_embedding!(embedding_vector, dimension, document_id)
+        # STEP 2: Generate embeddings for each chunk
+        chunk_embeddings = generate_chunk_embeddings(chunks, model_name, dimension, document_id)
 
-        # Store in vector_embeddings table
+        # STEP 3: Store primary embedding (first chunk or average)
+        primary_embedding = chunk_embeddings.first
+        validate_embedding!(primary_embedding, dimension, document_id)
+
         embedding_record.update!(
-          embedding_data: embedding_vector,
-          status: VectorEmbedding::STATUS_PROCESSED
+          embedding_data: primary_embedding,
+          status: VectorEmbedding::STATUS_PROCESSED,
+          chunk_count: chunks.size
         )
 
         # For backward compatibility, also store in document.embedding
         if document.primary_embedding_type == model_name || document.primary_embedding_type.nil?
           document.update(
-            embedding: embedding_vector,
+            embedding: primary_embedding,
             embedding_status: 'processed',
             vector_dimension: dimension,
             primary_embedding_type: model_name
@@ -109,10 +118,10 @@ module DocumentProcessing
           document.mark_embedding_as_processed!
         end
 
-        # Index in Qdrant (replaces old HNSW dual-write)
-        index_in_qdrant(document, embedding_vector, embedding_record)
+        # STEP 4: Index ALL chunks in Qdrant (chunk-level indexing)
+        index_chunks_in_qdrant(document, chunks, chunk_embeddings, embedding_record)
 
-        Rails.logger.info("Successfully completed embedding process for document #{document_id}")
+        Rails.logger.info("Successfully completed embedding process for document #{document_id} (#{chunks.size} chunks indexed)")
       rescue EmbeddingGenerationError
         # Re-raise to trigger retry
         raise
@@ -122,6 +131,134 @@ module DocumentProcessing
     end
 
     private
+
+    def chunk_document(document)
+      client = HaystackClient.new
+
+      begin
+        response = client.chunk_text(
+          document.content,
+          chunk_size: CHUNK_SIZE,
+          chunk_overlap: CHUNK_OVERLAP,
+          strategy: CHUNKING_STRATEGY
+        )
+
+        if response.success? && response.result['chunks'].present?
+          response.result['chunks']
+        else
+          # Fallback: simple word-based chunking if Haystack fails
+          Rails.logger.warn("Haystack chunking failed, using fallback chunking")
+          fallback_chunk(document.content)
+        end
+      rescue => e
+        Rails.logger.warn("Chunking service error: #{e.message}, using fallback")
+        fallback_chunk(document.content)
+      end
+    end
+
+    def fallback_chunk(content)
+      words = content.split
+      chunks = []
+
+      i = 0
+      while i < words.length
+        chunk_words = words[i, CHUNK_SIZE]
+        chunks << {
+          'content' => chunk_words.join(' '),
+          'chunk_index' => chunks.size,
+          'start_char' => nil,
+          'end_char' => nil
+        }
+        i += (CHUNK_SIZE - CHUNK_OVERLAP)
+      end
+
+      chunks.presence || [{ 'content' => content, 'chunk_index' => 0 }]
+    end
+
+    def generate_chunk_embeddings(chunks, model_name, dimension, document_id)
+      client = HaystackClient.new
+      chunk_contents = chunks.map { |c| c['content'] }
+
+      begin
+        # Use batch embedding for efficiency
+        embeddings = client.generate_embeddings_batch(
+          chunk_contents,
+          model_name: model_name
+        )
+
+        if embeddings.present? && embeddings.size == chunks.size
+          Rails.logger.info("Generated #{embeddings.size} chunk embeddings for document #{document_id}")
+          embeddings
+        else
+          # Fallback: generate one at a time
+          Rails.logger.warn("Batch embedding returned incomplete results, falling back to sequential")
+          generate_embeddings_sequentially(chunk_contents, client, model_name, dimension)
+        end
+      rescue => e
+        Rails.logger.warn("Batch embedding failed: #{e.message}, falling back to sequential")
+        generate_embeddings_sequentially(chunk_contents, client, model_name, dimension)
+      end
+    end
+
+    def generate_embeddings_sequentially(contents, client, model_name, dimension)
+      contents.map do |content|
+        client.generate_embeddings(content, model_name: model_name, dimension: dimension)
+      end
+    end
+
+    def index_chunks_in_qdrant(document, chunks, embeddings, embedding_record)
+      search_service = Search::UnifiedSearchService.new
+
+      unless search_service.healthy?
+        Rails.logger.warn("Qdrant not healthy, skipping chunk indexing for document #{document.id}")
+        mark_for_later_indexing(document, embedding_record, "Qdrant cluster unavailable")
+        return
+      end
+
+      begin
+        # Build points for all chunks
+        points = chunks.zip(embeddings).map.with_index do |(chunk, embedding), index|
+          {
+            id: "#{document.id}_chunk_#{index}",
+            vector: embedding,
+            payload: {
+              document_id: document.id,
+              organization_id: document.organization_id,
+              title: document.title,
+              chunk_index: index,
+              total_chunks: chunks.size,
+              content: chunk['content'],
+              file_type: document.file_type,
+              created_at: document.created_at.iso8601,
+              start_char: chunk['start_char'],
+              end_char: chunk['end_char']
+            }
+          }
+        end
+
+        # Bulk upsert all chunks
+        result = search_service.bulk_index_points(document.organization_id, points)
+
+        if result[:success]
+          embedding_record.update(
+            indexed_in_hnsw: true,
+            hnsw_index_reference: "qdrant:#{document.organization_id}:#{document.id}:chunks:#{chunks.size}"
+          ) if embedding_record.respond_to?(:indexed_in_hnsw)
+
+          document.update(
+            indexed_in_hnsw: true,
+            hnsw_index_reference: "qdrant:#{document.organization_id}:#{document.id}:chunks:#{chunks.size}"
+          )
+
+          Rails.logger.info("Successfully indexed #{chunks.size} chunks for document #{document.id} in Qdrant")
+        else
+          raise "Qdrant bulk upsert failed: #{result[:error]}"
+        end
+      rescue => e
+        Rails.logger.error("Failed to index chunks for document #{document.id} in Qdrant: #{e.message}")
+        mark_for_later_indexing(document, embedding_record, e.message)
+      end
+    end
 
     def generate_embedding(document, model_name, dimension)
       client = HaystackClient.new

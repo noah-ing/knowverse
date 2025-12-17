@@ -190,7 +190,7 @@ module Search
 
         # Generate embeddings in batch
         contents = org_docs.map(&:content)
-        embeddings = @haystack.batch_generate_embeddings(contents)
+        embeddings = @haystack.generate_embeddings_batch(contents)
 
         # Build points
         points = org_docs.zip(embeddings).map do |doc, embedding|
@@ -205,6 +205,31 @@ module Search
       end
 
       { success: results.all? { |r| r[:success] }, results: results }
+    end
+
+    # Bulk index pre-built points (for chunk-level indexing)
+    def bulk_index_points(organization_id, points)
+      return { success: true, indexed: 0 } if points.empty?
+
+      collection = collection_name(organization_id)
+      ensure_collection_exists(collection)
+
+      # Convert string IDs to format Qdrant expects
+      formatted_points = points.map do |point|
+        {
+          id: point[:id].to_s,
+          vector: point[:vector],
+          payload: point[:payload]
+        }
+      end
+
+      result = @qdrant.upsert(collection: collection, points: formatted_points)
+
+      if result[:success]
+        { success: true, indexed: points.size }
+      else
+        { success: false, error: result[:error], indexed: 0 }
+      end
     end
 
     # Delete document from index
