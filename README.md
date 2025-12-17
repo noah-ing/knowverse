@@ -2,205 +2,190 @@
 
 Enterprise AI knowledge management platform with vector search and RAG capabilities.
 
-## Current Architecture
+## Architecture
 
-Knowverse uses a polyglot architecture optimized for each task:
+```
+┌─────────────────────────────────────────────────────────────┐
+│              Rails 8 (Web UI, Auth, Admin, API)             │
+│                        Port 3000                            │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+        ▼                 ▼                 ▼
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│   PostgreSQL  │ │    Qdrant     │ │   Haystack    │
+│   (Metadata)  │ │ (Vector Search│ │   (Python)    │
+│   Port 5432   │ │  Port 6333    │ │   Port 8000   │
+└───────────────┘ └───────────────┘ └───────────────┘
+```
 
-- **Rails 8** - API, auth, multi-tenancy, background jobs
-- **Qdrant (Rust)** - Vector search with HNSW, built-in Raft consensus
-- **Haystack (Python)** - Document extraction and embedding generation
-- **PostgreSQL** - Metadata storage, full-text keyword search
+**Tech Stack:**
+- **Rails 8** - API, auth, multi-tenancy, background jobs (SolidQueue)
+- **Qdrant** - Vector search with HNSW indexes, native Raft consensus
+- **Haystack (Python/FastAPI)** - Document extraction, embeddings, RAG
+- **PostgreSQL 14+** - Metadata storage, pgvector, full-text search
+- **Redis 7+** - Caching, session storage
 
 ## Status
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Rails 8 API | ✅ Working | Multi-tenant, auth, background jobs |
-| PostgreSQL | ✅ Working | Metadata + keyword search |
-| Redis caching | ✅ Working | Two-tier cache (memory + Redis) |
-| Sidekiq/SolidQueue | ✅ Working | Background job processing |
-| Text file processing | ✅ Working | TXT, MD, RTF |
-| PDF Extraction | ✅ Working | Via Haystack service (pdfplumber) |
-| DOCX Extraction | ✅ Working | Via Haystack service (python-docx) |
-| Excel Extraction | ✅ Working | Via Haystack service (fastexcel) |
-| Qdrant Integration | ⚠️ Requires Setup | External Qdrant cluster needed |
-| Embedding Generation | ⚠️ Requires Setup | Haystack service must be running |
-
-## Search Modes
-
-```ruby
-# Semantic search (Qdrant - fastest)
-SearchRouter.route_query("your query", organization_id, mode: :semantic)
-
-# Keyword search (PostgreSQL full-text)
-SearchRouter.route_query("your query", organization_id, mode: :keyword)
-
-# Hybrid search (semantic + keyword fusion)
-SearchRouter.route_query("your query", organization_id, mode: :hybrid)
-```
-
-## Document Processing
-
-```ruby
-# Requires Haystack Python service running on port 8000
-client = HaystackClient.new
-
-# PDF extraction
-result = client.extract_pdf(file_content, filename: "doc.pdf")
-
-# Excel extraction (handles 30+ tabs)
-result = client.extract_excel(file_content, filename: "budget.xlsx")
-
-# DOCX extraction with structure preservation
-result = client.extract_docx(file_content, filename: "report.docx")
-```
-
-## Embeddings
-
-```ruby
-# CRITICAL: Requires Haystack service
-# If unavailable, embedding generation will FAIL (no mock fallback)
-client = HaystackClient.new
-result = client.generate_embeddings("your text", model: "all-mpnet-base-v2")
-```
-
-## Required Services
-
-| Feature | Required Service | Port |
-|---------|------------------|------|
-| Document extraction | Haystack (Python) | 8000 |
-| Embedding generation | Haystack (Python) | 8000 |
-| Vector search | Qdrant cluster | 6333 |
-| API | Rails | 3000 |
+| Rails 8 API | Working | Multi-tenant, Devise auth, SolidQueue |
+| PostgreSQL | Working | pgvector enabled, full-text search |
+| Redis | Working | Two-tier cache (memory + Redis) |
+| Qdrant | Working | Docker container, HNSW indexes |
+| PDF Extraction | Working | pdfplumber with table extraction |
+| DOCX Extraction | Working | python-docx with structure |
+| Excel Extraction | Working | fastexcel (Rust/calamine) |
+| Embedding Generation | Working | sentence-transformers |
+| Semantic Search | Working | Qdrant vector search |
+| Hybrid Search | Working | RRF fusion (vector + keyword) |
+| RAG Endpoints | Working | OpenAI integration, SSE streaming |
+| Domain Detection | Working | Query domain classification |
 
 ## Quick Start
 
-### Prerequisites
-- Ruby 3.4+
-- Python 3.13+
-- PostgreSQL 15+
-- Redis 7+
-- Docker (for Qdrant)
-
-### Setup
+### Docker (Recommended)
 
 ```bash
-# Clone
-git clone https://github.com/your-org/knowverse.git
-cd knowverse
+# Start all services
+docker compose up -d
 
-# Install Ruby dependencies
+# Check health
+curl http://localhost:3000/health  # Rails
+curl http://localhost:8000/health  # Haystack
+curl http://localhost:6333/health  # Qdrant
+```
+
+### Manual Setup
+
+```bash
+# Prerequisites: Ruby 3.4+, Python 3.11+, PostgreSQL 14+, Redis 7+
+
+# Ruby dependencies
 bundle install
 
-# Install Python dependencies
+# Python dependencies
 cd services/haystack && pip install -r requirements.txt && cd ../..
 
-# Setup database
-./bin/setup
+# Database setup
 rails db:create db:migrate
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your settings
+# Start Qdrant
+docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant:v1.12.4
+
+# Start Haystack
+cd services/haystack && uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Start Rails
+rails server
 ```
 
-### Start Production Stack
+## API Endpoints
+
+### Rails API (Port 3000)
+- `POST /api/v1/documents` - Upload document
+- `POST /api/v1/search` - Search documents
+- `GET /api/v1/organizations/:id/documents` - List documents
+
+### Haystack API (Port 8000)
+- `POST /search` - Semantic search
+- `POST /hybrid-search` - Hybrid vector + keyword search
+- `POST /embeddings/generate` - Generate embeddings
+- `POST /rag/answer` - RAG response
+- `POST /rag/stream` - Streaming RAG (SSE)
+- `GET /rag/providers` - List LLM providers
+- `POST /extract/pdf` - Extract text from PDF
+- `POST /extract/docx` - Extract text from Word
+- `POST /extract/excel` - Extract text from Excel
+- `POST /chunk` - Chunk text for embeddings
+- `POST /parse-query` - Analyze query
+- `POST /domains/detect` - Detect query domain
+
+## Usage Examples
+
+### Search
+
+```ruby
+# Semantic search
+SearchRouter.route_query("machine learning optimization", org_id, mode: :semantic)
+
+# Hybrid search (recommended)
+SearchRouter.route_query("quarterly revenue report", org_id, mode: :hybrid)
+
+# Keyword search
+SearchRouter.route_query("contract #12345", org_id, mode: :keyword)
+```
+
+### Document Processing
+
+```ruby
+client = HaystackClient.new
+
+# PDF with table extraction
+result = client.extract_pdf(file_content, filename: "report.pdf")
+
+# Excel (handles large workbooks with 30+ tabs)
+result = client.extract_excel(file_content, filename: "data.xlsx")
+
+# DOCX with structure preservation
+result = client.extract_docx(file_content, filename: "document.docx")
+```
+
+### Embeddings
+
+```ruby
+client = HaystackClient.new
+result = client.generate_embeddings("your text content")
+# => { embedding: [...], dimension: 768, processing_time: 0.05 }
+```
+
+## Environment Variables
 
 ```bash
-# Full stack with Qdrant cluster
-docker-compose -f docker-compose.production.yml up -d
+# Required
+DATABASE_URL=postgresql://postgres:password@localhost:5432/knowverse_development
+REDIS_URL=redis://localhost:6379/0
+QDRANT_URL=http://localhost:6333
+HAYSTACK_SERVICE_URL=http://localhost:8000
 
-# Check Qdrant health
-curl http://localhost:6333/readiness
+# Optional (for RAG)
+OPENAI_API_KEY=sk-...
 
-# Check Haystack health
-curl http://localhost:8000/health
+# Optional (for email)
+RESEND_API_KEY=re_...
 ```
 
-### Migrate Existing Data to Qdrant
+## Development
+
+### Running Tests
 
 ```bash
-# Check Qdrant status
-bundle exec rake qdrant:status
-
-# Migrate all documents
-bundle exec rake qdrant:migrate
-
-# Verify migration for an organization
-bundle exec rake qdrant:verify[org_id]
-
-# Run performance benchmark
-bundle exec rake qdrant:benchmark[org_id]
-```
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Client Layer                         │
-│  Web App │ Admin Dashboard │ API Clients                │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────┐
-│                  Rails 8 Application                     │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐   │
-│  │UnifiedSearch│ │ Documents   │ │ Organizations   │   │
-│  │  Service    │ │ Controller  │ │ (Multi-tenant)  │   │
-│  └──────┬──────┘ └──────┬──────┘ └─────────────────┘   │
-└─────────┼───────────────┼───────────────────────────────┘
-          │               │
-    ┌─────┴─────┐   ┌─────┴─────┐
-    │           │   │           │
-    ▼           ▼   ▼           │
-┌───────────┐ ┌───────────┐ ┌───────────────────────────┐
-│  QDRANT   │ │PostgreSQL │ │  Haystack Python Service  │
-│  CLUSTER  │ │           │ ├───────────────────────────┤
-│  (Rust)   │ │ Metadata  │ │ • PDF/DOCX/Excel extract │
-├───────────┤ │ + Keyword │ │ • Embedding generation    │
-│ • HNSW    │ │ search    │ │ • sentence-transformers   │
-│ • <10ms   │ │           │ └───────────────────────────┘
-│ • Raft    │ └───────────┘
-│ • 3-way   │
-│   repl.   │
-└───────────┘
-```
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `app/services/search/unified_search_service.rb` | Search orchestration |
-| `app/services/vector_store/qdrant_cluster_adapter.rb` | Qdrant HTTP client |
-| `app/services/search_router.rb` | Backwards-compatible search API |
-| `app/services/haystack_client.rb` | Python service communication |
-| `services/haystack/app/extractors/*.py` | PDF/DOCX/Excel extraction |
-| `docker-compose.production.yml` | Full production stack |
-| `lib/tasks/qdrant_migration.rake` | Migration utilities |
-
-## Performance
-
-| Metric | Value |
-|--------|-------|
-| Semantic search latency | < 10ms (Qdrant HNSW) |
-| Keyword search latency | ~20-50ms (PostgreSQL) |
-| Hybrid search latency | ~30-60ms (parallel) |
-| Scale tested | 100K vectors (production TBD) |
-
-## Testing
-
-```bash
-# Run tests
+# Rails tests
 bundle exec rspec
 
-# Integration tests (requires Haystack + Qdrant)
-bundle exec rspec spec/integration/
+# Python tests
+cd services/haystack && pytest
 ```
+
+### Database Tables
+
+Key tables for the AI/search functionality:
+- `documents` - Document metadata and content
+- `vector_embeddings` - Stored embeddings with model info
+- `conversation_sessions` - RAG conversation tracking
+- `conversation_messages` - Message history
+- `domain_embedding_models` - Domain-specific models
+- `domain_confidence_scores` - Query domain analytics
+
+## Roadmap
+
+- Comprehensive test suite (RSpec + pytest)
+- Rust embedding service (ONNX Runtime, 10-50x faster)
+- Rust WASM document processor (sandboxed parsing)
+- Production hardening and load testing
 
 ## License
 
-See LICENSE.md
-
----
-
-*Architecture: Qdrant-Centric v3.0*
-*Last updated: December 2025*
+Proprietary - All rights reserved.

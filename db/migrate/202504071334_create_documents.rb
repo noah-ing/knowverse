@@ -21,8 +21,8 @@ class CreateDocuments < ActiveRecord::Migration[8.0]
     add_index :documents, :status
     add_index :documents, :embedding_status
     add_index :documents, :file_type
-    add_index :documents, [:organization_id, :status], {name: 'idx_documents_org_sta'}
-    add_index :documents, [:organization_id, :embedding_status], {name: 'idx_documents_org_emb'}
+    add_index :documents, [:organization_id, :status], name: 'idx_documents_org_sta'
+    add_index :documents, [:organization_id, :embedding_status], name: 'idx_documents_org_emb'
     
     # Make sure pg_trgm is installed before creating text search indexes
     execute "CREATE EXTENSION IF NOT EXISTS pg_trgm"

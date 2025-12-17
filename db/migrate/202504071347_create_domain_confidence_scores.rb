@@ -15,6 +15,6 @@ class CreateDomainConfidenceScores < ActiveRecord::Migration[8.0]
       t.timestamps
     end
     
-    add_index :domain_confidence_scores, [:organization_id, :query_text, :domain], {name: 'idx_domain_confidence_scores_org_que_dom'}
+    add_index :domain_confidence_scores, [:organization_id, :query_text, :domain], name: 'idx_domain_confidence_scores_org_que_dom'
   end
 end

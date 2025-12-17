@@ -17,6 +17,6 @@ class CreateDomainEmbeddingModels < ActiveRecord::Migration[8.0]
     
     add_index :domain_embedding_models, :domain
     add_index :domain_embedding_models, [:organization_id, :domain], name: 'idx_domain_models_on_org_and_domain'
-    add_index :domain_embedding_models, [:organization_id, :name], {name: 'idx_domain_embedding_models_org_nam'}, unique: true, name: 'idx_domain_models_on_org_and_name'
+    add_index :domain_embedding_models, [:organization_id, :name], name: 'idx_domain_models_on_org_and_name', unique: true
   end
 end

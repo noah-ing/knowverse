@@ -1,4 +1,4 @@
-class CreateConversationMessages < ActiveRecord::Migration[7.0]
+class CreateConversationMessages < ActiveRecord::Migration[8.0]
   def change
     create_table :conversation_messages do |t|
       t.references :conversation_session, null: false, foreign_key: true, index: true

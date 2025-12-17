@@ -17,6 +17,11 @@ RUN apk add --no-cache \
     postgresql-dev \
     libffi-dev \
     musl-dev \
+    openblas-dev \
+    lapack-dev \
+    gfortran \
+    rust \
+    cargo \
     && rm -rf /var/cache/apk/*
 
 # Create virtual environment
@@ -25,7 +30,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy and install Python dependencies
 COPY requirements.txt .
-RUN pip install --upgrade pip && \
+RUN pip install --upgrade pip setuptools wheel && \
     pip install -r requirements.txt
 
 # Stage 2: Production (lightweight runtime)

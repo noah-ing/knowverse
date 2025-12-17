@@ -13,7 +13,7 @@ class CreateVectorProjections < ActiveRecord::Migration[8.0]
     end
     
     # Indexes for efficient querying by organization, algorithm, and LOD level
-    add_index :vector_projections, [:organization_id, :algorithm, :lod_level], {name: 'idx_vector_projections_org_alg_lod'}
-    add_index :vector_projections, [:vector_embedding_id, :algorithm], {name: 'idx_vector_projections_vec_alg'}
+    add_index :vector_projections, [:organization_id, :algorithm, :lod_level], name: 'idx_vector_projections_org_alg_lod'
+    add_index :vector_projections, [:vector_embedding_id, :algorithm], name: 'idx_vector_projections_vec_alg'
   end
 end

@@ -4,6 +4,6 @@ class AddDomainFieldsToVectorEmbeddings < ActiveRecord::Migration[8.0]
     add_reference :vector_embeddings, :domain_embedding_model, null: true, foreign_key: true
     
     add_index :vector_embeddings, :domain
-    add_index :vector_embeddings, [:domain, :model_name], {name: 'idx_vector_embeddings_dom_mod'}
+    add_index :vector_embeddings, [:domain, :model_name], name: 'idx_vector_embeddings_dom_mod'
   end
 end

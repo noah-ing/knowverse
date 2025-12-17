@@ -14,8 +14,8 @@ class CreateVectorEmbeddings < ActiveRecord::Migration[8.0]
       t.timestamps
     end
     
-    add_index :vector_embeddings, [:document_id, :dimension], {name: 'idx_vector_embeddings_doc_dim'}, unique: true
-    add_index :vector_embeddings, [:document_id, :model_name], {name: 'idx_vector_embeddings_doc_mod'}, unique: true
+    add_index :vector_embeddings, [:document_id, :dimension], name: 'idx_vector_embeddings_doc_dim', unique: true
+    add_index :vector_embeddings, [:document_id, :model_name], name: 'idx_vector_embeddings_doc_mod', unique: true
     
     # Add primary embedding type to documents
     add_column :documents, :primary_embedding_type, :string, default: 'base'
