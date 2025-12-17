@@ -1,0 +1,21 @@
+# Docker Compose override for external storage (e.g., external HD)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.external.yml up -d
+#
+# This file overrides volume mounts to use external storage at /Volumes/monster/knowverse/
+# Ensure the external drive is mounted before starting containers.
+
+services:
+  qdrant:
+    volumes:
+      - /Volumes/monster/knowverse/qdrant-storage:/qdrant/storage
+      - ./config/qdrant:/qdrant/config:ro
+
+  rust-embedding:
+    volumes:
+      - /Volumes/monster/knowverse/models:/app/models
+
+  # Haystack models can also use external storage
+  haystack:
+    volumes:
+      - ./services/haystack:/app
+      - /Volumes/monster/knowverse/models:/app/models

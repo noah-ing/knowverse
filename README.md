@@ -43,22 +43,25 @@ Enterprise AI knowledge management platform with vector search and RAG capabilit
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Rails 8 API | Working | Multi-tenant, Devise auth, SolidQueue |
-| PostgreSQL | Working | pgvector enabled, full-text search |
-| Redis | Working | Two-tier cache (memory + Redis) |
-| Qdrant | Working | Docker container, HNSW indexes |
-| PDF Extraction | Working | pdfplumber + Rust lopdf |
-| DOCX Extraction | Working | python-docx + Rust docx-rs |
-| Excel Extraction | Working | fastexcel + Rust calamine |
-| Embedding Generation | Working | sentence-transformers + Rust ONNX |
-| Semantic Search | Working | Qdrant vector search |
-| Hybrid Search | Working | RRF fusion (vector + keyword) |
-| RAG Endpoints | Working | OpenAI integration, SSE streaming |
-| Domain Detection | Working | Query domain classification |
-| Rust Embedding | Ready | ONNX Runtime, LRU cache |
-| Rust DocProc | Ready | Sandboxed PDF/Excel/DOCX |
-| CI/CD Pipeline | Working | GitHub Actions, multi-language |
-| Test Suite | Working | RSpec, pytest, Rust tests |
+| Rails 8 API | Implemented | Multi-tenant, Devise auth, SolidQueue |
+| PostgreSQL | Implemented | pgvector enabled, full-text search |
+| Redis | Implemented | Two-tier cache (memory + Redis) |
+| Qdrant | Implemented | Docker container, HNSW indexes |
+| PDF Extraction | Implemented | pdfplumber + Rust lopdf |
+| DOCX Extraction | Implemented | python-docx + Rust docx-rs |
+| Excel Extraction | Implemented | fastexcel + Rust calamine |
+| Embedding Generation | Implemented | sentence-transformers + Rust ONNX |
+| Semantic Search | Implemented | Qdrant vector search |
+| Hybrid Search | Implemented | RRF fusion (vector + keyword) |
+| RAG Endpoints | Implemented | OpenAI integration, SSE streaming |
+| Domain Detection | Implemented | Query domain classification |
+| Rust Embedding | Implemented | ONNX Runtime, LRU cache |
+| Rust DocProc | Implemented | Sandboxed PDF/Excel/DOCX |
+| CI/CD Pipeline | Implemented | GitHub Actions, multi-language |
+| Test Suite | Implemented | RSpec, pytest, Rust tests |
+| Frontend | Stale | Needs review and updates |
+| Large Dataset Testing | Not Started | Requires real-world data validation |
+| Production Hardening | Not Started | Load testing, monitoring, alerts |
 
 ## Quick Start
 
@@ -290,15 +293,23 @@ View workflow runs at: `https://github.com/<owner>/knowverse/actions`
 
 ## Roadmap
 
-- [x] Rust embedding service (ONNX Runtime, 10-50x faster)
+**Implemented:**
+- [x] Rust embedding service (ONNX Runtime)
 - [x] Rust WASM document processor (sandboxed parsing)
-- [x] Comprehensive test suite (RSpec + pytest + Rust)
+- [x] Test suite scaffolding (RSpec + pytest + Rust)
 - [x] CI/CD pipeline (GitHub Actions)
-- [x] ONNX model download script
-- [x] High-quality dataset ingestion pipeline
-- [x] Production security hardening
+- [x] Dataset ingestion scripts
+
+**Next Steps:**
+- [ ] Frontend review and updates (stale for 7 months)
+- [ ] Download and test with large datasets
+- [ ] End-to-end testing with real data
+- [ ] Load testing and performance benchmarks
+- [ ] Production monitoring and alerts
+
+**Future:**
 - [ ] Kubernetes deployment manifests
-- [ ] Multi-node Qdrant cluster configuration
+- [ ] Multi-node Qdrant cluster
 - [ ] Auto-scaling policies
 
 ## License
