@@ -102,3 +102,4 @@ npm-debug.log*
 
 # 🌐 ENVIRONMENT SPECIFIC
 /config/database.yml.backup
+*.pyc
