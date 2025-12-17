@@ -1,0 +1,85 @@
+[package]
+name = "knowverse-docproc"
+version = "1.0.0"
+edition = "2021"
+authors = ["Noah Ingwers <noah@knowverse.ai>"]
+description = "WASM-sandboxed document processing service for Knowverse"
+license = "Proprietary"
+rust-version = "1.75"
+
+[dependencies]
+# Web framework
+axum = { version = "0.8", features = ["macros", "multipart"] }
+tokio = { version = "1.40", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip", "limit"] }
+
+# WASM runtime
+wasmtime = "27"
+wasmtime-wasi = "27"
+
+# Document parsing (native Rust - compiled to WASM plugins)
+calamine = "0.26"           # Excel/ODS parsing
+lopdf = "0.34"              # PDF manipulation
+docx-rs = "0.4"             # DOCX parsing
+zip = "2.2"                 # Archive handling
+xml-rs = "0.8"              # XML parsing for Office docs
+
+# Text processing
+encoding_rs = "0.8"         # Character encoding
+unicode-segmentation = "1.12" # Text segmentation
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async utilities
+futures = "0.3"
+async-trait = "0.1"
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Configuration
+dotenvy = "0.15"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Metrics
+metrics = "0.24"
+metrics-exporter-prometheus = "0.16"
+
+# Temp files
+tempfile = "3.14"
+
+# Base64 for binary transfer
+base64 = "0.22"
+
+# MIME type detection
+infer = "0.16"
+
+# CSV parsing
+csv = "1.3"
+
+# Regex for text processing
+regex = "1.11"
+
+# UUID
+uuid = { version = "1.11", features = ["v4", "serde"] }
+
+# Bytes handling
+bytes = "1.8"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[[bin]]
+name = "knowverse-docproc"
+path = "src/main.rs"

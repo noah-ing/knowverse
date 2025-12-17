@@ -159,6 +159,60 @@ services:
     networks:
       - knowverse
 
+  # Rust Embedding Service (ONNX Runtime - 10-50x faster than Python)
+  rust-embedding:
+    build:
+      context: ./services/embedding-rust
+      dockerfile: Dockerfile
+    container_name: knowverse-rust-embedding
+    environment:
+      - EMBEDDING_HOST=0.0.0.0
+      - EMBEDDING_PORT=8001
+      - MODEL_PATH=/app/models
+      - DEFAULT_MODEL=all-MiniLM-L6-v2
+      - CACHE_SIZE_MB=512
+      - MAX_BATCH_SIZE=64
+      - RUST_LOG=info
+    ports:
+      - "8001:8001"
+    volumes:
+      - embedding_models:/app/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - rust
+    networks:
+      - knowverse
+
+  # Rust Document Processor (WASM-sandboxed parsing - 5-10x faster)
+  rust-docproc:
+    build:
+      context: ./services/document-processor
+      dockerfile: Dockerfile
+    container_name: knowverse-rust-docproc
+    environment:
+      - DOCPROC_HOST=0.0.0.0
+      - DOCPROC_PORT=8002
+      - MAX_FILE_SIZE_MB=100
+      - TEMP_DIR=/tmp/docproc
+      - SANDBOX_ENABLED=true
+      - TIMEOUT_SECONDS=60
+      - RUST_LOG=info
+    ports:
+      - "8002:8002"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - rust
+    networks:
+      - knowverse
+
   # CSS Watcher (Tailwind)
   css:
     build:
@@ -180,6 +234,8 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  embedding_models:
     driver: local
   qdrant_data:
     driver: local

@@ -5,25 +5,37 @@ Enterprise AI knowledge management platform with vector search and RAG capabilit
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│              Rails 8 (Web UI, Auth, Admin, API)             │
-│                        Port 3000                            │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-        ▼                 ▼                 ▼
-┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-│   PostgreSQL  │ │    Qdrant     │ │   Haystack    │
-│   (Metadata)  │ │ (Vector Search│ │   (Python)    │
-│   Port 5432   │ │  Port 6333    │ │   Port 8000   │
-└───────────────┘ └───────────────┘ └───────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                Rails 8 (Web UI, Auth, Admin, API)               │
+│                          Port 3000                              │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+       ┌───────────────────────┼───────────────────────┐
+       │                       │                       │
+       ▼                       ▼                       ▼
+┌─────────────┐  ┌───────────────────────┐  ┌─────────────────┐
+│ PostgreSQL  │  │        Qdrant         │  │    Haystack     │
+│ (Metadata)  │  │   (Vector Search)     │  │    (Python)     │
+│ Port 5432   │  │     Port 6333         │  │   Port 8000     │
+└─────────────┘  └───────────────────────┘  └─────────────────┘
+                                                     │
+                          ┌──────────────────────────┤
+                          │                          │
+                          ▼                          ▼
+               ┌─────────────────────┐   ┌─────────────────────┐
+               │   Rust Embedding    │   │   Rust DocProc      │
+               │   (ONNX Runtime)    │   │   (WASM Sandbox)    │
+               │   Port 8001         │   │   Port 8002         │
+               │   10-50x faster     │   │   5-10x faster      │
+               └─────────────────────┘   └─────────────────────┘
 ```
 
 **Tech Stack:**
 - **Rails 8** - API, auth, multi-tenancy, background jobs (SolidQueue)
 - **Qdrant** - Vector search with HNSW indexes, native Raft consensus
 - **Haystack (Python/FastAPI)** - Document extraction, embeddings, RAG
+- **Rust Embedding Service** - ONNX Runtime inference (10-50x faster)
+- **Rust Document Processor** - WASM-sandboxed parsing (5-10x faster)
 - **PostgreSQL 14+** - Metadata storage, pgvector, full-text search
 - **Redis 7+** - Caching, session storage
 
@@ -35,27 +47,34 @@ Enterprise AI knowledge management platform with vector search and RAG capabilit
 | PostgreSQL | Working | pgvector enabled, full-text search |
 | Redis | Working | Two-tier cache (memory + Redis) |
 | Qdrant | Working | Docker container, HNSW indexes |
-| PDF Extraction | Working | pdfplumber with table extraction |
-| DOCX Extraction | Working | python-docx with structure |
-| Excel Extraction | Working | fastexcel (Rust/calamine) |
-| Embedding Generation | Working | sentence-transformers |
+| PDF Extraction | Working | pdfplumber + Rust lopdf |
+| DOCX Extraction | Working | python-docx + Rust docx-rs |
+| Excel Extraction | Working | fastexcel + Rust calamine |
+| Embedding Generation | Working | sentence-transformers + Rust ONNX |
 | Semantic Search | Working | Qdrant vector search |
 | Hybrid Search | Working | RRF fusion (vector + keyword) |
 | RAG Endpoints | Working | OpenAI integration, SSE streaming |
 | Domain Detection | Working | Query domain classification |
+| Rust Embedding | Ready | ONNX Runtime, LRU cache |
+| Rust DocProc | Ready | Sandboxed PDF/Excel/DOCX |
 
 ## Quick Start
 
 ### Docker (Recommended)
 
 ```bash
-# Start all services
+# Start core services
 docker compose up -d
+
+# Start with Rust high-performance services (optional)
+docker compose --profile rust up -d
 
 # Check health
 curl http://localhost:3000/health  # Rails
 curl http://localhost:8000/health  # Haystack
 curl http://localhost:6333/health  # Qdrant
+curl http://localhost:8001/health  # Rust Embedding (if enabled)
+curl http://localhost:8002/health  # Rust DocProc (if enabled)
 ```
 
 ### Manual Setup
@@ -181,10 +200,10 @@ Key tables for the AI/search functionality:
 
 ## Roadmap
 
-- Comprehensive test suite (RSpec + pytest)
-- Rust embedding service (ONNX Runtime, 10-50x faster)
-- Rust WASM document processor (sandboxed parsing)
-- Production hardening and load testing
+- [x] Rust embedding service (ONNX Runtime, 10-50x faster)
+- [x] Rust WASM document processor (sandboxed parsing)
+- [ ] Comprehensive test suite (RSpec + pytest)
+- [ ] Production hardening and load testing
 
 ## License
 

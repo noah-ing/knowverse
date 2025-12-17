@@ -1,0 +1,76 @@
+[package]
+name = "knowverse-embedding"
+version = "1.0.0"
+edition = "2021"
+authors = ["Noah Ingwers <noah@knowverse.ai>"]
+description = "High-performance ONNX-based embedding service for Knowverse"
+license = "Proprietary"
+rust-version = "1.75"
+
+[dependencies]
+# Web framework
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1.40", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip"] }
+
+# ONNX Runtime for ML inference
+ort = { version = "2.0.0-rc.9", features = ["load-dynamic"] }
+
+# Tokenization (HuggingFace tokenizers in Rust)
+tokenizers = "0.20"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async utilities
+futures = "0.3"
+
+# Caching
+moka = { version = "0.12", features = ["future"] }
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Configuration
+config = "0.14"
+dotenvy = "0.15"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Metrics
+metrics = "0.24"
+metrics-exporter-prometheus = "0.16"
+
+# HTTP client for model downloads
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# Numerical operations
+ndarray = "0.16"
+
+# UUID generation
+uuid = { version = "1.11", features = ["v4", "serde"] }
+
+# System info
+num_cpus = "1.16"
+
+# Compression for model files
+flate2 = "1.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 1
+
+[[bin]]
+name = "knowverse-embedding"
+path = "src/main.rs"
