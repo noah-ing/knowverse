@@ -60,7 +60,7 @@ Enterprise AI knowledge management platform with vector search and RAG capabilit
 | CI/CD Pipeline | Implemented | GitHub Actions, multi-language |
 | Test Suite | Implemented | RSpec, pytest, Rust tests |
 | Frontend | Stale | Needs review and updates |
-| Large Dataset Testing | Not Started | Requires real-world data validation |
+| Large Dataset Testing | In Progress | SEC EDGAR 10-K/10-Q ingestion running |
 | Production Hardening | Not Started | Load testing, monitoring, alerts |
 
 ## Quick Start
@@ -263,6 +263,51 @@ python scripts/ingest_datasets.py --dataset squad --export squad.jsonl --limit 5
 | arxiv | 203K | ~5GB | Scientific papers |
 | stackexchange | 15M+ | ~8GB | Technical Q&A |
 
+### Enterprise Dataset Ingestion
+
+For production-grade ingestion with OpenAI embeddings and resume capability:
+
+```bash
+# Install dependencies
+pip install openai requests qdrant-client python-dotenv
+
+# Set OpenAI API key
+export OPENAI_API_KEY=sk-...
+
+# List available datasets and models
+python scripts/enterprise_ingest.py --list
+
+# Ingest SEC EDGAR 10-K/10-Q filings (5 years)
+python scripts/enterprise_ingest.py --dataset sec-edgar --years 5
+
+# Ingest with specific model and version
+python scripts/enterprise_ingest.py --dataset sec-edgar --model openai-3-small --version 2
+
+# Resume interrupted ingestion (automatic)
+python scripts/enterprise_ingest.py --dataset sec-edgar --years 5
+
+# Start fresh (ignore progress)
+python scripts/enterprise_ingest.py --dataset sec-edgar --years 5 --fresh
+
+# Run overnight with nohup
+PYTHONUNBUFFERED=1 nohup python3 scripts/enterprise_ingest.py --dataset sec-edgar --years 5 >> ingestion.log 2>&1 &
+```
+
+**Features:**
+- OpenAI embeddings (ada-002, text-embedding-3-small/large)
+- Versioned collections: `org_{id}_v{version}_{model}` for A/B testing
+- Resume capability with accession number logging
+- Atomic progress file updates (crash-safe)
+- Recursive character splitting with semantic awareness
+- Position metadata for context reconstruction
+
+**Embedding Models:**
+| Model | Dimension | Cost/1K tokens | Best For |
+|-------|-----------|----------------|----------|
+| text-embedding-ada-002 | 1536 | $0.0001 | General purpose |
+| text-embedding-3-small | 1536 | $0.00002 | Cost-effective |
+| text-embedding-3-large | 3072 | $0.00013 | Highest quality |
+
 ### Database Tables
 
 Key tables for the AI/search functionality:
@@ -302,8 +347,9 @@ View workflow runs at: `https://github.com/<owner>/knowverse/actions`
 
 **Next Steps:**
 - [ ] Frontend review and updates (stale for 7 months)
-- [ ] Download and test with large datasets
-- [ ] End-to-end testing with real data
+- [x] Enterprise SEC EDGAR ingestion pipeline
+- [ ] Complete SEC 10-K/10-Q corpus (~320K filings)
+- [ ] End-to-end testing with real financial data
 - [ ] Load testing and performance benchmarks
 - [ ] Production monitoring and alerts
 
