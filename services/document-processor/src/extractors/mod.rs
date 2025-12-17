@@ -12,7 +12,7 @@ pub use excel::ExcelExtractor;
 pub use docx::DocxExtractor;
 pub use csv::CsvExtractor;
 pub use text::TextExtractor;
-pub use chunker::TextChunker;
+pub use chunker::{TextChunker, TextChunk, ChunkStrategy};
 
 use crate::error::{DocProcError, Result};
 use serde::{Deserialize, Serialize};

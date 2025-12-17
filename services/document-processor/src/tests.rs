@@ -442,7 +442,7 @@ mod error_tests {
         let error = DocProcError::InvalidInput("bad data".to_string());
         assert!(error.to_string().contains("bad data"));
 
-        let error = DocProcError::ExtractionError("parse failed".to_string());
+        let error = DocProcError::ExtractionFailed("parse failed".to_string());
         assert!(error.to_string().contains("parse failed"));
     }
 }
