@@ -1,0 +1,113 @@
+# Docker ignore file for Knowverse enterprise development environment
+# Excludes unnecessary files from Docker build context for faster builds
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+docs/
+testing/README.md
+
+# Development files
+.env*
+!.env.example
+docker-compose*.yml
+Dockerfile*
+
+# Rails development files
+log/*
+tmp/*
+storage/*
+public/packs*
+public/assets*
+node_modules/
+.bundle/
+vendor/bundle/
+
+# Database files
+*.sqlite3
+*.db
+db/*.sqlite3
+
+# Gemfile.lock - generated fresh in container for platform compatibility
+Gemfile.lock
+
+# Cache and temporary files
+.cache/
+.tmp/
+*.tmp
+*.cache
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Windows platform-specific files (being removed)
+bin/windows_*
+*.bat
+
+# Cline documentation (contains sensitive analysis)
+cline_docs/
+
+# Test files
+spec/
+test/
+.rspec
+coverage/
+
+# Ruby/Rails specific
+*.gem
+*.rbc
+/.config
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/.yardoc/
+/_yardoc/
+/doc/
+/rdoc/
+/.bundle/
+/lib/bundler/man/
+
+# Python cache (for Haystack service)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

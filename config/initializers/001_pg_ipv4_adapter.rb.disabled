@@ -1,0 +1,238 @@
+# 001_pg_ipv4_adapter.rb
+# Simple PostgreSQL IPv4 Adapter - Forces connections to use 127.0.0.1 instead of localhost
+# Inspired by gold_saas_bp approach
+
+# Log helper for output while maintaining compatibility across environments
+def log_pg_ipv4(message)
+  if defined?(Rails) && Rails.logger
+    Rails.logger.info "PG-IPv4: #{message}"
+  else
+    puts "PG-IPv4: #{message}"
+  end
+end
+
+log_pg_ipv4 "Loading PostgreSQL IPv4 adapter"
+
+begin
+  require 'pg'
+
+  # Check if the PG gem is available
+  if defined?(PG::Connection)
+    log_pg_ipv4 "Patching PG::Connection to force IPv4"
+
+    # Store original connect method
+    if PG::Connection.respond_to?(:connect)
+      original_connect = PG::Connection.method(:connect)
+
+      # Patch connect method to always use 127.0.0.1 instead of localhost
+      # with simple retry logic
+      PG::Connection.define_singleton_method(:connect) do |*args|
+        max_attempts = 3
+        attempt = 0
+        retry_wait = 1.0
+
+        begin
+          attempt += 1
+          
+          # Replace localhost with 127.0.0.1 in connection params
+          if args.length == 1
+            if args[0].is_a?(String) && args[0].include?('localhost')
+              args[0] = args[0].gsub('localhost', '127.0.0.1')
+              log_pg_ipv4 "Modified connection string to use 127.0.0.1"
+            elsif args[0].is_a?(Hash) && args[0][:host].to_s == 'localhost'
+              args[0] = args[0].merge(host: '127.0.0.1')
+              log_pg_ipv4 "Modified connection hash to use 127.0.0.1"
+            end
+          end
+          
+          # Call original method
+          original_connect.call(*args)
+        rescue => e
+          if attempt < max_attempts
+            sleep_time = retry_wait * (2 ** (attempt - 1))
+            log_pg_ipv4 "Connection failed: #{e.message}, retrying in #{sleep_time}s (#{attempt}/#{max_attempts})"
+            sleep(sleep_time)
+            retry
+          else
+            log_pg_ipv4 "Failed after #{max_attempts} attempts, raising error"
+            raise
+          end
+        end
+      end
+      
+      log_pg_ipv4 "Successfully patched PG::Connection.connect method"
+    end
+  end
+rescue LoadError
+  log_pg_ipv4 "PG gem not found, skipping patches"
+end
+
+# Force IPv4 configuration for ActiveRecord by patching at multiple levels
+# This must happen early, so we directly patch if available, or set up a hook
+
+# Direct patching of PostgreSQLAdapter if already loaded
+if defined?(ActiveRecord) && defined?(ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
+  log_pg_ipv4 "Direct patching of PostgreSQL adapter (already loaded)"
+  
+  module PgIpv4ConnectionPatch
+    def resolve_database_url(url)
+      log_pg_ipv4 "Resolving database URL: #{url}"
+      url.gsub("localhost", "127.0.0.1")
+    end
+    
+    # Override this method explicitly
+    def resolve_database_host
+      log_pg_ipv4 "Resolving database host to 127.0.0.1"
+      "127.0.0.1"
+    end
+    
+    def new_client(config)
+      # Force 127.0.0.1 for IPv4
+      if config[:host] == 'localhost'
+        config = config.merge(host: '127.0.0.1')
+        log_pg_ipv4 "Forcing IPv4 by changing localhost to 127.0.0.1 in config: #{config[:host]}"
+      end
+      
+      # Add retry logic
+      max_attempts = 3
+      attempt = 0
+      retry_wait = 1.0
+      
+      begin
+        attempt += 1
+        log_pg_ipv4 "Connecting to PostgreSQL (attempt #{attempt}/#{max_attempts})"
+        super(config)
+      rescue => e
+        if attempt < max_attempts
+          sleep_time = retry_wait * (2 ** (attempt - 1))
+          log_pg_ipv4 "Connection failed: #{e.message}, retrying in #{sleep_time}s"
+          sleep(sleep_time)
+          retry
+        else
+          log_pg_ipv4 "Failed after #{max_attempts} attempts: #{e.message}"
+          raise
+        end
+      end
+    end
+  end
+  
+  # Apply patches
+  ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(PgIpv4ConnectionPatch)
+  log_pg_ipv4 "Applied IPv4 patches to PostgreSQL adapter"
+  
+  # Also patch config URL handling if it exists
+  if defined?(ActiveRecord::DatabaseConfigurations::UrlConfig)
+    module PgIpv4UrlConfigPatch
+      def build_url_hash(url)
+        # Replace localhost with 127.0.0.1 in URL before parsing
+        if url.include?('localhost')
+          url = url.gsub('localhost', '127.0.0.1')
+          log_pg_ipv4 "Modified DATABASE_URL to use 127.0.0.1: #{url}"
+        end
+        hash = super(url)
+        hash
+      end
+    end
+    
+    ActiveRecord::DatabaseConfigurations::UrlConfig.prepend(PgIpv4UrlConfigPatch)
+    log_pg_ipv4 "Patched URL config handling for IPv4"
+  end
+else
+  # Set up hooks for when ActiveRecord is loaded
+  if defined?(Rails)
+    log_pg_ipv4 "Setting up ActiveRecord load hooks"
+    
+    ActiveSupport.on_load(:active_record) do
+      log_pg_ipv4 "ActiveRecord loaded, applying PostgreSQL IPv4 patches"
+      
+      if defined?(ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
+        module PgIpv4ConnectionPatch
+          def resolve_database_url(url)
+            log_pg_ipv4 "Resolving database URL: #{url}"
+            url.gsub("localhost", "127.0.0.1")
+          end
+          
+          def resolve_database_host
+            log_pg_ipv4 "Resolving database host to 127.0.0.1"
+            "127.0.0.1"
+          end
+          
+          def new_client(config)
+            # Force 127.0.0.1 for IPv4
+            if config[:host] == 'localhost'
+              config = config.merge(host: '127.0.0.1')
+              log_pg_ipv4 "Forcing IPv4 by changing localhost to 127.0.0.1 in config"
+            end
+            
+            # Add retry logic
+            max_attempts = 3
+            attempt = 0
+            retry_wait = 1.0
+            
+            begin
+              attempt += 1
+              log_pg_ipv4 "Connecting to PostgreSQL (attempt #{attempt}/#{max_attempts})"
+              super(config)
+            rescue => e
+              if attempt < max_attempts
+                sleep_time = retry_wait * (2 ** (attempt - 1))
+                log_pg_ipv4 "Connection failed: #{e.message}, retrying in #{sleep_time}s"
+                sleep(sleep_time)
+                retry
+              else
+                log_pg_ipv4 "Failed after #{max_attempts} attempts: #{e.message}"
+                raise
+              end
+            end
+          end
+        end
+        
+        ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(PgIpv4ConnectionPatch)
+        log_pg_ipv4 "Applied IPv4 patches to PostgreSQL adapter"
+        
+        # Also patch config URL handling if it exists
+        if defined?(ActiveRecord::DatabaseConfigurations::UrlConfig)
+          module PgIpv4UrlConfigPatch
+            def build_url_hash(url)
+              # Replace localhost with 127.0.0.1 in URL before parsing
+              if url.include?('localhost')
+                url = url.gsub('localhost', '127.0.0.1')
+                log_pg_ipv4 "Modified DATABASE_URL to use 127.0.0.1: #{url}"
+              end
+              hash = super(url)
+              hash
+            end
+          end
+          
+          ActiveRecord::DatabaseConfigurations::UrlConfig.prepend(PgIpv4UrlConfigPatch)
+          log_pg_ipv4 "Patched URL config handling for IPv4"
+        end
+      else
+        log_pg_ipv4 "WARNING: PostgreSQLAdapter not defined yet, patches not applied"
+      end
+    end
+  else
+    log_pg_ipv4 "WARNING: Rails not defined, cannot set up ActiveRecord loading hooks"
+  end
+end
+
+# Also patch the Rails database configuration directly
+if defined?(Rails) && defined?(Rails.application) && Rails.application
+  begin
+    log_pg_ipv4 "Patching Rails database configuration directly"
+    configs = Rails.application.config.database_configuration
+    if configs && configs["development"] && configs["development"]["host"] == "localhost"
+      configs["development"]["host"] = "127.0.0.1"
+      log_pg_ipv4 "Changed development database host from localhost to 127.0.0.1"
+    end
+    
+    if configs && configs["test"] && configs["test"]["host"] == "localhost"
+      configs["test"]["host"] = "127.0.0.1"
+      log_pg_ipv4 "Changed test database host from localhost to 127.0.0.1"
+    end
+  rescue => e
+    log_pg_ipv4 "Error patching Rails database configuration: #{e.message}"
+  end
+end
+
+log_pg_ipv4 "IPv4 adapter initialization complete"

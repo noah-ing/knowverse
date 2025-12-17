@@ -1,0 +1,140 @@
+<% content_for :page_title, "LLM Providers" %>
+
+<div class="container mx-auto px-4 py-8">
+  <!-- Main Header Card -->
+  <%= render 'shared/card', animation_delay: 0.1 do |card| %>
+    <% card.with_header do %>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <div class="mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-lg font-semibold kv-text-primary">LLM Provider Management</h1>
+            <p class="text-sm kv-text-secondary">Configure and test language model providers for your RAG system</p>
+          </div>
+        </div>
+        
+        <%= render 'shared/button', 
+                text: 'Settings', 
+                url: admin_llm_providers_settings_path, 
+                variant: 'primary', 
+                size: 'sm',
+                icon: 'cog',
+                animate: true,
+                animation_delay: 0.1 %>
+      </div>
+    <% end %>
+    
+    <% card.with_body do %>
+    
+      <!-- Available Providers Card -->
+      <%= render 'shared/card', animation_delay: 0.2, border: true do |providers_card| %>
+        <% providers_card.with_header do %>
+          <div class="flex items-center">
+            <div class="mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium kv-text-primary">Available LLM Providers</h3>
+              <p class="text-xs kv-text-secondary">These are the currently configured LLM providers for the RAG system.</p>
+            </div>
+          </div>
+        <% end %>
+        
+        <% providers_card.with_body do %>
+      
+          <div class="animate-fade-in" style="animation-delay: 0.25s">
+            <% if @providers.present? %>
+              <ul class="mt-4 divide-y divide-gray-200 dark:divide-gray-700">
+                <% @providers.each_with_index do |provider, index| %>
+                  <li class="py-3 transition-all duration-300 animate-fade-in" style="animation-delay: <%= 0.3 + (index * 0.05) %>s">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center">
+                        <% provider_icon = case provider[:name].downcase
+                           when /openai/, /gpt/
+                             '<svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>'
+                           when /claude/, /anthropic/
+                             '<svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>'
+                           when /llama/, /meta/, /ai21/, /cohere/
+                             '<svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>'
+                           else
+                             '<svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>'
+                           end %>
+                        <div class="flex items-center">
+                          <%= raw provider_icon %>
+                          <p class="text-blue-600 dark:text-blue-400 font-medium truncate">
+                            <%= provider[:name] %>
+                            <% if provider[:default] %>
+                              <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                Default
+                              </span>
+                            <% end %>
+                          </p>
+                        </div>
+                      </div>
+                      <div class="ml-2 flex-shrink-0">
+                        <%= button_to admin_test_llm_provider_path(provider: provider[:name]), 
+                              method: :post,
+                              class: "inline-block" do %>
+                          <%= render 'shared/button', 
+                                text: 'Test', 
+                                variant: 'secondary',
+                                size: 'sm',
+                                icon: 'check-circle',
+                                animate: true,
+                                animation_delay: 0.1 %>
+                        <% end %>
+                      </div>
+                    </div>
+                  </li>
+                <% end %>
+              </ul>
+            <% else %>
+              <div class="py-10 text-center animate-fade-in" style="animation-delay: 0.3s">
+                <svg class="h-16 w-16 mx-auto kv-text-secondary mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+                <h3 class="text-lg font-medium kv-text-primary mb-2">No Providers Available</h3>
+                <p class="kv-text-secondary">Configure your providers in the settings.</p>
+              </div>
+            <% end %>
+        </div>
+      <% end %>
+      <% end %>
+      
+      <!-- Provider Configuration Card -->
+      <%= render 'shared/card', animation_delay: 0.7, border: true do |config_card| %>
+        <% config_card.with_header do %>
+          <div class="flex items-center">
+            <div class="mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-medium kv-text-primary">Provider Configuration</h3>
+              <p class="text-xs kv-text-secondary">LLM providers require API keys to be configured. Go to settings to manage your API keys and provider configurations.</p>
+            </div>
+          </div>
+        <% end %>
+        
+        <% config_card.with_body do %>
+          <div class="flex justify-center mt-6 animate-fade-in" style="animation-delay: 0.8s">
+            <%= render 'shared/button', 
+                  text: 'Go to Settings', 
+                  url: admin_llm_providers_settings_path,
+                  variant: 'primary',
+                  icon: 'cog',
+                  animate: true,
+                  animation_delay: 0.1 %>
+          </div>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

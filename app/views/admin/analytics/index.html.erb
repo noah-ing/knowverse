@@ -1,0 +1,166 @@
+<%= javascript_include_tag "chartkick" %>
+
+<div class="px-6 py-4">
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">Analytics Dashboard</h1>
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-2">Total Visits</h2>
+      <p class="text-3xl font-bold text-blue-600"><%= @visits_count %></p>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-2">Total Events</h2>
+      <p class="text-3xl font-bold text-blue-600"><%= @events_count %></p>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-2">Total Users</h2>
+      <p class="text-3xl font-bold text-blue-600"><%= @users_count %></p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Visits by Day</h2>
+      <%= line_chart @visits_per_day, colors: ["#3B82F6"], min: 0 %>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Events by Day</h2>
+      <%= line_chart @events_per_day, colors: ["#10B981"], min: 0 %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Subscription Status Distribution</h2>
+      <%= pie_chart @subscription_counts, colors: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"] %>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Top Referring Domains</h2>
+      <%= bar_chart @top_referrers.reject { |domain, _| domain.nil? }, colors: ["#6366F1"] %>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-4 mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-gray-700">Recent Visits</h2>
+      <%= link_to "View All Events", events_admin_analytics_path, class: "text-blue-600 hover:text-blue-800" %>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visitor</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrer</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @recent_visits.each do |visit| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <% if visit.user %>
+                  <%= link_to visit.user.email, admin_user_path(visit.user), class: "text-blue-600 hover:text-blue-800" %>
+                <% else %>
+                  <span class="text-gray-500">Anonymous</span>
+                <% end %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                <%= visit.started_at.strftime("%b %d, %Y %H:%M") %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                <%= visit.referring_domain || "Direct" %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                <%= visit.device_type %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-4 mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">Magic Link Login Events</h2>
+    
+    <% if @magic_link_logins.present? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% @magic_link_logins.each do |event| %>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <% if event.user %>
+                    <%= link_to event.user.email, admin_user_path(event.user), class: "text-blue-600 hover:text-blue-800" %>
+                  <% else %>
+                    <span class="text-gray-500">Anonymous</span>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                  <%= event.time.strftime("%b %d, %Y %H:%M") %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-gray-500">No magic link login events recorded yet.</p>
+    <% end %>
+  </div>
+  
+  <div class="bg-white rounded-lg shadow p-4 mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">Subscription Change Events</h2>
+    
+    <% if @subscription_events.present? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% @subscription_events.each do |event| %>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <% if event.user %>
+                    <%= link_to event.user.email, admin_user_path(event.user), class: "text-blue-600 hover:text-blue-800" %>
+                  <% else %>
+                    <span class="text-gray-500">Anonymous</span>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                  <%= event.properties["plan"] || "Unknown" %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                  <%= event.properties["action"] || "Changed" %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                  <%= event.time.strftime("%b %d, %Y %H:%M") %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-gray-500">No subscription change events recorded yet.</p>
+    <% end %>
+  </div>
+</div>

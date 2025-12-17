@@ -1,0 +1,2 @@
+module Users::MagicLinksHelper
+end

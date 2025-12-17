@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <title><%= content_for?(:title) ? yield(:title) : "KnowVerse" %></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="KnowVerse - AI-powered knowledge base with semantic search and RAG capabilities">
+    <meta name="theme-color" content="#4f46e5" data-dark-mode-target="themeColor">
+    <meta name="color-scheme" content="light dark">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    
+    <%# Tailwind CSS styles %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    
+    <%# Main application stylesheet %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    
+    <%# Main application javascript (includes Stimulus controllers via application.js) %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+    
+    <%# Ensure keyboard shortcuts are available globally %>
+    <script defer>
+      document.addEventListener('keydown', function(event) {
+        // Show keyboard shortcuts when ? is pressed
+        if (event.key === '?' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+          const shortcutsPanel = document.getElementById('keyboard-shortcuts-panel');
+          if (shortcutsPanel) shortcutsPanel.classList.remove('hidden');
+        }
+        
+        // Toggle dark mode with Shift + D
+        if (event.key === 'D' && event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+          const darkModeToggle = document.querySelector('[data-dark-mode-target="toggle"]');
+          if (darkModeToggle) darkModeToggle.click();
+        }
+      });
+    </script>
+    
+    <%# Ahoy.js for analytics tracking (Temporarily removed to debug JS issues) %>
+    <%# if Rails.env.production? || Rails.env.development? %>
+    <%#   <%= javascript_include_tag "ahoy", "data-turbo-track": "reload" %>
+    <%# end %>
+    
+    <%# Preload key assets for faster loading %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  </head>
+
+  <body class="min-h-screen flex flex-col transition-colors duration-300 bg-gray-50 dark:bg-gray-900 <%= user_signed_in? ? 'user-signed-in' : 'user-signed-out' %>" 
+        data-controller="dark-mode" 
+        id="application-body">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white dark:bg-gray-800 p-2 kv-text-accent z-50">Skip to content</a>
+    
+    <header class="sticky top-0 z-30 shadow-md transition-all duration-300 ease-in-out border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <nav class="container mx-auto px-4 py-3" data-controller="mobile-menu">
+        <div class="flex justify-between items-center">
+          <a href="<%= root_path %>" class="group text-2xl font-bold kv-text-accent transition-all duration-300 hover:text-primary-700 dark:hover:text-primary-300 relative">
+            <span class="relative inline-block">KnowVerse
+              <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+            </span>
+          </a>
+          
+          <div class="flex items-center space-x-3">
+            <!-- Dark mode toggle -->
+            <div class="kv-dark-mode-toggle mr-2 relative transition-all duration-300 ease-in-out transform hover:scale-110" 
+                 data-dark-mode-target="toggle" 
+                 data-action="click->dark-mode#toggle" 
+                 role="switch" 
+                 aria-checked="false" 
+                 aria-label="Toggle dark mode">
+              <span class="sr-only">Toggle dark mode</span>
+              <span class="absolute right-full mr-2 text-xs kv-text-secondary hidden md:inline-block">
+                <span data-dark-mode-target="modeText">Light</span>
+              </span>
+            </div>
+            
+            <% if user_signed_in? %>
+              <div class="hidden md:flex items-center space-x-4">
+                <%= link_to dashboard_path, { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+                  <span class="relative inline-block">Dashboard
+                    <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                  </span>
+                <% end %>
+                
+                <%= link_to organizations_path, { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+                  <span class="relative inline-block">Organizations
+                    <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                  </span>
+                <% end %>
+                
+                <% if current_organization %>
+                  <%= link_to organization_documents_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+                    <span class="relative inline-block">Documents
+                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                    </span>
+                  <% end %>
+                  
+                  <%= link_to organization_vectors_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+                    <span class="relative inline-block">Vectors
+                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                    </span>
+                  <% end %>
+                  
+                  <%= link_to organization_rag_index_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+                    <span class="relative inline-block">RAG
+                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                    </span>
+                  <% end %>
+                <% end %>
+                
+                <div class="relative" data-controller="dropdown">
+                  <button data-action="dropdown#toggle click@window->dropdown#hide" 
+                          data-dropdown-target="button"
+                          class="flex items-center px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 group"
+                          aria-haspopup="true" aria-expanded="false">
+                    <span class="mr-1 relative">
+                      <%= current_user.display_name %>
+                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                    </span>
+                    <% if current_user.avatar.attached? %>
+                      <%= image_tag current_user.avatar.variant(resize_to_limit: [32, 32]), class: "h-8 w-8 rounded-full ml-1 ring-2 ring-transparent group-hover:ring-primary-400 transition-all duration-300" %>
+                    <% else %>
+                      <div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center ml-1 ring-2 ring-transparent group-hover:ring-primary-400 transition-all duration-300">
+                        <span class="text-sm kv-text-secondary"><%= current_user.display_name[0].upcase %></span>
+                      </div>
+                    <% end %>
+                    <svg class="w-4 h-4 ml-1 transition-transform duration-300 group-hover:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                
+                  <div data-dropdown-target="menu" 
+                       class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 transition-all transform duration-300 origin-top-right scale-95 opacity-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none"
+                       role="menu" aria-orientation="vertical">
+                    <p class="px-4 py-2 text-sm kv-text-secondary border-b border-gray-200 dark:border-gray-700">
+                      <% if current_user.current_plan %>
+                        <span class="font-semibold"><%= current_user.current_plan.name %> Plan</span>
+                      <% else %>
+                        <span class="font-semibold">Free Plan</span>
+                      <% end %>
+                    </p>
+                    
+                    <%= link_to 'Profile', users_profile_path, 
+                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 hover:kv-text-accent transition-all duration-200", 
+                        role: "menuitem" %>
+                    <%= link_to 'Notification Settings', users_preferences_path, 
+                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 hover:kv-text-accent transition-all duration-200", 
+                        role: "menuitem" %>
+                    <%= link_to 'Usage Statistics', users_usage_path, 
+                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 hover:kv-text-accent transition-all duration-200", 
+                        role: "menuitem" %>
+                    <%= link_to 'Account Settings', users_account_path, 
+                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 hover:kv-text-accent transition-all duration-200", 
+                        role: "menuitem" %>
+                    
+                    <% if current_user.admin? %>
+                      <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                      <%= link_to 'Admin Dashboard', admin_dashboard_path, 
+                          class: "block px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200", 
+                          role: "menuitem" %>
+                    <% end %>
+                    
+                    <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+            <%= button_to 'Sign out', destroy_user_session_path, method: :delete, 
+                class: "block w-full text-left px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-error-800 dark:hover:text-error-300 bg-transparent border-0 cursor-pointer transition-all duration-200", 
+                role: "menuitem" %>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Mobile menu button -->
+              <button type="button" class="md:hidden kv-text-secondary hover:kv-text-accent focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md transition-all duration-300 hover:scale-110"
+                      data-mobile-menu-target="menuButton"
+                      data-action="mobile-menu#toggle"
+                      aria-expanded="false"
+                      aria-controls="mobile-menu-panel"
+                      aria-label="Toggle mobile menu">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" 
+                     data-mobile-menu-target="openIcon">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                     data-mobile-menu-target="closeIcon">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            <% else %>
+              <%= render 'shared/button',
+                       text: "Sign in",
+                       variant: "primary",
+                       animate: "fade",
+                       href: new_user_session_path %>
+            <% end %>
+          </div>
+        </div>
+        
+        <!-- Mobile menu panel -->
+        <% if user_signed_in? %>
+          <div id="mobile-menu-panel" 
+               class="md:hidden hidden mt-4 pb-3 border-t border-gray-200 dark:border-gray-700 transition-all transform duration-300 origin-top opacity-0 scale-95"
+               data-mobile-menu-target="panel"
+               role="menu">
+            <div class="space-y-1 py-2">
+              <%= link_to 'Dashboard', dashboard_path, class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
+              <%= link_to 'Organizations', organizations_path, class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
+              <% if current_organization %>
+                <%= link_to 'Documents', organization_documents_path(current_organization), class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
+                <%= link_to 'Vectors', organization_vectors_path(current_organization), class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
+                <%= link_to 'RAG', organization_rag_index_path(current_organization), class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
+              <% end %>
+            </div>
+            
+            <div class="pt-4 pb-2 border-t border-gray-200 dark:border-gray-700">
+              <div class="flex items-center px-4">
+                <% if current_user.avatar.attached? %>
+                  <%= image_tag current_user.avatar.variant(resize_to_limit: [40, 40]), class: "h-10 w-10 rounded-full ring-2 ring-primary-200 dark:ring-primary-700 transition-all duration-300" %>
+                <% else %>
+                  <div class="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                    <span class="text-sm kv-text-secondary font-medium"><%= current_user.display_name[0].upcase %></span>
+                  </div>
+                <% end %>
+                <div class="ml-3">
+                  <p class="text-base font-medium kv-text-primary"><%= current_user.display_name %></p>
+                  <p class="text-sm kv-text-secondary"><%= current_user.email %></p>
+                </div>
+              </div>
+              
+              <div class="mt-3 space-y-1 px-2">
+                <%= link_to 'Profile', users_profile_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
+                <%= link_to 'Notifications', users_preferences_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
+                <%= link_to 'Usage', users_usage_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
+                <%= link_to 'Account', users_account_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
+                <% if current_user.admin? %>
+                  <%= link_to 'Admin', admin_dashboard_path, class: "block px-3 py-2 rounded-md text-base text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
+                <% end %>
+                <%= button_to 'Sign out', destroy_user_session_path, method: :delete, class: "w-full text-left block px-3 py-2 rounded-md text-base text-error-600 dark:text-error-400 hover:bg-gray-100 dark:hover:bg-gray-800 bg-transparent border-0 cursor-pointer transition-colors duration-200" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </nav>
+    </header>
+
+    <% if notice || alert || flash[:success] || flash[:error] || flash[:warning] %>
+      <div class="container mx-auto px-4 mt-4 space-y-2">
+        <% if notice %>
+          <div class="kv-alert kv-alert-success" role="alert">
+            <div class="kv-alert-icon">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="kv-alert-content">
+              <div class="kv-alert-title">Success</div>
+              <p class="kv-alert-message"><%= notice %></p>
+            </div>
+          </div>
+        <% end %>
+        
+        <% if alert %>
+          <div class="kv-alert kv-alert-error" role="alert">
+            <div class="kv-alert-icon">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="kv-alert-content">
+              <div class="kv-alert-title">Error</div>
+              <p class="kv-alert-message"><%= alert %></p>
+            </div>
+          </div>
+        <% end %>
+        
+        <% if flash[:success] %>
+          <div class="kv-alert kv-alert-success" role="alert">
+            <div class="kv-alert-icon">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="kv-alert-content">
+              <div class="kv-alert-title">Success</div>
+              <p class="kv-alert-message"><%= flash[:success] %></p>
+            </div>
+          </div>
+        <% end %>
+        
+        <% if flash[:error] %>
+          <div class="kv-alert kv-alert-error" role="alert">
+            <div class="kv-alert-icon">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="kv-alert-content">
+              <div class="kv-alert-title">Error</div>
+              <p class="kv-alert-message"><%= flash[:error] %></p>
+            </div>
+          </div>
+        <% end %>
+        
+        <% if flash[:warning] %>
+          <div class="kv-alert kv-alert-warning" role="alert">
+            <div class="kv-alert-icon">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="kv-alert-content">
+              <div class="kv-alert-title">Warning</div>
+              <p class="kv-alert-message"><%= flash[:warning] %></p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <main id="main-content" class="container mx-auto px-4 py-6 flex-grow transition-opacity duration-300 animate-in ease-out">
+      <!-- Page header breadcrumbs when provided -->
+      <% if content_for?(:page_header) %>
+        <div class="mb-6 animation-fadeIn">
+          <%= yield :page_header %>
+        </div>
+      <% end %>
+      <%= yield %>
+    </main>
+    
+    <footer class="shadow-inner py-6 mt-8 transition-colors duration-300 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+          <div class="text-center md:text-left kv-text-secondary text-sm">
+            <p>&copy; <%= Time.current.year %> KnowVerse. All rights reserved.</p>
+          </div>
+          
+          <div class="flex items-center space-x-4">
+            <a href="#" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200">Privacy</a>
+            <a href="#" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200">Terms</a>
+            <a href="#" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200">Documentation</a>
+            <button type="button" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200"
+                    data-action="click->dark-mode#toggle" 
+                    aria-label="Toggle dark mode">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </footer>
+    
+    <!-- Keyboard shortcuts helper (hidden by default) -->
+    <div id="keyboard-shortcuts-panel" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" role="dialog" aria-modal="true" data-controller="keyboard-shortcuts">
+      <div class="bg-white dark:bg-gray-800 max-w-2xl w-full mx-auto rounded-lg shadow-xl p-6 transform transition-all scale-in duration-300 ease-out">
+        <div class="flex justify-between items-center

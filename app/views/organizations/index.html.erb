@@ -1,0 +1,137 @@
+<%# 
+  Organizations Index Page
+  A fully refactored page according to KnowVerse design patterns with:
+  - Card-based structure with consistent styling
+  - Proper animations and transitions
+  - Dark mode compatibility
+  - Responsive design
+  - Enhanced organization cards with improved visual hierarchy
+%>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <%# Page Header %>
+  <div class="flex justify-between items-center mb-6 animate-in slide-down duration-300">
+    <div>
+      <h1 class="text-2xl font-bold kv-text-primary">Organizations</h1>
+      <p class="text-sm kv-text-secondary">Manage your organizations and workspaces</p>
+    </div>
+    
+    <%= render partial: "shared/button", locals: {
+      text: "New Organization",
+      variant: "primary",
+      href: new_organization_path,
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+      </svg>'
+    } %>
+  </div>
+  
+  <% if @organizations.any? %>
+    <%# Organizations Grid %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+      <% @organizations.each_with_index do |organization, index| %>
+        <%= render "shared/card", locals: {
+          animate: "slide-up",
+          animate_delay: "#{index * 100}ms",
+          padding: false
+        } do %>
+          <div class="flex flex-col h-full">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-medium kv-text-primary truncate">
+                <%= link_to organization.name, organization_path(organization), class: "hover:text-primary-600 dark:hover:text-primary-400 transition-colors" %>
+              </h3>
+              <p class="kv-text-secondary text-sm mt-1 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <% begin %>
+                  <%= pluralize(organization.documents.count, 'document') rescue '0 documents' %>
+                <% rescue => e %>
+                  0 documents
+                <% end %>
+              </p>
+            </div>
+            
+            <%# Organization stats %>
+            <div class="px-4 py-4 sm:px-6 flex-grow">
+              <dl class="grid grid-cols-2 gap-x-4 gap-y-4">
+                <div class="col-span-1">
+                  <dt class="text-xs font-medium kv-text-secondary">Members</dt>
+                  <dd class="mt-1 text-sm kv-text-primary">
+                    <%= organization.organization_users.count %>
+                  </dd>
+                </div>
+                
+                <div class="col-span-1">
+                  <dt class="text-xs font-medium kv-text-secondary">Created</dt>
+                  <dd class="mt-1 text-sm kv-text-primary">
+                    <%= organization.created_at.strftime("%b %d, %Y") %>
+                  </dd>
+                </div>
+                
+                <div class="col-span-2">
+                  <dt class="text-xs font-medium kv-text-secondary">Document Usage</dt>
+                  <dd class="mt-1">
+                    <div class="relative pt-1">
+                      <div class="overflow-hidden h-2 mb-1 text-xs flex rounded-full bg-primary-100 dark:bg-primary-900">
+                        <div style="width:0%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-600 dark:bg-primary-400 rounded-full transition-all duration-500"></div>
+                      </div>
+                      <div class="text-xs kv-text-secondary flex justify-between">
+                        <span>0 used</span>
+                        <span>0%</span>
+                      </div>
+                    </div>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            
+            <%# Organization actions %>
+            <div class="px-4 py-4 sm:px-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
+              <div class="flex space-x-2">
+                <%= render partial: "shared/button", locals: {
+                  text: "Dashboard",
+                  variant: "secondary",
+                  size: "sm",
+                  href: dashboard_organization_path(organization)
+                } %>
+                
+                <%= render partial: "shared/button", locals: {
+                  text: "Documents",
+                  variant: "secondary",
+                  size: "sm",
+                  href: organization_documents_path(organization)
+                } %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <%# Empty State Card %>
+    <%= render "shared/card", locals: {
+      animate: "slide-up",
+      animate_delay: "100ms"
+    } do %>
+      <div class="px-4 py-8 sm:px-6 text-center">
+        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-primary-100 dark:bg-primary-900 mb-4">
+          <svg class="h-8 w-8 text-primary-600 dark:text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <h2 class="text-lg font-medium kv-text-primary mb-4">You don't have any organizations yet</h2>
+        <p class="kv-text-secondary mb-6 max-w-md mx-auto">Organizations help you organize your documents and collaborate with team members. Get started by creating your first organization.</p>
+        
+        <%= render partial: "shared/button", locals: {
+          text: "Create Organization",
+          variant: "primary",
+          href: new_organization_path,
+          icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>'
+        } %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

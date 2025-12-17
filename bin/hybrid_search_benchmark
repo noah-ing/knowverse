@@ -1,0 +1,128 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# This script runs the hybrid search benchmark with configurable options
+# Usage: bin/hybrid_search_benchmark [options]
+
+require File.expand_path('../config/environment', __dir__)
+require 'optparse'
+
+options = {
+  organization_id: nil,
+  query_count: 50,
+  query_types: nil, # Will use all by default
+  providers: nil, # Will use all by default
+  early_termination: true,
+  use_labeled_data: false,
+  output_file: "tmp/benchmark/hybrid_search_benchmark.json",
+  report_file: "tmp/benchmark/hybrid_search_report.md",
+  verbose: true
+}
+
+# Parse command line options
+OptionParser.new do |opts|
+  opts.banner = "Usage: bin/hybrid_search_benchmark [options]"
+
+  opts.on("-oORG_ID", "--organization=ORG_ID", Integer, "Organization ID to benchmark") do |id|
+    options[:organization_id] = id
+  end
+
+  opts.on("-qCOUNT", "--queries=COUNT", Integer, "Number of queries to test") do |count|
+    options[:query_count] = count
+  end
+
+  opts.on("-tTYPES", "--types=TYPES", "Query types to test (comma-separated: factoid,semantic,ambiguous,complex,specialized)") do |types|
+    options[:query_types] = types.split(',').map(&:to_sym)
+  end
+
+  opts.on("-pPROVIDERS", "--providers=PROVIDERS", "Search providers to test (comma-separated)") do |providers|
+    options[:providers] = providers.split(',').map(&:to_sym)
+  end
+
+  opts.on("--[no-]early-termination", "Enable or disable early termination") do |v|
+    options[:early_termination] = v
+  end
+
+  opts.on("-l", "--labeled-data", "Use labeled data for precision/recall measurements") do |v|
+    options[:use_labeled_data] = v
+  end
+
+  opts.on("-oOUTPUT", "--output=OUTPUT", "Output JSON file path") do |file|
+    options[:output_file] = file
+  end
+
+  opts.on("-rREPORT", "--report=REPORT", "Output report markdown file path") do |file|
+    options[:report_file] = file
+  end
+
+  opts.on("--[no-]verbose", "Run verbosely") do |v|
+    options[:verbose] = v
+  end
+
+  opts.on("-h", "--help", "Show this help message") do
+    puts opts
+    exit
+  end
+end.parse!
+
+# Validate required options
+unless options[:organization_id]
+  puts "ERROR: Organization ID is required"
+  puts "Use --help for usage information"
+  exit 1
+end
+
+# Ensure organization exists
+begin
+  organization = Organization.find(options[:organization_id])
+  puts "Running benchmark for organization: #{organization.name} (ID: #{organization.id})"
+rescue ActiveRecord::RecordNotFound
+  puts "ERROR: Organization with ID #{options[:organization_id]} not found"
+  exit 1
+end
+
+# Create output directory if it doesn't exist
+FileUtils.mkdir_p(File.dirname(options[:output_file]))
+FileUtils.mkdir_p(File.dirname(options[:report_file]))
+
+puts "Starting hybrid search benchmark with the following options:"
+puts options.inspect
+
+# Create the benchmark
+benchmark = Distributed::Benchmark::HybridSearchBenchmark.new(options)
+
+# Run the benchmarks
+puts "Running benchmarks..."
+result = benchmark.run_all
+
+# Generate and save the report
+puts "Generating report..."
+report = benchmark.generate_report
+File.write(options[:report_file], report)
+
+puts "Benchmark complete!"
+puts "Results saved to: #{options[:output_file]}"
+puts "Report saved to: #{options[:report_file]}"
+
+# Print summary recommendations
+puts "\nSummary Recommendations:"
+
+# Best provider recommendations
+if result[:provider_comparison] && result[:provider_comparison][:query_handling]
+  puts "\nBest Provider by Query Type:"
+  result[:provider_comparison][:query_handling].each do |query_type, data|
+    puts "  - #{query_type}: #{data[:best_provider]}"
+  end
+end
+
+# Weight recommendations if available
+if result[:weight_tuning] && result[:weight_tuning][:overall] && result[:weight_tuning][:overall][:optimal]
+  optimal_key = result[:weight_tuning][:overall][:optimal]
+  optimal_config = result[:weight_tuning][:overall][:weights][optimal_key][:config]
+  
+  puts "\nOptimal Weight Configuration:"
+  puts "  - Vector Weight: #{optimal_config[:vector]}"
+  puts "  - Keyword Weight: #{optimal_config[:keyword]}"
+end
+
+puts "\nSee the full report for detailed analysis and recommendations."

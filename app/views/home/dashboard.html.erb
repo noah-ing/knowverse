@@ -1,0 +1,64 @@
+<div class="dashboard-content">
+  <h1 class="text-2xl font-semibold">Dashboard</h1>
+  
+  <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Summary Card -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <h2 class="text-lg font-medium text-gray-900 dark:text-white">Summary</h2>
+      <p class="mt-2 text-gray-600 dark:text-gray-300">Welcome to your KnowVerse dashboard. Here you can manage your documents, organizations, and search capabilities.</p>
+    </div>
+    
+    <!-- Quick Actions Card -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <h2 class="text-lg font-medium text-gray-900 dark:text-white">Quick Actions</h2>
+      <div class="mt-4 flex flex-col gap-3">
+        <% if current_organization %>
+          <a href="<%= new_organization_document_path(current_organization) %>" class="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+            <span>Upload a Document</span>
+          </a>
+          <a href="<%= search_path %>" class="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+            <span>Search Content</span>
+          </a>
+          <a href="<%= new_organization_path %>" class="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+            <span>Create Organization</span>
+          </a>
+        <% else %>
+          <a href="<%= new_organization_path %>" class="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-medium">
+            <span>Create an Organization</span>
+          </a>
+          <div class="text-gray-500 dark:text-gray-400 text-sm mt-2">
+            <span>You'll need to create an organization before uploading documents or searching content</span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    
+    <!-- Recent Activity Card -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <h2 class="text-lg font-medium text-gray-900 dark:text-white">Recent Activity</h2>
+      <p class="mt-2 text-gray-600 dark:text-gray-300">Your recent activities will appear here.</p>
+    </div>
+  </div>
+</div>
+
+<div class="login-required-placeholder mt-4 text-center">
+  <p class="text-lg text-gray-600 dark:text-gray-400">You need to be logged in to view the dashboard.</p>
+  <a href="/users/sign_in" class="mt-2 inline-block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500">Sign In</a>
+</div>
+
+<script>
+  // This script ensures the correct content is shown based on authentication state
+  document.addEventListener('DOMContentLoaded', function() {
+    const isAuthenticated = document.body.classList.contains('user-signed-in');
+    const dashboardContent = document.querySelector('.dashboard-content');
+    const loginPlaceholder = document.querySelector('.login-required-placeholder');
+    
+    if (isAuthenticated) {
+      if (dashboardContent) dashboardContent.classList.remove('hidden');
+      if (loginPlaceholder) loginPlaceholder.classList.add('hidden');
+    } else {
+      if (dashboardContent) dashboardContent.classList.add('hidden');
+      if (loginPlaceholder) loginPlaceholder.classList.remove('hidden');
+    }
+  });
+</script>

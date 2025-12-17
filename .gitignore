@@ -1,0 +1,104 @@
+# 🚨 SECURITY - Never commit these files
+.env*
+!.env.example
+config/master.key
+config/credentials/*.key
+*.pem
+*.p12
+*.crt
+secrets/
+.secret
+
+# 🛠️ CLINE & PLANNING FILES - Keep development private
+cline_docs/
+temp_repo/
+KNOWVERSE_DOCS.md
+DATABASE_SETUP.md
+VECTOR_SEARCH_INTEGRATION.md
+CLAUDE_CONTEXT.md
+.claude/
+**/plans/
+**/fix_*.rb
+**/migration_fixer.rb
+**/reconcile_migrations.rb
+mark_migrations_complete.rb
+force_migrations.sh
+bin/fix_*
+bin/knowverse_repair.rb
+
+# 🧪 DEVELOPMENT & TEST ARTIFACTS
+log/*
+!log/.keep
+tmp/
+storage/*
+!storage/.keep
+node_modules/
+coverage/
+.nyc_output/
+public/ui_test.html
+public/ui_fix.js
+public/ui-fix.js
+app/javascript/ui_debugging_tool.js
+
+# 🎨 ASSET BUILD ARTIFACTS
+app/assets/builds/*
+!app/assets/builds/.keep
+public/assets/
+
+# 🗃️ DATABASE FILES
+*.sqlite3
+*.sqlite3-*
+*.db
+
+# 🔍 EDITOR & IDE FILES
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*~
+
+# 📱 OS GENERATED FILES
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 🔧 RUBY & RAILS SPECIFIC
+/.bundle
+/vendor/bundle
+/.yardoc
+/_yardoc/
+/doc/
+/rdoc/
+/.rspec_status
+
+# 📊 TESTING
+capybara-*.html
+/spec/tmp/
+/spec/reports/
+
+# 🚀 DEPLOYMENT
+.render-buildpacks/
+
+# 📈 ANALYTICS & MONITORING
+newrelic_agent.log
+
+# 🗂️ TEMPORARY FILES CREATED DURING DEVELOPMENT
+*.tmp
+*.temp
+.cache/
+
+# 📦 PACKAGE MANAGERS
+yarn-error.log
+npm-debug.log*
+.pnpm-debug.log*
+
+# 🔌 EDITOR PLUGINS
+.powenv
+
+# 🌐 ENVIRONMENT SPECIFIC
+/config/database.yml.backup

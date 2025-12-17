@@ -1,0 +1,310 @@
+/**
+ * KnowVerse UI Component Fallbacks CSS
+ * 
+ * This stylesheet provides essential fallback styles for UI components to ensure
+ * they function and appear correctly even when JavaScript fails to load or initialize.
+ * 
+ * It uses !important declarations selectively to override any conflicting styles
+ * and focuses on key UI components that are critical for functionality.
+ */
+
+/* ---------- DARK MODE FALLBACKS ---------- */
+
+/* Dark mode core variables */
+:root {
+  --kv-bg-primary: #ffffff;
+  --kv-bg-secondary: #f9fafb;
+  --kv-bg-tertiary: #f3f4f6;
+  --kv-text-primary: #111827;
+  --kv-text-secondary: #374151;
+  --kv-text-tertiary: #6b7280;
+  --kv-border-color: #e5e7eb;
+  --kv-shadow-color: rgba(0, 0, 0, 0.1);
+  --kv-accent-color: #4f46e5;
+  --kv-accent-color-hover: #4338ca;
+  --kv-accent-color-light: #e0e7ff;
+}
+
+/* Dark mode variables */
+html.dark {
+  --kv-bg-primary: #111827 !important;
+  --kv-bg-secondary: #1f2937 !important;
+  --kv-bg-tertiary: #374151 !important;
+  --kv-text-primary: #f9fafb !important;
+  --kv-text-secondary: #e5e7eb !important;
+  --kv-text-tertiary: #9ca3af !important;
+  --kv-border-color: #374151 !important;
+  --kv-shadow-color: rgba(0, 0, 0, 0.5) !important;
+  --kv-accent-color: #6366f1 !important;
+  --kv-accent-color-hover: #818cf8 !important;
+  --kv-accent-color-light: #1e1b4b !important;
+}
+
+/* Core dark mode background styles */
+html.dark body,
+html.dark header,
+html.dark footer,
+html.dark .bg-white,
+html.dark [class*="bg-white"] {
+  background-color: var(--kv-bg-primary) !important;
+  color: var(--kv-text-primary) !important;
+}
+
+html.dark .bg-gray-50,
+html.dark .bg-gray-100,
+html.dark [class*="bg-gray-50"],
+html.dark [class*="bg-gray-100"] {
+  background-color: var(--kv-bg-secondary) !important;
+}
+
+html.dark .bg-gray-200,
+html.dark .bg-gray-300,
+html.dark [class*="bg-gray-200"],
+html.dark [class*="bg-gray-300"] {
+  background-color: var(--kv-bg-tertiary) !important;
+}
+
+/* Core dark mode text styles */
+html.dark .text-gray-800,
+html.dark .text-gray-900,
+html.dark [class*="text-gray-800"],
+html.dark [class*="text-gray-900"] {
+  color: var(--kv-text-primary) !important;
+}
+
+html.dark .text-gray-600,
+html.dark .text-gray-700,
+html.dark [class*="text-gray-600"],
+html.dark [class*="text-gray-700"] {
+  color: var(--kv-text-secondary) !important;
+}
+
+html.dark .text-gray-400,
+html.dark .text-gray-500,
+html.dark [class*="text-gray-400"],
+html.dark [class*="text-gray-500"] {
+  color: var(--kv-text-tertiary) !important;
+}
+
+/* Core dark mode border styles */
+html.dark .border,
+html.dark .border-gray-200,
+html.dark .border-gray-300,
+html.dark [class*="border-gray-200"],
+html.dark [class*="border-gray-300"] {
+  border-color: var(--kv-border-color) !important;
+}
+
+/* Dark mode toggle styling */
+.kv-dark-mode-toggle {
+  position: relative !important;
+  width: 56px !important;
+  height: 28px !important;
+  background-color: #e2e8f0 !important;
+  border-radius: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease-in-out !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 4px !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  margin-right: 12px !important;
+  border: 1px solid transparent !important;
+  z-index: 10 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.kv-dark-mode-toggle:before {
+  content: '' !important;
+  position: absolute !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background-color: white !important;
+  left: 4px !important;
+  transform: translateX(0) !important;
+  transition: transform 0.3s ease, background-color 0.3s ease !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  z-index: 5 !important;
+}
+
+.kv-dark-mode-toggle.dark,
+.kv-dark-mode-toggle[aria-checked="true"] {
+  background-color: #4b5563 !important;
+}
+
+.kv-dark-mode-toggle.dark:before,
+.kv-dark-mode-toggle[aria-checked="true"]:before {
+  transform: translateX(28px) !important;
+  background-color: #f3f4f6 !important;
+}
+
+/* Focus state for the toggle */
+.kv-dark-mode-toggle:focus,
+.kv-dark-mode-toggle:focus-visible {
+  outline: none !important;
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3) !important;
+}
+
+/* ---------- DROPDOWN FALLBACKS ---------- */
+
+/* Force visibility for dropdown menus that are active */
+[data-dropdown-target="menu"]:not(.hidden) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 50 !important;
+}
+
+/* Fix dropdown positioning */
+.relative [data-dropdown-target="menu"] {
+  position: absolute !important;
+  right: 0 !important;
+  margin-top: 0.5rem !important;
+  min-width: 10rem !important;
+  max-height: 80vh !important;
+  overflow-y: auto !important;
+}
+
+/* Dropdown animations */
+[data-dropdown-target="menu"] {
+  transition: opacity 150ms ease-out, transform 150ms ease-out, visibility 150ms ease-out !important;
+}
+
+/* Fix dropdown visibility during transitions */
+[data-dropdown-target="menu"].opacity-0:not(.hidden) {
+  display: block !important;
+}
+
+/* Add box-shadow to dropdown menus for better visibility */
+[data-dropdown-target="menu"] {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid var(--kv-border-color) !important;
+}
+
+/* Dark mode dropdown styles */
+html.dark [data-dropdown-target="menu"] {
+  background-color: var(--kv-bg-secondary) !important;
+  border-color: var(--kv-border-color) !important;
+}
+
+/* Ensure dropdown items are visible and have proper hover effects */
+[data-dropdown-target="menu"] a,
+[data-dropdown-target="menu"] button {
+  display: block !important;
+  width: 100% !important;
+  text-align: left !important;
+  transition: background-color 150ms ease-in-out !important;
+}
+
+/* Hover effects for dropdown items */
+[data-dropdown-target="menu"] a:hover,
+[data-dropdown-target="menu"] button:hover {
+  background-color: #f3f4f6 !important;
+}
+
+html.dark [data-dropdown-target="menu"] a:hover,
+html.dark [data-dropdown-target="menu"] button:hover {
+  background-color: var(--kv-bg-tertiary) !important;
+}
+
+/* ---------- MOBILE MENU FALLBACKS ---------- */
+
+/* Ensure the mobile menu is visible when expanded */
+[data-mobile-menu-target="panel"]:not(.hidden) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Mobile menu transitions */
+[data-mobile-menu-target="panel"] {
+  transition: opacity 200ms ease-out, transform 200ms ease-out !important;
+}
+
+/* Mobile menu toggle button icon visibility fixes */
+[data-mobile-menu-target="closeIcon"]:not(.hidden) {
+  display: block !important;
+}
+
+[data-mobile-menu-target="openIcon"]:not(.hidden) {
+  display: block !important;
+}
+
+/* ---------- AUTHENTICATION STATE FALLBACKS ---------- */
+
+/* Show authenticated-only elements when authenticated */
+body.user-signed-in [data-authenticated-only],
+body[data-user-authenticated="true"] [data-authenticated-only] {
+  display: block !important;
+}
+
+/* Hide unauthenticated-only elements when authenticated */
+body.user-signed-in [data-unauthenticated-only],
+body[data-user-authenticated="true"] [data-unauthenticated-only] {
+  display: none !important;
+}
+
+/* Show unauthenticated-only elements when not authenticated */
+body:not(.user-signed-in) [data-unauthenticated-only],
+body:not([data-user-authenticated="true"]) [data-unauthenticated-only] {
+  display: block !important;
+}
+
+/* Hide authenticated-only elements when not authenticated */
+body:not(.user-signed-in) [data-authenticated-only],
+body:not([data-user-authenticated="true"]) [data-authenticated-only] {
+  display: none !important;
+}
+
+/* Fix for dashboard auth message - hide it for logged in users */
+body.user-signed-in .dashboard-auth-message,
+body[data-user-authenticated="true"] .dashboard-auth-message {
+  display: none !important;
+}
+
+/* ---------- UTILITY CLASSES ---------- */
+
+/* Force visibility class */
+.kv-visible {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Force hiding class */
+.kv-hidden {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Transitions for UI elements */
+.kv-transition {
+  transition: all 200ms ease-in-out !important;
+}
+
+/* Debug mode styles - only applied when ?debug=true is in URL */
+body.kv-debug-mode,
+.kv-debug-mode body {
+  --kv-debug-border-color: rgba(59, 130, 246, 0.5);
+}
+
+.kv-debug-mode [data-controller] {
+  outline: 2px solid var(--kv-debug-border-color) !important;
+}
+
+.kv-debug-mode [data-controller="dark-mode"] {
+  outline-color: rgba(79, 70, 229, 0.5) !important;
+}
+
+.kv-debug-mode [data-controller="dropdown"] {
+  outline-color: rgba(16, 185, 129, 0.5) !important;
+}
+
+.kv-debug-mode [data-controller="mobile-menu"] {
+  outline-color: rgba(245, 158, 11, 0.5) !important;
+}

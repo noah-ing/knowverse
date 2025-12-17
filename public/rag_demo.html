@@ -1,0 +1,1219 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KnowVerse RAG Demo</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    /* KnowVerse Design System */
+    :root {
+      /* Color System */
+      --kv-primary-50: #eef2ff;
+      --kv-primary-100: #e0e7ff;
+      --kv-primary-200: #c7d2fe;
+      --kv-primary-300: #a5b4fc;
+      --kv-primary-400: #818cf8;
+      --kv-primary-500: #6366f1;
+      --kv-primary-600: #4f46e5;
+      --kv-primary-700: #4338ca;
+      --kv-primary-800: #3730a3;
+      --kv-primary-900: #312e81;
+      --kv-primary-950: #1e1b4b;
+
+      --kv-gray-50: #f9fafb;
+      --kv-gray-100: #f3f4f6;
+      --kv-gray-200: #e5e7eb;
+      --kv-gray-300: #d1d5db;
+      --kv-gray-400: #9ca3af;
+      --kv-gray-500: #6b7280;
+      --kv-gray-600: #4b5563;
+      --kv-gray-700: #374151;
+      --kv-gray-800: #1f2937;
+      --kv-gray-900: #111827;
+      --kv-gray-950: #030712;
+
+      --kv-success-50: #ecfdf5;
+      --kv-success-100: #d1fae5;
+      --kv-success-500: #10b981;
+      --kv-success-600: #059669;
+      --kv-success-700: #047857;
+
+      --kv-error-50: #fef2f2;
+      --kv-error-100: #fee2e2;
+      --kv-error-500: #ef4444;
+      --kv-error-600: #dc2626;
+      --kv-error-700: #b91c1c;
+
+      --kv-warning-50: #fffbeb;
+      --kv-warning-100: #fef3c7;
+      --kv-warning-500: #f59e0b;
+      --kv-warning-600: #d97706;
+      --kv-warning-700: #b45309;
+
+      --kv-info-50: #eff6ff;
+      --kv-info-100: #dbeafe;
+      --kv-info-500: #3b82f6;
+      --kv-info-600: #2563eb;
+      --kv-info-700: #1d4ed8;
+
+      /* Typography */
+      --kv-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --kv-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      
+      /* Spacing */
+      --kv-spacing-0: 0px;
+      --kv-spacing-1: 0.25rem;
+      --kv-spacing-2: 0.5rem;
+      --kv-spacing-3: 0.75rem;
+      --kv-spacing-4: 1rem;
+      --kv-spacing-5: 1.25rem;
+      --kv-spacing-6: 1.5rem;
+      --kv-spacing-8: 2rem;
+      --kv-spacing-10: 2.5rem;
+      --kv-spacing-12: 3rem;
+
+      /* Borders */
+      --kv-radius-sm: 0.125rem;
+      --kv-radius: 0.25rem;
+      --kv-radius-md: 0.375rem;
+      --kv-radius-lg: 0.5rem;
+      --kv-radius-xl: 0.75rem;
+      --kv-radius-2xl: 1rem;
+      --kv-radius-full: 9999px;
+
+      /* Shadows */
+      --kv-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --kv-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+      --kv-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --kv-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+      /* Transitions */
+      --kv-transition-fast: 150ms;
+      --kv-transition-normal: 250ms;
+      --kv-transition-slow: 350ms;
+      --kv-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Dark Mode Variables */
+    .dark {
+      --kv-primary-50: #1e1b4b;
+      --kv-primary-100: #312e81;
+      --kv-primary-200: #3730a3;
+      --kv-primary-300: #4338ca;
+      --kv-primary-400: #4f46e5;
+      --kv-primary-500: #6366f1;
+      --kv-primary-600: #818cf8;
+      --kv-primary-700: #a5b4fc;
+      --kv-primary-800: #c7d2fe;
+      --kv-primary-900: #e0e7ff;
+      --kv-primary-950: #eef2ff;
+
+      --kv-gray-50: #030712;
+      --kv-gray-100: #111827;
+      --kv-gray-200: #1f2937;
+      --kv-gray-300: #374151;
+      --kv-gray-400: #4b5563;
+      --kv-gray-500: #6b7280;
+      --kv-gray-600: #9ca3af;
+      --kv-gray-700: #d1d5db;
+      --kv-gray-800: #e5e7eb;
+      --kv-gray-900: #f3f4f6;
+      --kv-gray-950: #f9fafb;
+    }
+
+    /* Card Component */
+    .kv-card {
+      background-color: white;
+      border-radius: var(--kv-radius-lg);
+      box-shadow: var(--kv-shadow-md);
+      overflow: hidden;
+    }
+
+    .dark .kv-card {
+      background-color: var(--kv-gray-800);
+    }
+
+    .kv-card-header {
+      padding: var(--kv-spacing-4) var(--kv-spacing-6);
+      border-bottom: 1px solid var(--kv-gray-200);
+    }
+
+    .dark .kv-card-header {
+      border-color: var(--kv-gray-700);
+    }
+
+    .kv-card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--kv-gray-900);
+    }
+
+    .dark .kv-card-title {
+      color: var(--kv-gray-50);
+    }
+
+    .kv-card-subtitle {
+      font-size: 0.875rem;
+      color: var(--kv-gray-500);
+      margin-top: var(--kv-spacing-1);
+    }
+
+    .kv-card-body {
+      padding: var(--kv-spacing-6);
+    }
+
+    /* Button Component */
+    .kv-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--kv-radius-md);
+      font-weight: 500;
+      transition: all var(--kv-transition-fast) var(--kv-transition-timing);
+      padding: var(--kv-spacing-2) var(--kv-spacing-4);
+      cursor: pointer;
+      line-height: 1.5;
+    }
+
+    .kv-btn:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+      box-shadow: 0 0 0 2px var(--kv-primary-500);
+    }
+
+    .kv-btn-sm {
+      padding: var(--kv-spacing-1) var(--kv-spacing-3);
+      font-size: 0.875rem;
+    }
+
+    .kv-btn-primary {
+      background-color: var(--kv-primary-600);
+      color: white;
+    }
+
+    .kv-btn-primary:hover {
+      background-color: var(--kv-primary-700);
+    }
+
+    .kv-btn-outline {
+      background-color: transparent;
+      color: var(--kv-primary-600);
+      border: 1px solid var(--kv-primary-600);
+    }
+
+    .kv-btn-outline:hover {
+      background-color: var(--kv-primary-50);
+    }
+
+    /* Form Elements */
+    .kv-input {
+      display: block;
+      width: 100%;
+      padding: var(--kv-spacing-2) var(--kv-spacing-3);
+      border-radius: var(--kv-radius-md);
+      border: 1px solid var(--kv-gray-300);
+      background-color: white;
+      color: var(--kv-gray-900);
+      font-size: 1rem;
+      line-height: 1.5;
+      transition: border-color var(--kv-transition-fast) var(--kv-transition-timing),
+                  box-shadow var(--kv-transition-fast) var(--kv-transition-timing);
+    }
+
+    .kv-input:focus {
+      outline: none;
+      border-color: var(--kv-primary-500);
+      box-shadow: 0 0 0 2px var(--kv-primary-100);
+    }
+
+    .dark .kv-input {
+      background-color: var(--kv-gray-800);
+      border-color: var(--kv-gray-600);
+      color: var(--kv-gray-100);
+    }
+
+    .kv-label {
+      display: block;
+      margin-bottom: var(--kv-spacing-1);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--kv-gray-700);
+    }
+
+    .dark .kv-label {
+      color: var(--kv-gray-300);
+    }
+
+    .kv-textarea {
+      min-height: 6rem;
+      resize: vertical;
+    }
+
+    .kv-checkbox {
+      appearance: none;
+      width: 1rem;
+      height: 1rem;
+      border: 1px solid var(--kv-gray-300);
+      border-radius: var(--kv-radius-sm);
+      background-color: white;
+      cursor: pointer;
+      transition: background-color var(--kv-transition-fast) var(--kv-transition-timing),
+                  border-color var(--kv-transition-fast) var(--kv-transition-timing);
+    }
+
+    .kv-checkbox:checked {
+      background-color: var(--kv-primary-600);
+      border-color: var(--kv-primary-600);
+      background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+    }
+
+    .dark .kv-checkbox {
+      background-color: var(--kv-gray-800);
+      border-color: var(--kv-gray-600);
+    }
+
+    /* Text Utility Classes */
+    .kv-text-primary {
+      color: var(--kv-gray-900);
+    }
+
+    .dark .kv-text-primary {
+      color: var(--kv-gray-100);
+    }
+
+    .kv-text-secondary {
+      color: var(--kv-gray-500);
+    }
+
+    .dark .kv-text-secondary {
+      color: var(--kv-gray-400);
+    }
+
+    .kv-text-accent {
+      color: var(--kv-primary-600);
+    }
+
+    .dark .kv-text-accent {
+      color: var(--kv-primary-400);
+    }
+
+    /* Dark Mode Toggle */
+    .kv-dark-mode-toggle {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      width: 3rem;
+      height: 1.5rem;
+      border-radius: var(--kv-radius-full);
+      background-color: var(--kv-gray-300);
+      cursor: pointer;
+      transition: background-color var(--kv-transition-fast) var(--kv-transition-timing);
+    }
+
+    .kv-dark-mode-toggle.dark {
+      background-color: var(--kv-primary-600);
+    }
+
+    .kv-dark-mode-toggle:before {
+      content: "";
+      position: absolute;
+      left: 0.25rem;
+      top: 0.25rem;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 50%;
+      background-color: white;
+      transition: transform var(--kv-transition-fast) var(--kv-transition-timing);
+    }
+
+    .kv-dark-mode-toggle.dark:before {
+      transform: translateX(1.5rem);
+      background-color: white;
+    }
+
+    /* Streaming Styles */
+    .kv-source-citation {
+      background-color: rgba(79, 70, 229, 0.1);
+      border-radius: 0.25rem;
+      padding: 0 0.25rem;
+      transition: background-color 0.15s ease;
+      position: relative;
+    }
+
+    .dark .kv-source-citation {
+      background-color: rgba(129, 140, 248, 0.15);
+    }
+
+    .kv-source-citation:hover {
+      background-color: rgba(79, 70, 229, 0.2);
+    }
+
+    .dark .kv-source-citation:hover {
+      background-color: rgba(129, 140, 248, 0.25);
+    }
+
+    .kv-source-hover-highlight {
+      background-color: rgba(79, 70, 229, 0.2) !important;
+      box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.4);
+    }
+
+    .dark .kv-source-hover-highlight {
+      background-color: rgba(129, 140, 248, 0.25) !important;
+      box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.6);
+    }
+
+    .kv-typing-cursor {
+      display: inline-block;
+      width: 0.5rem;
+      height: 1.25rem;
+      background-color: #4f46e5;
+      animation: kv-cursor-blink 0.8s infinite;
+      vertical-align: middle;
+      margin-left: 1px;
+      border-radius: 1px;
+    }
+
+    .dark .kv-typing-cursor {
+      background-color: #818cf8;
+    }
+
+    @keyframes kv-cursor-blink {
+      0% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    .kv-spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(79, 70, 229, 0.3);
+      border-radius: 50%;
+      border-top-color: #4f46e5;
+      animation: kv-spin 1s ease-in-out infinite;
+    }
+
+    .dark .kv-spinner {
+      border-color: rgba(129, 140, 248, 0.3);
+      border-top-color: #818cf8;
+    }
+
+    .kv-spinner-sm {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-width: 1.5px;
+    }
+
+    @keyframes kv-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .kv-conversation-thread {
+      max-height: min(70vh, 600px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(79, 70, 229, 0.3) transparent;
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 1rem;
+    }
+
+    .dark .kv-conversation-thread {
+      background-color: #111827;
+      border-color: #374151;
+      scrollbar-color: rgba(129, 140, 248, 0.4) rgba(17, 24, 39, 0.3);
+    }
+
+    .kv-message {
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      max-width: 80%;
+      animation: kv-message-appear 0.3s ease-out;
+    }
+
+    .kv-message-user {
+      background-color: white;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .dark .kv-message-user {
+      background-color: #1f2937;
+      border-color: #374151;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .kv-message-assistant {
+      background-color: #eef2ff;
+      border: 1px solid #e0e7ff;
+      margin-left: auto;
+      box-shadow: 0 1px 2px rgba(79, 70, 229, 0.05);
+    }
+
+    .dark .kv-message-assistant {
+      background-color: #1e1b4b;
+      border-color: #312e81;
+      box-shadow: 0 1px 2px rgba(129, 140, 248, 0.1);
+    }
+
+    .kv-message-header {
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-bottom: 0.25rem;
+      font-weight: 500;
+    }
+
+    .dark .kv-message-header {
+      color: #9ca3af;
+    }
+
+    .kv-message-content {
+      color: #1f2937;
+      line-height: 1.5;
+    }
+
+    .dark .kv-message-content {
+      color: #e5e7eb;
+    }
+
+    .kv-message-sources {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #e0e7ff;
+    }
+
+    .dark .kv-message-sources {
+      color: #9ca3af;
+      border-top-color: #312e81;
+    }
+
+    .kv-message-metrics {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .dark .kv-message-metrics {
+      color: #9ca3af;
+    }
+
+    .kv-sources-list {
+      list-style-type: none;
+      padding-left: 0;
+      margin-top: 0.25rem;
+    }
+
+    .kv-sources-list li {
+      position: relative;
+      padding: 0.25rem 0.5rem;
+      transition: background-color 0.15s ease;
+      border-radius: 0.25rem;
+    }
+
+    .kv-sources-list li:hover {
+      background-color: rgba(79, 70, 229, 0.1);
+    }
+
+    .dark .kv-sources-list li:hover {
+      background-color: rgba(129, 140, 248, 0.15);
+    }
+
+    .kv-link {
+      color: #4f46e5;
+      text-decoration: none;
+      transition: text-decoration 0.15s ease;
+    }
+
+    .kv-link:hover {
+      text-decoration: underline;
+    }
+
+    .dark .kv-link {
+      color: #818cf8;
+    }
+
+    .kv-status-indicator {
+      transition: opacity 0.3s ease;
+      font-size: 0.875rem;
+    }
+
+    .kv-status-indicator.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .kv-error-message {
+      color: #ef4444;
+      padding: 0.75rem;
+      margin-top: 0.75rem;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 0.375rem;
+      background-color: rgba(239, 68, 68, 0.05);
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dark .kv-error-message {
+      color: #f87171;
+      border-color: rgba(248, 113, 113, 0.2);
+      background-color: rgba(248, 113, 113, 0.05);
+    }
+
+    .feedback-button {
+      transition: transform 0.1s ease, background-color 0.15s ease;
+      border-radius: 0.25rem;
+      padding: 0.25rem;
+    }
+
+    .feedback-button:hover {
+      transform: scale(1.05);
+      background-color: rgba(79, 70, 229, 0.1);
+    }
+
+    .dark .feedback-button:hover {
+      background-color: rgba(129, 140, 248, 0.15);
+    }
+
+    .feedback-button:active {
+      transform: scale(0.95);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    @keyframes kv-message-appear {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes kv-highlight-fade {
+      0% { background-color: rgba(79, 70, 229, 0.2); }
+      100% { background-color: transparent; }
+    }
+
+    @keyframes kv-highlight-fade-dark {
+      0% { background-color: rgba(129, 140, 248, 0.25); }
+      100% { background-color: transparent; }
+    }
+
+    .kv-token-highlight {
+      animation: kv-highlight-fade 2s ease forwards;
+    }
+
+    .dark .kv-token-highlight {
+      animation: kv-highlight-fade-dark 2s ease forwards;
+    }
+
+    @media (max-width: 640px) {
+      .kv-message {
+        max-width: 90%;
+      }
+      
+      .kv-conversation-thread {
+        max-height: 60vh;
+        padding: 0.75rem;
+      }
+    }
+
+    /* Additional demo-specific styles */
+    #conversation-container {
+      max-height: min(80vh, 600px);
+      transition: background-color 0.3s ease;
+    }
+    .dark #conversation-container {
+      background-color: #111827;
+      border-color: #374151;
+    }
+    .token-metrics {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 0.5rem;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+    }
+    .dark .token-metrics {
+      background-color: rgba(17, 24, 39, 0.8);
+      color: #e5e7eb;
+    }
+  </style>
+</head>
+<body class="min-h-screen transition-colors duration-200" x-data="{ darkMode: false }" :class="{ 'dark bg-gray-900 text-white': darkMode, 'bg-gray-100': !darkMode }">
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header with dark mode toggle -->
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold text-center transition-colors" :class="{ 'text-white': darkMode, 'text-gray-900': !darkMode }">
+        KnowVerse RAG Streaming Demo
+      </h1>
+      <!-- Dark mode toggle -->
+      <button @click="darkMode = !darkMode" 
+              class="kv-dark-mode-toggle"
+              :class="{ 'dark': darkMode }"
+              aria-label="Toggle dark mode">
+      </button>
+    </div>
+    
+    <div class="kv-card transition-colors duration-200">
+      <div class="kv-card-header">
+        <h2 class="kv-card-title">Contextual Q&A with RAG</h2>
+        <p class="kv-card-subtitle">
+          Ask questions about your documents using Retrieval Augmented Generation. This combines vector search with
+          large language models to provide accurate answers with context from your documents.
+        </p>
+      </div>
+      
+      <div class="kv-card-body">
+        <!-- Conversation Thread -->
+        <div class="kv-conversation-thread mb-6" id="conversation-container">
+          <div class="space-y-4" id="conversation-thread">
+            <!-- Conversation history will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Query Form -->
+        <form id="query-form" class="space-y-4">
+          <div class="mb-4">
+            <div class="flex flex-col gap-4 mb-4">
+              <div class="flex flex-row gap-2 items-end">
+                <label for="query" class="kv-label">Question</label>
+                <div class="ml-auto flex items-center">
+                  <input type="checkbox" id="streaming" checked class="kv-checkbox mr-2">
+                  <label for="streaming" class="text-sm kv-text-secondary">Streaming mode</label>
+                </div>
+              </div>
+              
+              <textarea id="query" placeholder="Ask a question about your documents..." 
+                        class="kv-input kv-textarea"
+                        rows="2"></textarea>
+            </div>
+          </div>
+          
+          <div class="flex justify-between items-center">
+            <!-- Status indicators -->
+            <div class="text-sm kv-status-indicator" id="status">
+              <span class="hidden kv-text-secondary" id="waiting">
+                <span class="kv-spinner kv-spinner-sm mr-2"></span>
+                Waiting for response...
+              </span>
+              <span class="hidden kv-text-accent" id="streaming-status">
+                <span class="kv-spinner kv-spinner-sm mr-2"></span>
+                Streaming response...
+              </span>
+              <span class="hidden text-green-500" id="complete">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Response complete
+              </span>
+            </div>
+            
+            <!-- Submit button -->
+            <button type="submit" class="kv-btn kv-btn-primary" id="submit">
+              Generate Answer
+            </button>
+          </div>
+        </form>
+        
+        <!-- Streaming response container -->
+        <div class="hidden mt-8" id="response-container">
+          <div class="kv-message kv-message-assistant w-full max-w-full">
+            <!-- Streaming text container with streaming cursor -->
+            <div id="streaming-response" class="kv-message-content relative"></div>
+            <div id="streaming-cursor" class="kv-typing-cursor"></div>
+            
+            <!-- Source documents container -->
+            <div class="mt-4 hidden" id="sources-container">
+              <h4 class="font-medium kv-text-secondary mb-1">Sources:</h4>
+              <ul class="kv-sources-list" id="sources"></ul>
+            </div>
+            
+            <!-- Feedback UI -->
+            <div class="mt-3 flex items-center justify-end gap-3 text-sm hidden" id="feedback-container">
+              <span class="kv-text-secondary">Was this response helpful?</span>
+              <button type="button" class="feedback-button" data-feedback-value="positive">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor" aria-label="Thumbs up">
+                  <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                </svg>
+              </button>
+              <button type="button" class="feedback-button" data-feedback-value="negative">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" viewBox="0 0 20 20" fill="currentColor" aria-label="Thumbs down">
+                  <path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.105-1.79l-.05-.025A4 4 0 0011.055 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866a4 4 0 00.8-2.4z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Performance metrics display (hidden by default) -->
+        <div id="performance-metrics" class="token-metrics hidden">
+          <div class="font-medium mb-1">Performance Metrics</div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="text-xs">
+              <span class="kv-text-secondary">First token:</span>
+              <span id="ttft-value">-</span>ms
+            </div>
+            <div class="text-xs">
+              <span class="kv-text-secondary">Tokens/sec:</span>
+              <span id="tps-value">-</span>
+            </div>
+            <div class="text-xs">
+              <span class="kv-text-secondary">Total tokens:</span>
+              <span id="total-tokens">-</span>
+            </div>
+            <div class="text-xs">
+              <span class="kv-text-secondary">Total time:</span>
+              <span id="total-time">-</span>ms
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Alpine.js for dark mode and reactivity -->
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // DOM elements
+  const form = document.getElementById('query-form');
+  const queryInput = document.getElementById('query');
+  const submitButton = document.getElementById('submit');
+  const responseContainer = document.getElementById('response-container');
+  const streamingResponse = document.getElementById('streaming-response');
+  const streamingCursor = document.getElementById('streaming-cursor');
+  const sourcesContainer = document.getElementById('sources-container');
+  const sourcesList = document.getElementById('sources');
+  const conversationThread = document.getElementById('conversation-thread');
+  const waitingStatus = document.getElementById('waiting');
+  const streamingStatus = document.getElementById('streaming-status');
+  const completeStatus = document.getElementById('complete');
+  const feedbackContainer = document.getElementById('feedback-container');
+  const performanceMetrics = document.getElementById('performance-metrics');
+  const ttftValue = document.getElementById('ttft-value');
+  const tpsValue = document.getElementById('tps-value');
+  const totalTokensValue = document.getElementById('total-tokens');
+  const totalTimeValue = document.getElementById('total-time');
+  
+  // Performance tracking
+  let startTime = 0;
+  let firstTokenTime = 0;
+  let tokenCount = 0;
+  
+  // Demo responses
+  const demoResponses = [
+    {
+      text: "Based on the documents I've analyzed, the KnowVerse RAG (Retrieval Augmented Generation) system combines vector search with large language models to provide accurate answers from your documents. The system works by retrieving relevant context from your knowledge base, then using this context to generate precise answers with citations to the source material.",
+      sources: [
+        { id: 'doc1', title: 'KnowVerse Architecture.pdf', score: 0.92, span: [8, 134] },
+        { id: 'doc2', title: 'RAG Systems Overview.docx', score: 0.89, span: [135, 234] }
+      ]
+    },
+    {
+      text: "KnowVerse's streaming capabilities allow for token-by-token display of responses, providing a more interactive and responsive user experience. This feature enables users to see answers forming in real-time rather than waiting for complete responses, with a typical speed of 15-20 tokens per second. The system also supports source attribution highlighting, where citations are visually indicated within the text.",
+      sources: [
+        { id: 'doc3', title: 'Frontend Design Specs.md', score: 0.94, span: [0, 111] },
+        { id: 'doc4', title: 'UX Research Findings.pdf', score: 0.85, span: [112, 210] }
+      ]
+    },
+    {
+      text: "According to the technical documentation, the conversation interface in KnowVerse uses a chat-like UI for multi-turn RAG interactions. Each message is displayed in a bubble format, with user queries and system responses clearly distinguished. The thread view automatically scrolls to show new content, and conversation controls allow for starting new threads or exporting discussions for reference.",
+      sources: [
+        { id: 'doc5', title: 'User Interface Guidelines.pdf', score: 0.91, span: [27, 148] },
+        { id: 'doc6', title: 'Conversation Design Patterns.docx', score: 0.88, span: [149, 250] }
+      ]
+    }
+  ];
+
+  // Setup keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+Enter to submit form
+    if (e.ctrlKey && e.key === 'Enter' && document.activeElement === queryInput) {
+      form.dispatchEvent(new Event('submit'));
+      e.preventDefault();
+    }
+    // Escape to clear input
+    if (e.key === 'Escape' && document.activeElement === queryInput) {
+      queryInput.value = '';
+      e.preventDefault();
+    }
+  });
+
+  // Handle form submission
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    
+    const query = queryInput.value.trim();
+    if (!query) return;
+    
+    // Reset performance metrics
+    resetPerformanceMetrics();
+    
+    // Add user message
+    addUserMessage(query);
+    
+    // Clear input
+    queryInput.value = '';
+    
+    // Show response container
+    responseContainer.classList.remove('hidden');
+    
+    // Update status
+    updateStatus('streaming');
+    submitButton.disabled = true;
+    
+    // Get response based on query
+    let responseIndex = 0;
+    if (query.toLowerCase().includes('stream') || query.toLowerCase().includes('token')) {
+      responseIndex = 1;
+    } else if (query.toLowerCase().includes('conversation') || query.toLowerCase().includes('interface')) {
+      responseIndex = 2;
+    }
+    
+    const response = demoResponses[responseIndex];
+    
+    // Simulate streaming
+    streamText(response.text, response.sources);
+  });
+
+  // Reset performance metrics
+  function resetPerformanceMetrics() {
+    startTime = performance.now();
+    firstTokenTime = 0;
+    tokenCount = 0;
+    ttftValue.textContent = '-';
+    tpsValue.textContent = '-';
+    totalTokensValue.textContent = '-';
+    totalTimeValue.textContent = '-';
+    performanceMetrics.classList.add('hidden');
+  }
+
+  // Update performance metrics
+  function updatePerformanceMetrics(isComplete = false) {
+    const now = performance.now();
+    
+    if (tokenCount === 1) {
+      // First token time
+      firstTokenTime = now - startTime;
+      ttftValue.textContent = Math.round(firstTokenTime);
+    }
+    
+    if (tokenCount > 1) {
+      // Calculate tokens per second
+      const elapsedSec = (now - startTime) / 1000;
+      const tokensPerSec = tokenCount / elapsedSec;
+      tpsValue.textContent = tokensPerSec.toFixed(1);
+    }
+    
+    totalTokensValue.textContent = tokenCount;
+    
+    if (isComplete) {
+      // Total time
+      totalTimeValue.textContent = Math.round(now - startTime);
+    }
+    
+    // Show metrics panel after first token
+    if (tokenCount > 0 && performanceMetrics.classList.contains('hidden')) {
+      performanceMetrics.classList.remove('hidden');
+    }
+  }
+
+  // Add user message to conversation
+  function addUserMessage(message) {
+    const container = document.createElement('div');
+    container.className = 'kv-message kv-message-user';
+    
+    const header = document.createElement('div');
+    header.className = 'kv-message-header';
+    header.textContent = 'User';
+    
+    const content = document.createElement('div');
+    content.className = 'kv-message-content';
+    content.textContent = message;
+    
+    container.appendChild(header);
+    container.appendChild(content);
+    conversationThread.appendChild(container);
+    
+    // Scroll to bottom
+    const conversationContainer = document.getElementById('conversation-container');
+    conversationContainer.scrollTop = conversationContainer.scrollHeight;
+  }
+  
+  // Add assistant message to conversation
+  function addAssistantMessage(message, sources = []) {
+    const container = document.createElement('div');
+    container.className = 'kv-message kv-message-assistant';
+    
+    const header = document.createElement('div');
+    header.className = 'kv-message-header';
+    header.textContent = 'KnowVerse';
+    
+    const content = document.createElement('div');
+    content.className = 'kv-message-content';
+    content.textContent = message;
+    
+    container.appendChild(header);
+    container.appendChild(content);
+    
+    // Add source references if present
+    if (sources && sources.length > 0) {
+      const sourcesContainer = document.createElement('div');
+      sourcesContainer.className = 'kv-message-sources';
+      
+      const sourcesList = document.createElement('div');
+      sourcesList.innerHTML = 'Sources: ';
+      
+      sources.forEach((source, index) => {
+        if (index > 0) {
+          sourcesList.innerHTML += ', ';
+        }
+        
+        const sourceLink = document.createElement('a');
+        sourceLink.href = '#';
+        sourceLink.className = 'kv-link';
+        sourceLink.textContent = source.title || `Document ${source.id}`;
+        
+        sourcesList.appendChild(sourceLink);
+      });
+      
+      sourcesContainer.appendChild(sourcesList);
+      container.appendChild(sourcesContainer);
+    }
+    
+    // Add performance metrics if available
+    if (firstTokenTime > 0) {
+      const metricsContainer = document.createElement('div');
+      metricsContainer.className = 'kv-message-metrics';
+      
+      // Time to first token
+      const ttft = document.createElement('span');
+      ttft.title = 'Time to first token';
+      ttft.textContent = `${Math.round(firstTokenTime)}ms TTF`;
+      metricsContainer.appendChild(ttft);
+      
+      // Tokens per second
+      const tps = document.createElement('span');
+      tps.title = 'Tokens per second';
+      tps.textContent = `${(tokenCount / ((performance.now() - startTime) / 1000)).toFixed(1)} tokens/s`;
+      metricsContainer.appendChild(tps);
+      
+      container.appendChild(metricsContainer);
+    }
+    
+    conversationThread.appendChild(container);
+    
+    // Scroll to bottom
+    const conversationContainer = document.getElementById('conversation-container');
+    conversationContainer.scrollTop = conversationContainer.scrollHeight;
+  }
+  
+  // Update status indicators
+  function updateStatus(status) {
+    waitingStatus.classList.add('hidden');
+    streamingStatus.classList.add('hidden');
+    completeStatus.classList.add('hidden');
+    
+    if (status === 'waiting') {
+      waitingStatus.classList.remove('hidden');
+    } else if (status === 'streaming') {
+      streamingStatus.classList.remove('hidden');
+    } else if (status === 'complete') {
+      completeStatus.classList.remove('hidden');
+    }
+  }
+  
+  // Stream text token by token with natural pauses
+  function streamText(text, sources) {
+    streamingResponse.textContent = '';
+    streamingCursor.style.display = 'inline-block';
+    
+    // Split text into tokens (simulating LLM tokens)
+    const tokens = simulateTokenization(text);
+    let index = 0;
+    
+    // Process tokens with natural pauses
+    function addNextToken() {
+      if (index < tokens.length) {
+        const token = tokens[index];
+        streamingResponse.textContent += token;
+        
+        // Update token count and metrics
+        tokenCount++;
+        updatePerformanceMetrics();
+        
+        // Move to next token
+        index++;
+        
+        // Calculate variable delay for more natural typing
+        let delay = 20 + Math.random() * 10; // Base delay
+        
+        // Add pauses for natural reading
+        if (token.match(/[\.\!\?](\s|$)/)) {
+          // End of sentence pause
+          delay += 15 + Math.random() * 10;
+        } else if (token.match(/[\,\;\:](\s|$)/)) {
+          // Comma or clause pause
+          delay += 8 + Math.random() * 5;
+        } else if (token.match(/\n/)) {
+          // Newline pause
+          delay += 15 / 2;
+        }
+        
+        setTimeout(addNextToken, delay);
+      } else {
+        // All tokens processed
+        streamingCursor.style.display = 'none';
+        updateStatus('complete');
+        submitButton.disabled = false;
+        
+        // Update metrics as complete
+        updatePerformanceMetrics(true);
+        
+        // Add to conversation and show sources
+        addAssistantMessage(text, sources);
+        updateSources(sources);
+        feedbackContainer.classList.remove('hidden');
+        
+        // Hide metrics after 10 seconds
+        setTimeout(() => {
+          performanceMetrics.classList.add('hidden');
+        }, 10000);
+      }
+    }
+    
+    addNextToken();
+  }
+  
+  // Simple tokenization simulator (just for demo purposes)
+  function simulateTokenization(text) {
+    // This is a very simplified tokenization. Real LLM tokenization is more complex.
+    // Split on spaces, then split each part further preserving punctuation
+    let parts = text.split(' ');
+    let tokens = [];
+    
+    for (let part of parts) {
+      // Split by punctuation, keeping the punctuation
+      let subparts = part.split(/([.,;:!?()])/g).filter(Boolean);
+      for (let subpart of subparts) {
+        tokens.push(subpart);
+      }
+      // Add the space back except for the last part
+      if (part !== parts[parts.length - 1]) {
+        tokens.push(' ');
+      }
+    }
+    
+    return tokens;
+  }
+  
+  // Update sources list
+  function updateSources(sources) {
+    if (!sources || !sources.length) return;
+    
+    // Clear sources list
+    sourcesList.innerHTML = '';
+    
+    // Add each source
+    sources.forEach(source => {
+      const li = document.createElement('li');
+      li.dataset.sourceId = source.id;
+      
+      const link = document.createElement('a');
+      link.href = '#';
+      link.className = 'kv-link';
+      link.textContent = source.title;
+      
+      li.appendChild(link);
+      
+      // Add score if available
+      if (source.score) {
+        const scoreSpan = document.createElement('span');
+        scoreSpan.className = 'kv-text-secondary ml-1';
+        scoreSpan.textContent = `(${Math.round(source.score * 100)}% match)`;
+        li.appendChild(scoreSpan);
+      }
+      
+      // Add source highlighting on hover
+      li.addEventListener('mouseenter', () => {
+        highlightSourceInText(source.id, source.span);
+      });
+      
+      li.addEventListener('mouseleave', () => {
+        clearSourceHighlight();
+      });
+      
+      sourcesList.appendChild(li);
+    });
+    
+    // Show sources container
+    sourcesContainer.classList.remove('hidden');
+  }
+  
+  // Highlight source in text (simplified simulation)
+  function highlightSourceInText(sourceId, span) {
+    // In a real implementation, this would highlight the actual spans in the text
+    // For demo purposes, we're just adding a highlighting class to the response container
+    streamingResponse.classList.add('kv-token-highlight');
+  }
+  
+  // Clear source highlight
+  function clearSourceHighlight() {
+    streamingResponse.classList.remove('kv-token-highlight');
+  }
+  
+  // Handle feedback buttons
+  document.querySelectorAll('[data-feedback-value]').forEach(button => {
+    button.addEventListener('click', () => {
+      // In a real implementation, this would send feedback to the server
+      
+      // Add a thank you message
+      const thanksMsg = document.createElement('div');
+      thanksMsg.className = 'text-sm text-green-600 text-right mt-2';
+      thanksMsg.textContent = 'Thank you for your feedback!';
+      
+      feedbackContainer.classList.add('hidden');
+      feedbackContainer.parentNode.appendChild(thanksMsg);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        if (thanksMsg.parentNode) {
+          thanksMsg.parentNode.removeChild(thanksMsg);
+        }
+      }, 3000);
+    });
+  });
+  
+  // Focus the query input when the page loads
+  queryInput.focus();
+});
+</script>
+</body>
+</html>

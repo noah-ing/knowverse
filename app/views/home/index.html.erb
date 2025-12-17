@@ -1,0 +1,256 @@
+<div class="transition-colors duration-200">
+  <!-- Hero Section -->
+  <div class="bg-gradient-to-r from-primary-600 to-indigo-700 dark:from-primary-800 dark:to-indigo-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div class="text-center md:text-left">
+          <h1 class="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">Transform your knowledge with <span class="text-white">KnowVerse</span></h1>
+          <p class="text-lg md:text-xl text-indigo-100 mb-8">Powerful AI-driven document search and RAG capabilities for your organization's knowledge base</p>
+          
+          <div class="flex flex-col sm:flex-row justify-center md:justify-start gap-4">
+            <% if defined?(user_signed_in?) && user_signed_in? || user_authenticated? %>
+              <%= link_to 'Go to Dashboard', dashboard_path, class: "kv-btn kv-btn-light text-primary-700 hover:bg-white dark:hover:bg-white group" %>
+              <%= link_to 'Your Organizations', organizations_path, class: "kv-btn kv-btn-outline border-white text-white hover:bg-white/10" %>
+            <% else %>
+              <button class="kv-btn kv-btn-light text-primary-700 hover:bg-white dark:hover:bg-white group" data-action="click->modal#open" data-modal-target="magicLinkModal">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-primary-600 group-hover:text-primary-700" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
+                </svg>
+                Get Started
+              </button>
+              <%= link_to new_user_session_path, class: "kv-btn kv-btn-outline border-white text-white hover:bg-white/10" do %>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm12 0H5v10h10V5z" clip-rule="evenodd" />
+                  <path d="M9 7h2v2H9V7zm0 4h2v2H9v-2z" />
+                </svg>
+                Sign In
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+        
+        <div class="hidden md:block relative">
+          <div class="absolute inset-0 bg-primary-500 opacity-10 rounded-lg blur-2xl transform rotate-6"></div>
+          <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+            <div class="p-5 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <div class="flex items-center">
+                <div class="h-3 w-3 rounded-full bg-red-500 mr-2"></div>
+                <div class="h-3 w-3 rounded-full bg-amber-500 mr-2"></div>
+                <div class="h-3 w-3 rounded-full bg-green-500"></div>
+              </div>
+              <div class="text-sm kv-text-secondary">KnowVerse RAG UI</div>
+            </div>
+            <div class="p-6">
+              <!-- Simulated RAG Chat UI -->
+              <div class="flex flex-col space-y-4">
+                <div class="kv-message kv-message-user self-end max-w-md">
+                  <div class="kv-message-header">
+                    <div class="flex items-center">
+                      <div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mr-2">
+                        <span class="text-sm kv-text-secondary font-medium">U</span>
+                      </div>
+                      <div>
+                        <span class="font-medium kv-text-primary">You</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="kv-message-content mt-2">
+                    What's our Q2 financial forecast?
+                  </div>
+                </div>
+                
+                <div class="kv-message kv-message-system self-start max-w-md">
+                  <div class="kv-message-header">
+                    <div class="flex items-center">
+                      <div class="h-8 w-8 bg-primary-600 dark:bg-primary-700 rounded-full flex items-center justify-center text-white mr-2">
+                        <span class="text-sm font-medium">K</span>
+                      </div>
+                      <div>
+                        <span class="font-medium kv-text-primary">KnowVerse</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="kv-message-content mt-2">
+                    Based on your organization's documents, the Q2 financial forecast projects a <span class="kv-source-citation">15% revenue growth with a projected EBITDA of $2.4M</span>. This represents a <span class="kv-source-citation">22% increase from Q1</span>.
+                  </div>
+                  <div class="kv-message-sources">
+                    <h5 class="font-medium mb-1">Sources:</h5>
+                    <ul class="kv-sources-list">
+                      <li class="kv-sources-item">
+                        <span class="kv-link">Q2 Financial Projections.pdf</span>
+                        <span class="kv-text-secondary text-xs ml-1">
+                          (98% match)
+                        </span>
+                      </li>
+                      <li class="kv-sources-item">
+                        <span class="kv-link">Executive Summary 2025.docx</span>
+                        <span class="kv-text-secondary text-xs ml-1">
+                          (87% match)
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <!-- Typing indicator -->
+                <div class="flex items-center text-xs kv-text-secondary mt-1 ml-10">
+                  <div class="kv-typing-cursor mr-1"></div>
+                  <span>KnowVerse is analyzing your documents...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Feature Section -->
+  <div class="py-16 bg-white dark:bg-gray-900 transition-colors duration-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold kv-text-primary mb-4">Powerful Features</h2>
+        <p class="max-w-3xl mx-auto text-lg kv-text-secondary">KnowVerse transforms how your organization manages, searches, and interacts with knowledge.</p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Feature 1 -->
+        <div class="kv-card shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
+          <div class="p-6">
+            <div class="flex-shrink-0 bg-primary-500 dark:bg-primary-600 rounded-full p-3 transition-colors duration-200 shadow-md mb-4">
+              <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold kv-text-primary mb-2">Smart Document Processing</h3>
+            <p class="kv-text-secondary">Upload any document type and KnowVerse automatically extracts, processes, and indexes the content for semantic search.</p>
+          </div>
+        </div>
+        
+        <!-- Feature 2 -->
+        <div class="kv-card shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
+          <div class="p-6">
+            <div class="flex-shrink-0 bg-primary-500 dark:bg-primary-600 rounded-full p-3 transition-colors duration-200 shadow-md mb-4">
+              <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold kv-text-primary mb-2">Semantic Vector Search</h3>
+            <p class="kv-text-secondary">Find information based on meaning, not just keywords. Our vector embeddings understand context and relevance.</p>
+          </div>
+        </div>
+        
+        <!-- Feature 3 -->
+        <div class="kv-card shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
+          <div class="p-6">
+            <div class="flex-shrink-0 bg-primary-500 dark:bg-primary-600 rounded-full p-3 transition-colors duration-200 shadow-md mb-4">
+              <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold kv-text-primary mb-2">AI-Powered RAG</h3>
+            <p class="kv-text-secondary">Ask questions in natural language and get accurate answers with source citations from your organization's knowledge base.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- How It Works Section -->
+  <div class="py-16 bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold kv-text-primary mb-4">How KnowVerse Works</h2>
+        <p class="max-w-3xl mx-auto text-lg kv-text-secondary">A simple three-step process to transform your organization's knowledge management.</p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Step 1 -->
+        <div class="flex flex-col items-center text-center">
+          <div class="flex items-center justify-center h-20 w-20 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 text-3xl font-bold mb-6 transition-colors duration-200">
+            1
+          </div>
+          <h3 class="text-xl font-semibold kv-text-primary mb-2">Upload Documents</h3>
+          <p class="kv-text-secondary">Upload any document type including PDFs, Word documents, Excel sheets, and more.</p>
+        </div>
+        
+        <!-- Step 2 -->
+        <div class="flex flex-col items-center text-center">
+          <div class="flex items-center justify-center h-20 w-20 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 text-3xl font-bold mb-6 transition-colors duration-200">
+            2
+          </div>
+          <h3 class="text-xl font-semibold kv-text-primary mb-2">Automatic Processing</h3>
+          <p class="kv-text-secondary">KnowVerse automatically extracts text, generates vector embeddings, and indexes content for search.</p>
+        </div>
+        
+        <!-- Step 3 -->
+        <div class="flex flex-col items-center text-center">
+          <div class="flex items-center justify-center h-20 w-20 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 text-3xl font-bold mb-6 transition-colors duration-200">
+            3
+          </div>
+          <h3 class="text-xl font-semibold kv-text-primary mb-2">Search & Ask Questions</h3>
+          <p class="kv-text-secondary">Use semantic search or ask natural language questions to get insights from your documents.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Call to Action Section -->
+  <div class="py-16 bg-gradient-to-r from-primary-600 to-indigo-700 dark:from-primary-800 dark:to-indigo-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center">
+        <h2 class="text-3xl font-bold text-white mb-6">Ready to transform your organization's knowledge?</h2>
+        <p class="max-w-3xl mx-auto text-lg text-indigo-100 mb-8">Start exploring the power of AI-driven document search and retrieval today.</p>
+        
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+          <% if defined?(user_signed_in?) && user_signed_in? || user_authenticated? %>
+            <%= link_to 'Go to Dashboard', dashboard_path, class: "kv-btn kv-btn-light text-primary-700 hover:bg-white dark:hover:bg-white group" %>
+            <%= link_to 'Your Organizations', organizations_path, class: "kv-btn kv-btn-outline border-white text-white hover:bg-white/10" %>
+          <% else %>
+            <button class="kv-btn kv-btn-light text-primary-700 hover:bg-white dark:hover:bg-white group" data-action="click->modal#open" data-modal-target="magicLinkModal">
+              Get Started
+            </button>
+            <%= link_to 'Learn More', '#', class: "kv-btn kv-btn-outline border-white text-white hover:bg-white/10" %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Magic Link Modal -->
+<% unless defined?(user_signed_in?) && user_signed_in? || user_authenticated? %>
+  <div id="magicLinkModal" class="fixed inset-0 flex items-center justify-center z-50 hidden" data-controller="modal">
+    <div class="absolute inset-0 bg-black bg-opacity-50" data-action="click->modal#close"></div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden transform transition-all">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold kv-text-primary">Sign in with Magic Link</h3>
+          <button class="text-gray-400 hover:text-gray-500 focus:outline-none" data-action="modal#close">
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <p class="mb-4 kv-text-secondary text-sm">Enter your email address to receive a secure magic link for instant access.</p>
+        
+        <%= form_with url: user_magic_link_path, method: :post, class: "space-y-4", data: { action: "submit->modal#processMagicLink" } do |form| %>
+          <div>
+            <%= form.label :email, 'Email Address', class: "block text-sm font-medium kv-text-secondary mb-1" %>
+            <%= form.email_field :email, placeholder: "you@example.com", class: "kv-input", required: true %>
+          </div>
+          
+          <div>
+            <%= form.submit "Send Magic Link", class: "kv-btn kv-btn-primary w-full" %>
+          </div>
+        <% end %>
+        
+        <div class="mt-4 text-center text-sm kv-text-secondary">
+          <span>Or use </span>
+          <%= link_to 'password login', new_user_session_path, class: "kv-text-accent hover:underline" %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

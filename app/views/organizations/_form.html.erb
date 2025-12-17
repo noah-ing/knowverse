@@ -1,0 +1,119 @@
+<%# 
+  Organization Form Partial
+  A fully refactored form according to KnowVerse design patterns with:
+  - Consistent form field styling with proper design tokens
+  - Dark mode compatibility
+  - Improved error presentation
+  - Enhanced organization settings section
+%>
+
+<%= form_with(model: organization, class: "space-y-6") do |form| %>
+  <%= form.hidden_field :active, value: true %> <!-- Add hidden field for active status -->
+  <% if organization.errors.any? %>
+    <div class="kv-alert kv-alert-error mb-6 animate-in fade-in duration-300">
+      <div class="kv-alert-icon">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="kv-alert-content">
+        <h3 class="kv-alert-title">
+          <%= pluralize(organization.errors.count, "error") %> prohibited this organization from being saved:
+        </h3>
+        <div class="kv-alert-message">
+          <ul class="list-disc pl-5 space-y-1">
+            <% organization.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= form.label :name, class: "kv-label" %>
+    <div class="mt-1">
+      <%= form.text_field :name, autofocus: true, class: "kv-input" %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :slug, class: "kv-label" %>
+    <div class="mt-1">
+      <%= form.text_field :slug, class: "kv-input" %>
+    </div>
+    <p class="mt-1 text-xs kv-text-secondary">
+      Used for URL and identification. Leave blank to generate automatically from name.
+    </p>
+  </div>
+
+  <% if organization.persisted? && current_user.organization_users.find_by(organization: organization)&.role == 'owner' %>
+    <div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mt-6">
+      <h3 class="text-lg font-medium kv-text-primary mb-4">Organization Settings</h3>
+      
+      <div class="space-y-5">
+        <div class="form-group">
+          <%= form.label :settings_max_documents, "Maximum Documents", class: "kv-label" %>
+          <div class="mt-1">
+            <%= form.number_field :settings_max_documents, value: organization.max_documents, min: 1, class: "kv-input" %>
+          </div>
+          <p class="mt-1 text-xs kv-text-secondary">
+            Maximum number of documents this organization can have.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :settings_max_queries_per_month, "Monthly Query Limit", class: "kv-label" %>
+          <div class="mt-1">
+            <%= form.number_field :settings_max_queries_per_month, value: organization.max_queries_per_month, min: 1, class: "kv-input" %>
+          </div>
+          <p class="mt-1 text-xs kv-text-secondary">
+            Maximum number of search queries allowed per month.
+          </p>
+        </div>
+
+        <div class="kv-toggle-group">
+          <div class="flex items-center h-5">
+            <%= form.check_box :settings_advanced_search, checked: organization.advanced_search, class: "kv-toggle" %>
+          </div>
+          <div class="ml-3 text-sm">
+            <%= form.label :settings_advanced_search, "Enable Advanced Search", class: "kv-toggle-label" %>
+            <p class="text-xs kv-text-secondary">
+              Enables more sophisticated search algorithms and features.
+            </p>
+          </div>
+        </div>
+
+        <div class="kv-toggle-group">
+          <div class="flex items-center h-5">
+            <%= form.check_box :settings_api_access, checked: organization.api_access, class: "kv-toggle" %>
+          </div>
+          <div class="ml-3 text-sm">
+            <%= form.label :settings_api_access, "Enable API Access", class: "kv-toggle-label" %>
+            <p class="text-xs kv-text-secondary">
+              Enables API keys for programmatic access to this organization's documents.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="flex justify-end space-x-3 mt-6">
+    <%= render partial: "shared/button", locals: {
+      text: "Cancel",
+      variant: "secondary",
+      href: organization.persisted? ? organization_path(organization) : organizations_path
+    } %>
+    
+    <%= render partial: "shared/button", locals: {
+      text: organization.persisted? ? "Update Organization" : "Create Organization",
+      variant: "primary",
+      type: "submit",
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
+      </svg>'
+    } %>
+  </div>
+<% end %>

@@ -1,0 +1,265 @@
+<div class="kv-container kv-animation-fade-in" style="--kv-animation-delay: 100ms;">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="kv-text-primary text-2xl font-bold">Problem Queries</h1>
+      <p class="kv-text-secondary mt-1">Identify problematic search queries that need attention</p>
+    </div>
+    <div>
+      <%= render partial: "shared/button", locals: {
+        text: "Back to Dashboard",
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>',
+        href: admin_search_metrics_path,
+        variant: "secondary"
+      } %>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="kv-animation-fade-in" style="--kv-animation-delay: 200ms;">
+    <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+      <nav class="-mb-px flex" aria-label="Tabs">
+        <a href="#poor-feedback" class="tab-link kv-active border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" aria-current="page">
+          Poor Feedback
+        </a>
+        <a href="#zero-results" class="tab-link border-transparent kv-text-secondary hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ml-8">
+          Zero Results
+        </a>
+        <a href="#high-latency" class="tab-link border-transparent kv-text-secondary hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ml-8">
+          High Latency
+        </a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Problem Queries with Poor Feedback -->
+  <div id="poor-feedback" class="tab-content kv-animation-fade-in" style="--kv-animation-delay: 300ms;">
+    <%= render partial: "shared/card", locals: {
+      title: "Queries with Poor Feedback",
+      badge: {
+        text: "#{@problem_queries.size} queries",
+        variant: "error"
+      },
+      content: capture do %>
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+          <% if @problem_queries.any? %>
+            <% @problem_queries.each_with_index do |query, index| %>
+              <li class="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-gray-800 kv-animation-slide-up" style="--kv-animation-delay: <%= 300 + ((index + 1) * 50) %>ms;">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-primary truncate w-1/2">
+                    <%= query.query_text %>
+                  </div>
+                  <div class="ml-2 flex-shrink-0 flex items-center">
+                    <div class="kv-text-secondary text-sm mr-4">
+                      <%= query.feedback_count %> feedback
+                    </div>
+                    <span class="flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
+                      <svg class="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      Avg Score: <%= number_with_precision(query.avg_score, precision: 1) %>/5
+                    </span>
+                  </div>
+                </div>
+                <div class="mt-2 sm:flex sm:justify-between">
+                  <div class="sm:flex">
+                    <div class="flex items-center text-sm kv-text-secondary">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                      </svg>
+                      <%= query.user&.email || 'Anonymous' %>
+                    </div>
+                    <div class="mt-2 flex items-center text-sm kv-text-secondary sm:mt-0 sm:ml-6">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h6v4H7V5zm8 8v2h1v1H4v-1h1v-2a7.001 7.001 0 0113 0zm-7-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      <%= query.organization&.name || 'Unknown' %>
+                    </div>
+                  </div>
+                  <div class="mt-2 flex items-center text-sm kv-text-secondary sm:mt-0">
+                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    <%= time_ago_in_words(query.created_at) %> ago
+                  </div>
+                </div>
+              </li>
+            <% end %>
+          <% else %>
+            <li class="px-4 py-6 sm:px-6 text-center kv-text-secondary">
+              <p>No problematic queries detected.</p>
+            </li>
+          <% end %>
+        </ul>
+      <% end 
+    } %>
+  </div>
+
+  <!-- Zero Results Queries -->
+  <div id="zero-results" class="tab-content hidden kv-animation-fade-in" style="--kv-animation-delay: 300ms;">
+    <%= render partial: "shared/card", locals: {
+      title: "Searches with Zero Results",
+      badge: {
+        text: "#{@zero_results_queries.size} queries",
+        variant: "warning"
+      },
+      content: capture do %>
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+          <% if @zero_results_queries.any? %>
+            <% @zero_results_queries.each_with_index do |query, index| %>
+              <li class="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-gray-800 kv-animation-slide-up" style="--kv-animation-delay: <%= 300 + ((index + 1) * 50) %>ms;">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-primary truncate w-1/2">
+                    <%= query.query_text %>
+                  </div>
+                  <div class="ml-2 flex-shrink-0 flex items-center">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
+                      <svg class="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      No results found
+                    </span>
+                  </div>
+                </div>
+                <div class="mt-2 sm:flex sm:justify-between">
+                  <div class="sm:flex">
+                    <div class="flex items-center text-sm kv-text-secondary">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                      </svg>
+                      <%= query.user&.email || 'Anonymous' %>
+                    </div>
+                    <div class="mt-2 flex items-center text-sm kv-text-secondary sm:mt-0 sm:ml-6">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h6v4H7V5zm8 8v2h1v1H4v-1h1v-2a7.001 7.001 0 0113 0zm-7-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      <%= query.organization&.name || 'Unknown' %>
+                    </div>
+                  </div>
+                  <div class="mt-2 flex items-center text-sm kv-text-secondary sm:mt-0">
+                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    <%= time_ago_in_words(query.created_at) %> ago
+                  </div>
+                </div>
+              </li>
+            <% end %>
+          <% else %>
+            <li class="px-4 py-6 sm:px-6 text-center kv-text-secondary">
+              <p>No zero result queries detected.</p>
+            </li>
+          <% end %>
+        </ul>
+      <% end 
+    } %>
+  </div>
+
+  <!-- High Latency Queries -->
+  <div id="high-latency" class="tab-content hidden kv-animation-fade-in" style="--kv-animation-delay: 300ms;">
+    <%= render partial: "shared/card", locals: {
+      title: "High Latency Searches (>1s)",
+      badge: {
+        text: "#{@high_latency_queries.size} queries",
+        variant: "warning"
+      },
+      content: capture do %>
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+          <% if @high_latency_queries.any? %>
+            <% @high_latency_queries.each_with_index do |query, index| %>
+              <li class="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-gray-800 kv-animation-slide-up" style="--kv-animation-delay: <%= 300 + ((index + 1) * 50) %>ms;">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-primary truncate w-1/2">
+                    <%= query.query_text %>
+                  </div>
+                  <div class="ml-2 flex-shrink-0 flex items-center">
+                    <div class="kv-text-secondary text-sm mr-4">
+                      <%= query.result_count %> results
+                    </div>
+                    <span class="flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100">
+                      <svg class="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                      </svg>
+                      <%= number_with_precision(query.latency / 1000.0, precision: 2) %>s
+                    </span>
+                  </div>
+                </div>
+                <div class="mt-2 sm:flex sm:justify-between">
+                  <div class="sm:flex">
+                    <div class="flex items-center text-sm kv-text-secondary">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                      </svg>
+                      <%= query.user&.email || 'Anonymous' %>
+                    </div>
+                    <div class="mt-2 flex items-center text-sm kv-text-secondary sm:mt-0 sm:ml-6">
+                      <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1h6v4H7V5zm8 8v2h1v1H4v-1h1v-2a7.001 7.001 0 0113 0zm-7-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                      <%= query.organization&.name || 'Unknown' %>
+                    </div>
+                    <div class="mt-2 flex items-center text-sm kv-text-secondary sm:mt-0 sm:ml-6">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                        <%= case query.search_provider
+                            when 'hybrid' then 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100'
+                            when 'pgvector_cosine' then 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+                            when 'pgvector_l2' then 'bg-cyan-100 text-cyan-800 dark:bg-cyan-800 dark:text-cyan-100'
+                            when 'haystack' then 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100'
+                            when 'hnsw' then 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                            else 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                            end %>">
+                        <%= query.search_provider&.humanize || 'Unknown' %>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="mt-2 flex items-center text-sm kv-text-secondary sm:mt-0">
+                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    <%= time_ago_in_words(query.created_at) %> ago
+                  </div>
+                </div>
+              </li>
+            <% end %>
+          <% else %>
+            <li class="px-4 py-6 sm:px-6 text-center kv-text-secondary">
+              <p>No high latency queries detected.</p>
+            </li>
+          <% end %>
+        </ul>
+      <% end 
+    } %>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('turbo:load', function() {
+    // Handle tab navigation
+    const tabs = document.querySelectorAll('.tab-link');
+    const contents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Remove active states
+        tabs.forEach(t => {
+          t.classList.remove('kv-active', 'border-primary', 'text-primary');
+          t.classList.add('border-transparent', 'kv-text-secondary', 'hover:text-gray-700', 'dark:hover:text-gray-300', 'hover:border-gray-300', 'dark:hover:border-gray-600');
+        });
+        
+        // Hide all content
+        contents.forEach(content => {
+          content.classList.add('hidden');
+        });
+        
+        // Set active tab
+        this.classList.add('kv-active', 'border-primary', 'text-primary');
+        this.classList.remove('border-transparent', 'kv-text-secondary', 'hover:text-gray-700', 'dark:hover:text-gray-300', 'hover:border-gray-300', 'dark:hover:border-gray-600');
+        
+        // Show selected content
+        const contentId = this.getAttribute('href').substring(1);
+        document.getElementById(contentId).classList.remove('hidden');
+      });
+    });
+  });
+</script>

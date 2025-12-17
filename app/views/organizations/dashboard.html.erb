@@ -1,0 +1,278 @@
+ <%# 
+  Organization Dashboard Page
+  A fully refactored page according to KnowVerse design patterns with:
+  - Card-based structure with consistent styling
+  - Proper animations and transitions
+  - Dark mode compatibility
+  - Responsive design
+  - Central navigation to key features
+%>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-200">
+  <%# Page Header with Actions %>
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold kv-text-primary">Organization Dashboard</h1>
+      <p class="text-sm kv-text-secondary mt-1"><%= @organization.name %> Knowledge Hub</p>
+    </div>
+    
+    <div class="flex items-center space-x-4">
+      <!-- Dark mode toggle -->
+      <div class="kv-dark-mode-toggle" data-controller="dark-mode" data-action="click->dark-mode#toggle" 
+          data-dark-mode-target="toggle" title="Toggle dark mode" role="switch" aria-checked="false"></div>
+      
+      <div class="flex flex-wrap gap-3">
+        <%= render partial: "shared/button", locals: {
+          text: "Settings",
+          variant: "secondary",
+          size: "sm",
+          href: edit_organization_path(@organization),
+          icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+          </svg>'
+        } %>
+        
+        <% # Temporarily removed user preferences button until route is fixed %>
+      </div>
+    </div>
+  </div>
+
+  <%# Organization stats summary %>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <%= render "shared/card",
+      title: "Documents",
+      animate: "fade-in",
+      classes: "flex flex-col justify-between transition-all duration-200 hover:shadow-lg",
+      header_actions: raw('<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-300 transition-colors duration-200">' + (@organization.documents.count || 0).to_s + '</span>') do %>
+      <div class="mt-1 mb-4">
+        <div class="relative pt-1">
+          <div class="overflow-hidden h-2 mb-1 text-xs flex rounded-full bg-primary-100 dark:bg-primary-900 transition-colors duration-200">
+            <% usage_percent = @organization.usage_percent(:documents) %>
+            <% bar_color = usage_percent > 80 ? "bg-error-500 dark:bg-error-600" : "bg-primary-500 dark:bg-primary-600" %>
+            <div class="<%= bar_color %> h-2 rounded-full transition-colors duration-200" 
+                style="width:<%= usage_percent %>%">
+            </div>
+          </div>
+          <div class="text-xs text-right kv-text-secondary mt-1">
+            <%= @organization.documents.count %> of <%= @organization.max_documents %> documents
+          </div>
+        </div>
+      </div>
+      
+      <%= render partial: "shared/button", locals: {
+        text: "View Documents",
+        full_width: true,
+        variant: "primary",
+        href: organization_documents_path(@organization),
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+        </svg>'
+      } %>
+    <% end %>
+    
+    <%= render "shared/card",
+      title: "Vector Search",
+      animate: "fade-in",
+      animate_delay: "100ms",
+      classes: "flex flex-col justify-between transition-all duration-200 hover:shadow-lg" do %>
+      <div class="mb-4">
+        <p class="text-sm kv-text-secondary">
+          Explore your documents through vector embeddings in an interactive 3D visualization.
+        </p>
+      </div>
+      
+      <%= render partial: "shared/button", locals: {
+        text: "Open Vector Space",
+        full_width: true,
+        variant: "primary",
+        href: organization_vectors_path(@organization),
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z" />
+        </svg>'
+      } %>
+    <% end %>
+    
+    <%= render "shared/card",
+      title: "Search",
+      animate: "fade-in",
+      animate_delay: "200ms",
+      classes: "flex flex-col justify-between transition-all duration-200 hover:shadow-lg",
+      header_actions: raw('<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 transition-colors duration-200">' + (@recent_searches&.count || 0).to_s + ' recent</span>') do %>
+      <div class="mb-4">
+        <p class="text-sm kv-text-secondary">
+          Find information across your documents using advanced semantic search.
+        </p>
+      </div>
+      
+      <%= link_to new_organization_document_path(@organization), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" do %>
+        <div class="flex-shrink-0 h-10 w-10 rounded-md bg-primary-500 flex items-center justify-center">
+          <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-base font-medium kv-text-primary">Upload Document</p>
+          <p class="text-sm kv-text-secondary">Add new documents to your knowledge base</p>
+        </div>
+      <% end %>
+        
+        <%= link_to organization_rag_index_path(@organization), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" do %>
+          <div class="flex-shrink-0 h-10 w-10 rounded-md bg-indigo-500 flex items-center justify-center">
+            <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-base font-medium kv-text-primary">New RAG Conversation</p>
+            <p class="text-sm kv-text-secondary">Ask questions about your documents</p>
+          </div>
+        <% end %>
+        
+        <%= link_to search_path(organization_id: @organization.id), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" do %>
+          <div class="flex-shrink-0 h-10 w-10 rounded-md bg-blue-500 flex items-center justify-center">
+            <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-base font-medium kv-text-primary">Semantic Search</p>
+            <p class="text-sm kv-text-secondary">Find information across your documents</p>
+          </div>
+        <% end %>
+        
+        <%= link_to organization_conversations_path(@organization), class: "flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200" do %>
+          <div class="flex-shrink-0 h-10 w-10 rounded-md bg-amber-500 flex items-center justify-center">
+            <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-base font-medium kv-text-primary">View Conversations</p>
+            <p class="text-sm kv-text-secondary">Access your conversation history</p>
+          </div>
+        <% end %>
+    <% end %>
+    
+    <%# Recent Activity Card %>
+    <%= render "shared/card",
+      title: "Recent Activity",
+      subtitle: "Latest organization updates",
+      animate: "fade-in",
+      animate_delay: "500ms",
+      classes: "lg:col-span-2 transition-all duration-200 hover:shadow-lg" do %>
+      <% if @recent_activities&.any? %>
+        <div class="flow-root">
+          <ul role="list" class="-mb-8">
+            <% @recent_activities.each_with_index do |activity, index| %>
+              <li>
+                <div class="relative pb-8">
+                  <% if index < @recent_activities.size - 1 %>
+                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700 transition-colors duration-200" aria-hidden="true"></span>
+                  <% end %>
+                  <div class="relative flex space-x-3 animate-in fade-in duration-300" style="animation-delay: <%= 100 + (index * 50) %>ms;">
+                    <% activity_type_bg = 
+                      case activity.activity_type
+                      when 'document_upload' then 'bg-primary-500 dark:bg-primary-500'
+                      when 'search_query' then 'bg-blue-500 dark:bg-blue-500'
+                      when 'conversation' then 'bg-amber-500 dark:bg-amber-500'
+                      else 'bg-green-500 dark:bg-green-500'
+                      end %>
+                    <div>
+                      <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-gray-900 <%= activity_type_bg %> transition-colors duration-200">
+                        <% activity_icon = 
+                          case activity.activity_type
+                          when 'document_upload' then '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />'
+                          when 'search_query' then '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />'
+                          when 'conversation' then '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />'
+                          else '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />'
+                          end %>
+                        <svg class="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                          <%= raw activity_icon %>
+                        </svg>
+                      </span>
+                    </div>
+                    <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                      <div>
+                        <p class="text-sm kv-text-primary"><%= activity.title %></p>
+                        <p class="text-xs kv-text-secondary"><%= activity.description %></p>
+                      </div>
+                      <div class="text-right text-xs whitespace-nowrap kv-text-secondary">
+                        <time datetime="<%= activity.created_at.iso8601 %>"><%= time_ago_in_words(activity.created_at) %> ago</time>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% else %>
+        <div class="text-center py-6">
+          <svg class="mx-auto h-12 w-12 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium kv-text-primary">No activity yet</h3>
+          <p class="mt-1 text-sm kv-text-secondary">Your organization activities will appear here.</p>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+  
+  <%# Features Overview Card %>
+  <%= render "shared/card",
+    title: "KnowVerse Features",
+    subtitle: "Explore the capabilities of your knowledge platform",
+    animate: "fade-in",
+    animate_delay: "600ms",
+    classes: "mt-6 transition-all duration-200 hover:shadow-lg" do %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg transition-colors duration-200">
+        <div class="flex flex-col items-center text-center">
+          <div class="h-12 w-12 rounded-md bg-primary-100 dark:bg-primary-900 flex items-center justify-center mb-4 transition-colors duration-200">
+            <svg class="h-6 w-6 text-primary-600 dark:text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium kv-text-primary">Document Management</h3>
+          <p class="mt-2 text-sm kv-text-secondary">Upload, organize, and manage documents with automatic processing and vectorization.</p>
+        </div>
+      </div>
+      
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg transition-colors duration-200">
+        <div class="flex flex-col items-center text-center">
+          <div class="h-12 w-12 rounded-md bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-4 transition-colors duration-200">
+            <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium kv-text-primary">Semantic Search</h3>
+          <p class="mt-2 text-sm kv-text-secondary">Find information using natural language queries with vector and hybrid search options.</p>
+        </div>
+      </div>
+      
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg transition-colors duration-200">
+        <div class="flex flex-col items-center text-center">
+          <div class="h-12 w-12 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4 transition-colors duration-200">
+            <svg class="h-6 w-6 text-indigo-600 dark:text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium kv-text-primary">RAG Conversations</h3>
+          <p class="mt-2 text-sm kv-text-secondary">Ask questions and get AI-powered answers backed by your document knowledge.</p>
+        </div>
+      </div>
+      
+      <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg transition-colors duration-200">
+        <div class="flex flex-col items-center text-center">
+          <div class="h-12 w-12 rounded-md bg-amber-100 dark:bg-amber-900 flex items-center justify-center mb-4 transition-colors duration-200">
+            <svg class="h-6 w-6 text-amber-600 dark:text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium kv-text-primary">Vector Visualization</h3>
+          <p class="mt-2 text-sm kv-text-secondary">Explore document relationships in 3D space with interactive visualizations.</p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

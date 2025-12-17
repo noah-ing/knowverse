@@ -1,0 +1,68 @@
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-semibold mb-6">Payment Methods</h1>
+  
+  <div class="mb-8">
+    <%= link_to new_subscriptions_payment_method_path, class: "py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors" do %>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+      </svg>
+      Add Payment Method
+    <% end %>
+  </div>
+
+  <% if @payment_methods.empty? %>
+    <div class="bg-gray-100 p-6 rounded-lg text-center">
+      <p class="text-gray-700">You don't have any payment methods yet.</p>
+      <p class="text-gray-500 mt-2">Add a payment method to subscribe to a plan.</p>
+    </div>
+  <% else %>
+    <div class="grid gap-4">
+      <% @payment_methods.each do |payment_method| %>
+        <div class="border rounded-lg p-6 flex items-center justify-between">
+          <div class="flex items-center">
+            <% case payment_method.card.brand %>
+            <% when 'visa' %>
+              <div class="text-blue-600 mr-4">
+                <svg class="h-10 w-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="48" height="48" rx="12" fill="currentColor" fill-opacity="0.1"/>
+                  <path d="M15 19L22 29L28 19M20 29H30" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            <% when 'mastercard' %>
+              <div class="text-red-600 mr-4">
+                <svg class="h-10 w-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="48" height="48" rx="12" fill="currentColor" fill-opacity="0.1"/>
+                  <circle cx="18" cy="24" r="6" fill="#FF5F00"/>
+                  <circle cx="30" cy="24" r="6" fill="#EB001B" fill-opacity="0.8"/>
+                </svg>
+              </div>
+            <% else %>
+              <div class="text-gray-600 mr-4">
+                <svg class="h-10 w-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="48" height="48" rx="12" fill="currentColor" fill-opacity="0.1"/>
+                  <rect x="14" y="16" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </div>
+            <% end %>
+            <div>
+              <p class="font-medium text-gray-900"><%= payment_method.card.brand.titleize %> ending in <%= payment_method.card.last4 %></p>
+              <p class="text-gray-500">Expires <%= payment_method.card.exp_month %>/<%= payment_method.card.exp_year %></p>
+            </div>
+          </div>
+          
+          <%= button_to subscriptions_payment_method_path(payment_method.id), method: :delete, class: "text-red-600 hover:text-red-800 transition-colors" do %>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+  
+  <div class="mt-8">
+    <%= link_to subscriptions_plans_path, class: "text-blue-600 hover:text-blue-800" do %>
+      ← Back to Plans
+    <% end %>
+  </div>
+</div>

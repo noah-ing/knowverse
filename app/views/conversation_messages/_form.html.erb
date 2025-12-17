@@ -1,0 +1,35 @@
+<%= form_with url: organization_conversation_messages_path(@organization, @conversation), 
+           method: :post, 
+           class: "space-y-4",
+           id: "new_message_form",
+           data: { controller: "auto-submit",
+                  action: "turbo:submit-end->scroll-to-bottom#scrollToBottom" } do |f| %>
+
+  <div class="flex gap-4 items-end">
+    <%= f.hidden_field :role, value: "user" %>
+    
+    <div class="flex-grow relative">
+      <%= f.text_area :content, 
+                    placeholder: "Type your message...", 
+                    class: "kv-input kv-textarea transition-all duration-200",
+                    rows: 2,
+                    required: true,
+                    data: { 
+                      action: "keydown->auto-submit#checkSubmit focus:animate-in focus:fade-in focus:duration-300"
+                    } %>
+      <div class="absolute right-3 bottom-3 text-xs text-gray-400 dark:text-gray-500 pointer-events-none">
+        <kbd class="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded-md">Shift+Enter</kbd> for new line
+      </div>
+    </div>
+    
+    <div>
+      <%= render 'shared/button',
+            variant: 'primary',
+            icon: 'paper-airplane',
+            type: 'submit',
+            animate: 'fade-in',
+            animate_delay: '100ms',
+            aria: { label: 'Send message' } %>
+    </div>
+  </div>
+<% end %>

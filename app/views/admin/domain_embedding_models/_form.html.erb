@@ -1,0 +1,282 @@
+<%= form_with(model: [:admin, @organization, domain_model], local: true, class: "space-y-6 animate-in fade-in duration-500 w-full") do |form| %>
+  <% if domain_model.errors.any? %>
+    <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-6 animate-in fade-in duration-300 rounded-r-lg shadow-sm" style="animation-delay: 0.1s">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400 dark:text-red-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800 dark:text-red-300">
+            <%= pluralize(domain_model.errors.count, "error") %> prohibited this domain embedding model from being saved:
+          </h3>
+          <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+            <ul class="list-disc pl-5 space-y-1">
+              <% domain_model.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render 'shared/card', 
+              title: "Model Information",
+              subtitle: "Basic information about the domain-specific embedding model",
+              animate: "fade-in", 
+              animate_delay: "0.2s",
+              header_actions: capture do %>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+    </svg>
+  <% end do %>
+    <div class="md:grid md:grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 animate-in fade-in duration-300" style="animation-delay: 0.3s">
+      <div class="animate-in fade-in duration-300" style="animation-delay: 0.35s">
+        <%= form.label :name, class: "block text-sm font-medium kv-text-primary mb-1" %>
+        <div class="relative rounded-md shadow-sm">
+          <%= form.text_field :name, 
+                      class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
+                      placeholder: "Medical Terminology Model",
+                      aria: { label: "Model Name" } %>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+        <p class="mt-1 text-xs kv-text-secondary">A descriptive name for the model</p>
+      </div>
+
+      <div class="animate-in fade-in duration-300" style="animation-delay: 0.4s">
+        <%= form.label :domain, class: "block text-sm font-medium kv-text-primary mb-1" %>
+        <div class="relative rounded-md shadow-sm">
+          <%= form.text_field :domain, 
+                      class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
+                      placeholder: "medical",
+                      aria: { label: "Domain Name" } %>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M9.504 1.132a1 1 0 01.992 0l1.75 1a1 1 0 11-.992 1.736L10 3.152l-1.254.716a1 1 0 11-.992-1.736l1.75-1zM5.618 4.504a1 1 0 01-.372 1.364L5.016 6l.23.132a1 1 0 11-.992 1.736L4 7.723V8a1 1 0 01-2 0V6a.996.996 0 01.52-.878l1.734-.99a1 1 0 011.364.372zm8.764 0a1 1 0 011.364-.372l1.733.99A1.002 1.002 0 0118 6v2a1 1 0 11-2 0v-.277l-.254.145a1 1 0 11-.992-1.736l.23-.132-.23-.132a1 1 0 01-.372-1.364zm-7 4a1 1 0 011.364-.372L10 8.848l1.254-.716a1 1 0 11.992 1.736L11 10.58V12a1 1 0 11-2 0v-1.42l-1.246-.712a1 1 0 01-.372-1.364zM3 11a1 1 0 011 1v1.42l1.246.712a1 1 0 11-.992 1.736l-1.75-1A1 1 0 012 14v-2a1 1 0 011-1zm14 0a1 1 0 011 1v2a1 1 0 01-.504.868l-1.75 1a1 1 0 11-.992-1.736L16 13.42V12a1 1 0 011-1zm-9.618 5.504a1 1 0 011.364-.372l.254.145V16a1 1 0 112 0v.277l.254-.145a1 1 0 11.992 1.736l-1.735.992a.995.995 0 01-1.022 0l-1.735-.992a1 1 0 01-.372-1.364z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+        <p class="mt-1 text-xs kv-text-secondary">Domain name (lowercase, no spaces)</p>
+      </div>
+
+      <div class="animate-in fade-in duration-300" style="animation-delay: 0.45s">
+        <%= form.label :base_model, class: "block text-sm font-medium kv-text-primary mb-1" %>
+        <div class="relative rounded-md shadow-sm">
+          <%= form.select :base_model, 
+                      options_for_select(['mini', 'small', 'base', 'large', 'xl'], domain_model.base_model), 
+                      {}, 
+                      { class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200",
+                        aria: { label: "Base Model" } } %>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+        <p class="mt-1 text-xs kv-text-secondary">Base embedding model to extend</p>
+      </div>
+
+      <div class="animate-in fade-in duration-300" style="animation-delay: 0.5s">
+        <%= form.label :dimension, class: "block text-sm font-medium kv-text-primary mb-1" %>
+        <div class="relative rounded-md shadow-sm">
+          <%= form.select :dimension, 
+                      options_for_select([
+                        ["Mini (384)", 384],
+                        ["Small (768)", 768],
+                        ["Base (1024)", 1024],
+                        ["Large (1536)", 1536],
+                        ["XL (2048)", 2048]
+                      ], domain_model.dimension || 1024), 
+                      {}, 
+                      { class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200",
+                        aria: { label: "Dimension" } } %>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+        <p class="mt-1 text-xs kv-text-secondary">Embedding dimension (should match the base model)</p>
+      </div>
+
+      <div class="animate-in fade-in duration-300" style="animation-delay: 0.55s">
+        <%= form.label :version, class: "block text-sm font-medium kv-text-primary mb-1" %>
+        <div class="relative rounded-md shadow-sm">
+          <%= form.text_field :version, 
+                      class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
+                      placeholder: "1.0",
+                      aria: { label: "Version" } %>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a1 1 0 011-1h5a.997.997 0 01.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+        <p class="mt-1 text-xs kv-text-secondary">Version identifier for this model</p>
+      </div>
+
+      <div class="col-span-1 lg:col-span-2 animate-in fade-in duration-300" style="animation-delay: 0.6s">
+        <%= form.label :description, class: "block text-sm font-medium kv-text-primary mb-1" %>
+        <div class="relative rounded-md shadow-sm">
+          <%= form.text_area :description, 
+                      rows: 4, 
+                      class: "mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
+                      placeholder: "Specialized for medical terminology and healthcare documents...",
+                      aria: { label: "Description" } %>
+        </div>
+        <p class="mt-1 text-xs kv-text-secondary">Detailed description of the model and its use cases</p>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render 'shared/card', 
+              title: "Advanced Configuration",
+              subtitle: "Additional settings for the domain model",
+              animate: "fade-in", 
+              animate_delay: "0.65s",
+              header_actions: capture do %>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+    </svg>
+  <% end do %>
+    <div class="animate-in fade-in duration-300" style="animation-delay: 0.7s">
+      <%= form.label :
+<%= form_with(model: [:admin, @organization, domain_model], local: true, class: "space-y-6 animate-fade-in") do |form| %>
+  <% if domain_model.errors.any? %>
+    <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-6 animate-fade-in" style="animation-delay: 0.1s">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400 dark:text-red-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800 dark:text-red-300">
+            <%= pluralize(domain_model.errors.count, "error") %> prohibited this domain embedding model from being saved:
+          </h3>
+          <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+            <ul class="list-disc pl-5 space-y-1">
+              <% domain_model.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render 'shared/card', animation_delay: 0.2 do |card| %>
+    <% card.with_header do %>
+      <div class="flex items-center">
+        <div class="mr-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium leading-6 kv-text-primary">Model Information</h3>
+          <p class="mt-1 text-sm kv-text-secondary">
+            Basic information about the domain-specific embedding model.
+          </p>
+        </div>
+      </div>
+    <% end %>
+    <% card.with_body do %>
+      <div class="md:grid md:grid-cols-2 md:gap-6 animate-fade-in" style="animation-delay: 0.3s">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="col-span-1 animate-fade-in" style="animation-delay: 0.35s">
+            <%= form.label :name, class: "block text-sm font-medium kv-text-primary" %>
+            <%= form.text_field :name, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md transition", placeholder: "Medical Terminology Model" %>
+            <p class="mt-2 text-sm kv-text-secondary">A descriptive name for the model.</p>
+          </div>
+
+          <div class="col-span-1 animate-fade-in" style="animation-delay: 0.4s">
+            <%= form.label :domain, class: "block text-sm font-medium kv-text-primary" %>
+            <%= form.text_field :domain, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md transition", placeholder: "medical" %>
+            <p class="mt-2 text-sm kv-text-secondary">Domain name (lowercase, no spaces).</p>
+          </div>
+
+          <div class="col-span-1 animate-fade-in" style="animation-delay: 0.45s">
+            <%= form.label :base_model, class: "block text-sm font-medium kv-text-primary" %>
+            <%= form.select :base_model, options_for_select(['mini', 'small', 'base', 'large', 'xl'], domain_model.base_model), {}, { class: "mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition" } %>
+            <p class="mt-2 text-sm kv-text-secondary">Base embedding model to extend.</p>
+          </div>
+
+          <div class="col-span-1 animate-fade-in" style="animation-delay: 0.5s">
+            <%= form.label :dimension, class: "block text-sm font-medium kv-text-primary" %>
+            <%= form.select :dimension, options_for_select([
+              ["Mini (384)", 384],
+              ["Small (768)", 768],
+              ["Base (1024)", 1024],
+              ["Large (1536)", 1536],
+              ["XL (2048)", 2048]
+            ], domain_model.dimension || 1024), {}, { class: "mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition" } %>
+            <p class="mt-2 text-sm kv-text-secondary">Embedding dimension (should match the base model).</p>
+          </div>
+
+          <div class="col-span-1 animate-fade-in" style="animation-delay: 0.55s">
+            <%= form.label :version, class: "block text-sm font-medium kv-text-primary" %>
+            <%= form.text_field :version, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md transition", placeholder: "1.0" %>
+            <p class="mt-2 text-sm kv-text-secondary">Version identifier for this model.</p>
+          </div>
+
+          <div class="col-span-1 md:col-span-2 animate-fade-in" style="animation-delay: 0.6s">
+            <%= form.label :description, class: "block text-sm font-medium kv-text-primary" %>
+            <%= form.text_area :description, rows: 4, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md transition", placeholder: "Specialized for medical terminology and healthcare documents..." %>
+            <p class="mt-2 text-sm kv-text-secondary">Detailed description of the model and its use cases.</p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+
+  <%= render 'shared/card', animation_delay: 0.7 do |card| %>
+    <% card.with_header do %>
+      <div class="flex items-center">
+        <div class="mr-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium leading-6 kv-text-primary">Configuration</h3>
+          <p class="mt-1 text-sm kv-text-secondary">
+            Additional configuration for the domain model.
+          </p>
+        </div>
+      </div>
+    <% end %>
+    
+    <% card.with_body do %>
+      <div class="animate-fade-in" style="animation-delay: 0.75s">
+        <div>
+          <%= form.label :configuration, "Model Configuration (JSON)", class: "block text-sm font-medium kv-text-primary" %>
+          <%= form.text_area :configuration, rows: 6, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md font-mono transition", placeholder: '{ "training_params": { "epochs": 5, "learning_rate": 0.001 } }' %>
+          <p class="mt-2 text-sm kv-text-secondary">Optional: Advanced configuration in JSON format.</p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+
+  <div class="flex justify-end mt-6 animate-fade-in" style="animation-delay: 0.8s">
+    <%= render 'shared/button', 
+          text: "Cancel", 
+          url: admin_organization_domain_embedding_models_path(@organization), 
+          variant: "secondary",
+          animate: true,
+          animation_delay: 0.1 %>
+          
+    <%= form.button domain_model.new_record? ? "Create Domain Model" : "Update Domain Model", 
+          type: "submit",
+          class: "ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition transform hover:scale-105 duration-200" %>
+  </div>
+<% end %>

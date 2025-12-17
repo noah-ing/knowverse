@@ -1,0 +1,205 @@
+<%# 
+  Enhanced button component with advanced features and accessibility
+  
+  Parameters:
+  - text: Button text (required)
+  - variant: Button style variant (default: 'primary')
+    Options: primary, secondary, outline, danger, success, info, link, ghost, subtle
+  - size: Button size (default: 'md')
+    Options: xs, sm, md, lg, xl
+  - icon: Optional icon HTML to include before text
+  - icon_right: Optional icon HTML to include after text
+  - type: Button type attribute (default: 'button')
+  - classes: Additional CSS classes (optional)
+  - disabled: Whether the button is disabled (default: false)
+  - loading: Whether to show loading state (default: false)
+  - full_width: Whether button should take full width (default: false)
+  - animate: Optional animation style (default: nil)
+    Options: pulse, bounce, fade, none 
+  - rounded: How rounded the button should be (default: 'md')
+    Options: none, sm, md, lg, full
+  - data: Data attributes hash (optional)
+  - id: Optional button ID
+  - aria: ARIA attributes hash (optional)
+  - href: If provided, renders as an anchor tag instead
+  - target: Target attribute for links (default: nil)
+  - rel: Rel attribute for links (default: nil)
+  - tooltip: Optional tooltip text
+  - group_position: Position in button group, if any (default: nil)
+    Options: start, middle, end
+  - title: Optional title attribute for more accessibility context
+%>
+
+<% 
+  # Set defaults
+  variant ||= 'primary'
+  size ||= 'md'
+  type ||= 'button'
+  disabled ||= false
+  loading ||= false
+  full_width ||= false
+  animate ||= nil
+  rounded ||= 'md'
+  classes ||= ''
+  data ||= {}
+  aria ||= {}
+  target ||= nil
+  rel ||= nil
+  group_position ||= nil
+  title ||= nil
+  
+  # Determine base class based on variant
+  base_class = case variant.to_s.downcase
+    when 'primary' then 'kv-btn kv-btn-primary'
+    when 'secondary' then 'kv-btn kv-btn-secondary'
+    when 'outline' then 'kv-btn kv-btn-outline'
+    when 'danger' then 'kv-btn kv-btn-danger'
+    when 'success' then 'kv-btn kv-btn-success'
+    when 'info' then 'kv-btn kv-btn-info'
+    when 'link' then 'kv-btn kv-btn-link'
+    when 'ghost' then 'kv-btn kv-btn-ghost'
+    when 'subtle' then 'kv-btn kv-btn-subtle'
+    else 'kv-btn kv-btn-primary'
+  end
+  
+  # Add size modifier
+  size_class = case size.to_s.downcase
+    when 'xs' then 'kv-btn-xs'
+    when 'sm' then 'kv-btn-sm'
+    when 'lg' then 'kv-btn-lg'
+    when 'xl' then 'kv-btn-xl'
+    else ''
+  end
+  
+  # Add animation class if specified
+  animation_class = case animate.to_s.downcase
+    when 'pulse' then 'animation-pulse'
+    when 'bounce' then 'animation-bounce duration-1000 infinite'
+    when 'fade' then 'animate-in fade-in duration-300 ease-in-out'
+    else ''
+  end
+  
+  # Add rounded class
+  rounded_class = case rounded.to_s.downcase
+    when 'none' then 'rounded-none'
+    when 'sm' then 'rounded-sm'
+    when 'lg' then 'rounded-lg'
+    when 'full' then 'rounded-full'
+    else 'rounded-md'
+  end
+  
+  # Add width class
+  width_class = full_width ? 'w-full justify-center' : ''
+  
+  # Add group position class
+  group_class = case group_position.to_s.downcase
+    when 'start' then 'rounded-r-none border-r-0'
+    when 'middle' then 'rounded-none border-r-0'
+    when 'end' then 'rounded-l-none'
+    else ''
+  end
+  
+  # Add disabled/loading classes
+  state_class = []
+  state_class << 'kv-btn-disabled' if disabled
+  state_class << 'kv-btn-loading' if loading
+  
+  # Combine all classes
+  all_classes = [
+    base_class, 
+    size_class, 
+    animation_class, 
+    rounded_class,
+    width_class,
+    group_class,
+    state_class.join(' '), 
+    classes
+  ].reject(&:blank?).join(' ')
+  
+  # Convert data hash to data attributes
+  data_attrs = data.is_a?(Hash) ? data.map { |k, v| "data-#{k}=\"#{v}\"" }.join(" ") : ""
+  
+  # Convert aria hash to aria attributes
+  aria_attrs = aria.is_a?(Hash) ? aria.map { |k, v| "aria-#{k}=\"#{v}\"" }.join(" ") : ""
+  
+  # Additional attributes
+  rel_attr = rel.present? ? "rel=\"#{rel}\"" : ""
+  target_attr = target.present? ? "target=\"#{target}\"" : ""
+  
+  # Tooltip attributes
+  tooltip_attrs = local_assigns[:tooltip].present? ? 
+    'data-controller="tooltip" data-tooltip-content-value="' + local_assigns[:tooltip] + '"' : 
+    ''
+%>
+
+<% if local_assigns[:href].present? %>
+  <a href="<%= href %>" 
+     class="<%= all_classes %>" 
+     <%= "id=#{id}" if local_assigns[:id].present? %>
+     <%= "title=\"#{title}\"" if title.present? %>
+     <%= disabled ? 'aria-disabled="true" tabindex="-1"' : '' %>
+     <%= loading ? 'aria-busy="true"' : '' %>
+     <%= data_attrs.html_safe if data_attrs.present? %>
+     <%= aria_attrs.html_safe if aria_attrs.present? %>
+     <%= rel_attr.html_safe if rel_attr.present? %>
+     <%= target_attr.html_safe if target_attr.present? %>
+     <%= tooltip_attrs.html_safe if tooltip_attrs.present? %>>
+    <% if local_assigns[:icon].present? && icon.respond_to?(:html_safe) %>
+      <span class="mr-2 inline-flex items-center"><%= icon.html_safe %></span>
+    <% end %>
+    
+    <% if loading %>
+      <span class="kv-btn-text opacity-0">
+        <%= text %>
+      </span>
+      <span class="kv-btn-loader">
+        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </span>
+    <% else %>
+      <span class="kv-btn-text">
+        <%= text %>
+      </span>
+    <% end %>
+    
+    <% if local_assigns[:icon_right].present? && icon_right.respond_to?(:html_safe) %>
+      <span class="ml-2 inline-flex items-center"><%= icon_right.html_safe %></span>
+    <% end %>
+  </a>
+<% else %>
+  <button type="<%= type %>" 
+          class="<%= all_classes %>" 
+          <%= "id=#{id}" if local_assigns[:id].present? %>
+          <%= "title=\"#{title}\"" if title.present? %>
+          <%= disabled ? 'disabled aria-disabled="true"' : '' %>
+          <%= loading ? 'aria-busy="true"' : '' %>
+          <%= data_attrs.html_safe if data_attrs.present? %>
+          <%= aria_attrs.html_safe if aria_attrs.present? %>
+          <%= tooltip_attrs.html_safe if tooltip_attrs.present? %>>
+    <% if local_assigns[:icon].present? && icon.respond_to?(:html_safe) %>
+      <span class="mr-2 inline-flex items-center"><%= icon.html_safe %></span>
+    <% end %>
+    
+    <% if loading %>
+      <span class="kv-btn-text opacity-0">
+        <%= text %>
+      </span>
+      <span class="kv-btn-loader">
+        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </span>
+    <% else %>
+      <span class="kv-btn-text">
+        <%= text %>
+      </span>
+    <% end %>
+    
+    <% if local_assigns[:icon_right].present? && icon_right.respond_to?(:html_safe) %>
+      <span class="ml-2 inline-flex items-center"><%= icon_right.html_safe %></span>
+    <% end %>
+  </button>
+<% end %>

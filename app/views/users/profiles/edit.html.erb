@@ -1,0 +1,72 @@
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Edit Your Profile</h1>
+    <p class="mt-1 text-sm text-gray-500">Update your personal information and avatar</p>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Personal Information</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">Make changes to your profile</p>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+      <%= form_with(model: @user, url: users_profile_path, method: :patch, class: "space-y-6", html: { multipart: true }) do |form| %>
+        <% if @user.errors.any? %>
+          <div class="bg-red-50 p-4 rounded-md mb-6">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">There were <%= pluralize(@user.errors.count, "error") %> with your submission</h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <ul class="list-disc pl-5 space-y-1">
+                    <% @user.errors.full_messages.each do |message| %>
+                      <li><%= message %></li>
+                    <% end %>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <div>
+          <%= form.label :name, class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.text_field :name, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :avatar, class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1 flex items-center space-x-5">
+            <% if @user.avatar.attached? %>
+              <%= image_tag @user.avatar.variant(resize_to_limit: [100, 100]), class: "h-20 w-20 rounded-full" %>
+            <% else %>
+              <div class="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                <svg class="h-12 w-12" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+            <% end %>
+            <div class="flex text-sm text-gray-600">
+              <label for="user_avatar" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                <span>Upload a new avatar</span>
+                <%= form.file_field :avatar, class: "sr-only", accept: 'image/*' %>
+              </label>
+            </div>
+          </div>
+          <p class="mt-2 text-sm text-gray-500">PNG, JPG, GIF up to 5MB</p>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+          <%= link_to "Cancel", users_profile_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+          <%= form.submit "Save", class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

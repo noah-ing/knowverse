@@ -1,0 +1,92 @@
+<% content_for :title, "Manage Users" %>
+
+<div class="mb-6 flex justify-between items-center">
+  <h1 class="text-3xl font-bold">Users</h1>
+</div>
+
+<div class="bg-white rounded-lg shadow-md mb-6 p-6">
+  <%= form_with url: search_admin_users_path, method: :get, class: "mb-0" do |f| %>
+    <div class="flex space-x-4">
+      <div class="flex-1">
+        <%= f.text_field :query, placeholder: "Search by email...", value: params[:query], class: "w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" %>
+      </div>
+      <div>
+        <%= f.submit "Search", class: "inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150" %>
+      </div>
+      <% if params[:query].present? %>
+        <div>
+          <%= link_to "Clear", admin_users_path, class: "inline-flex items-center px-4 py-2 bg-gray-300 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-400 active:bg-gray-500 focus:outline-none focus:border-gray-500 focus:ring ring-gray-300 disabled:opacity-25 transition ease-in-out duration-150" %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <% @users.each do |user| %>
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900"><%= user.email %></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-500"><%= user.created_at.strftime("%b %d, %Y") %></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <% if user.active_subscription? %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+              <% elsif user.trialing? %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Trial</span>
+              <% elsif user.past_due? %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Past Due</span>
+              <% elsif user.canceled? %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Canceled</span>
+              <% else %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">No Sub</span>
+              <% end %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <%= user.current_plan&.name || "None" %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <% if user.admin? %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">Admin</span>
+              <% else %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">User</span>
+              <% end %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <%= link_to "View", admin_user_path(user), class: "text-indigo-600 hover:text-indigo-900 mr-3" %>
+              <%= link_to "Edit", edit_admin_user_path(user), class: "text-indigo-600 hover:text-indigo-900" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if @users.empty? %>
+    <div class="text-center py-10">
+      <h3 class="text-lg font-medium text-gray-500">No users found</h3>
+      <% if params[:query].present? %>
+        <p class="mt-1 text-sm text-gray-500">Try a different search query</p>
+      <% end %>
+    </div>
+  <% end %>
+  
+  <div class="px-6 py-4 border-t">
+    <%# Implement pagination here if needed %>
+  </div>
+</div>
