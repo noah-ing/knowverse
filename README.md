@@ -57,6 +57,8 @@ Enterprise AI knowledge management platform with vector search and RAG capabilit
 | Domain Detection | Working | Query domain classification |
 | Rust Embedding | Ready | ONNX Runtime, LRU cache |
 | Rust DocProc | Ready | Sandboxed PDF/Excel/DOCX |
+| CI/CD Pipeline | Working | GitHub Actions, multi-language |
+| Test Suite | Working | RSpec, pytest, Rust tests |
 
 ## Quick Start
 
@@ -180,13 +182,83 @@ RESEND_API_KEY=re_...
 
 ### Running Tests
 
-```bash
-# Rails tests
-bundle exec rspec
+Tests are designed to run in Docker containers or via CI/CD. The GitHub Actions workflow runs all tests automatically on push.
 
-# Python tests
-cd services/haystack && pytest
+```bash
+# Run all tests via Docker Compose
+docker compose run --rm -e RAILS_ENV=test rails bundle exec rspec
+docker compose run --rm haystack pytest tests/ -v
+docker compose run --rm --build rust-embedding cargo test
+docker compose run --rm --build rust-docproc cargo test
+
+# Or trigger CI/CD by pushing to GitHub
+git push origin knowverse-integration
 ```
+
+**Test Coverage:**
+- Rails RSpec: Models, services, integration tests
+- Python pytest: Haystack endpoints, extraction, search, RAG
+- Rust: Unit tests for embedding and document processor services
+
+### ONNX Model Download
+
+Download embedding models for the Rust embedding service:
+
+```bash
+# Install dependencies
+pip install transformers onnx onnxruntime sentence-transformers optimum
+
+# List available models
+python scripts/download_models.py --list
+
+# Download all models (recommended)
+python scripts/download_models.py --output-dir ./models
+
+# Download specific models
+python scripts/download_models.py --models all-MiniLM-L6-v2,bge-base-en-v1.5
+```
+
+**Supported Models:**
+- `all-MiniLM-L6-v2` (384d, fast) - General purpose
+- `all-mpnet-base-v2` (768d, balanced) - High quality
+- `bge-small-en-v1.5` (384d) - Best quality/speed ratio
+- `bge-base-en-v1.5` (768d) - Production quality
+- `bge-large-en-v1.5` (1024d) - Best quality
+
+### Dataset Ingestion
+
+Ingest high-quality datasets for RAG applications:
+
+```bash
+# Install dependencies
+pip install datasets sentence-transformers qdrant-client tqdm
+
+# List available datasets
+python scripts/ingest_datasets.py --list
+
+# Ingest Wikipedia (first 10,000 docs)
+python scripts/ingest_datasets.py --dataset wikipedia --limit 10000 --org-id 1
+
+# Ingest MS MARCO passages
+python scripts/ingest_datasets.py --dataset msmarco --org-id 1
+
+# Export to JSONL for later ingestion
+python scripts/ingest_datasets.py --dataset squad --export squad.jsonl --limit 5000
+```
+
+**Available Datasets:**
+| Dataset | Documents | Size | Description |
+|---------|-----------|------|-------------|
+| wikipedia | 6.4M | ~20GB | English Wikipedia articles |
+| wikipedia-simple | 205K | ~200MB | Simple English Wikipedia |
+| msmarco | 8.8M | ~3GB | Microsoft MARCO passages |
+| natural-questions | 307K | ~42GB | Google's QA dataset |
+| squad | 87K | ~35MB | Stanford QA Dataset |
+| hotpotqa | 90K | ~600MB | Multi-hop reasoning |
+| pubmed | 1K | ~50MB | Biomedical QA |
+| eli5 | 272K | ~1.5GB | Explain Like I'm 5 |
+| arxiv | 203K | ~5GB | Scientific papers |
+| stackexchange | 15M+ | ~8GB | Technical Q&A |
 
 ### Database Tables
 
@@ -198,12 +270,36 @@ Key tables for the AI/search functionality:
 - `domain_embedding_models` - Domain-specific models
 - `domain_confidence_scores` - Query domain analytics
 
+## CI/CD
+
+GitHub Actions workflow runs on every push and pull request:
+
+```yaml
+# .github/workflows/ci.yml
+Jobs:
+- Security Scan (Brakeman)
+- Ruby Lint (RuboCop)
+- Rails Tests (RSpec + PostgreSQL + Redis)
+- Python Tests (pytest + Haystack)
+- Rust Embedding Tests (cargo test + clippy)
+- Rust DocProc Tests (cargo test + clippy)
+- Docker Build Verification
+```
+
+View workflow runs at: `https://github.com/<owner>/knowverse/actions`
+
 ## Roadmap
 
 - [x] Rust embedding service (ONNX Runtime, 10-50x faster)
 - [x] Rust WASM document processor (sandboxed parsing)
-- [ ] Comprehensive test suite (RSpec + pytest)
-- [ ] Production hardening and load testing
+- [x] Comprehensive test suite (RSpec + pytest + Rust)
+- [x] CI/CD pipeline (GitHub Actions)
+- [x] ONNX model download script
+- [x] High-quality dataset ingestion pipeline
+- [x] Production security hardening
+- [ ] Kubernetes deployment manifests
+- [ ] Multi-node Qdrant cluster configuration
+- [ ] Auto-scaling policies
 
 ## License
 
