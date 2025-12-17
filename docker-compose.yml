@@ -88,6 +88,9 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - QDRANT_URL=http://qdrant:6333
       - HAYSTACK_SERVICE_URL=http://haystack:8000
+      - RUST_EMBEDDING_URL=http://rust-embedding:8001
+      - RUST_DOCPROC_URL=http://rust-docproc:8002
+      - USE_RUST_SERVICES=true
       - SOLID_QUEUE_IN_PUMA=true
       - WEB_CONCURRENCY=1
       - RAILS_MAX_THREADS=3
@@ -145,6 +148,9 @@ services:
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/knowverse_development
       - REDIS_URL=redis://redis:6379/0
       - HAYSTACK_SERVICE_URL=http://haystack:8000
+      - RUST_EMBEDDING_URL=http://rust-embedding:8001
+      - RUST_DOCPROC_URL=http://rust-docproc:8002
+      - USE_RUST_SERVICES=true
     volumes:
       - .:/rails
       - bundle_cache:/usr/local/bundle

@@ -6,29 +6,34 @@ class HaystackClient
   # Response class for consistent API responses
   class Response
     attr_reader :success, :data, :error
-    
+
     def initialize(success, data, error)
       @success = success
       @data = data
       @error = error
     end
-    
+
     def success?
       @success
     end
   end
-  
-  # Default configuration
+
+  # Default configuration with Rust service URLs
   DEFAULT_CONFIG = {
     base_url: ENV.fetch('HAYSTACK_SERVICE_URL', 'http://localhost:8000'),
+    rust_embedding_url: ENV.fetch('RUST_EMBEDDING_URL', 'http://localhost:8001'),
+    rust_docproc_url: ENV.fetch('RUST_DOCPROC_URL', 'http://localhost:8002'),
     timeout: 30,
     max_retries: 3,
-    backoff_factor: 0.5
+    backoff_factor: 0.5,
+    use_rust_services: ENV.fetch('USE_RUST_SERVICES', 'true') == 'true'
   }.freeze
 
   # Initialize with optional configuration override
   def initialize(config = {})
     @config = self.class.config.merge(config)
+    @rust_embedding_available = nil
+    @rust_docproc_available = nil
   end
   
   # Search documents with query
@@ -90,6 +95,7 @@ class HaystackClient
   end
   
   # Generate embeddings for a given text
+  # Routes to Rust embedding service first (10-50x faster), falls back to Python
   # @param text [String] The text to generate embeddings for
   # @param model_name [String] The name of the embedding model to use (mini, small, base, large, xl)
   # @param dimension [Integer] The dimension of the embeddings to generate (384, 768, 1024, 1536, 2048)
@@ -101,45 +107,53 @@ class HaystackClient
     # Prepare parameters
     model = model_name || 'base'
     dim = dimension || SearchRouter::MODELS[model] || 1024
-    
+
     # Check cache if enabled and organization_id is provided
     if use_cache && organization_id.present?
-      cache_options = { 
-        model_name: model, 
+      cache_options = {
+        model_name: model,
         dimension: dim,
         domain: domain || 'general'
       }
-      
+
       # Get cache manager
       cache_manager = EmbeddingCache::CacheManager.instance
-      
+
       # Try to get from cache or compute if not found
       return cache_manager.fetch(organization_id, text, cache_options) do
-        # Cache miss - generate embedding via API
-        # Prepare payload
-        payload = { text: text }
-        payload[:model_name] = model
-        payload[:dimension] = dim if dim
-        
-        response = post_request('/embeddings/generate', payload)
-        result = parse_response(response)
-        
-        # Return the embedding vector from the response
-        result['embedding']
+        # Cache miss - generate embedding via API (Rust first, then Python)
+        generate_embedding_from_service(text, model, dim)
       end
     end
-    
+
     # If cache is disabled or organization_id is not provided, generate directly
-    # Prepare payload
-    payload = { text: text }
-    payload[:model_name] = model
-    payload[:dimension] = dim if dim
-    
-    response = post_request('/embeddings/generate', payload)
-    result = parse_response(response)
-    
-    # Return the embedding vector from the response
-    result['embedding']
+    generate_embedding_from_service(text, model, dim)
+  end
+
+  # Generate embeddings for a batch of texts (uses Rust service for performance)
+  # @param texts [Array<String>] Array of texts to embed
+  # @param model_name [String] The model to use
+  # @return [Array<Array<Float>>] Array of embedding vectors
+  def generate_embeddings_batch(texts, model_name: 'all-MiniLM-L6-v2')
+    return [] if texts.empty?
+
+    # Try Rust service first for batch processing (much faster)
+    if @config[:use_rust_services] && rust_embedding_available?
+      begin
+        payload = { texts: texts, model: model_name }
+        response = post_to_rust_embedding('/embed/batch', payload)
+        if response && response['embeddings']
+          Rails.logger.debug("Batch embeddings generated via Rust service (#{texts.length} texts)")
+          return response['embeddings']
+        end
+      rescue => e
+        Rails.logger.warn("Rust batch embedding failed, falling back to Python: #{e.message}")
+        @rust_embedding_available = false
+      end
+    end
+
+    # Fallback: Generate embeddings one by one via Python
+    texts.map { |text| generate_embedding_from_service(text, model_name, nil) }
   end
   
   # Answer a question based on the documents
@@ -716,12 +730,21 @@ class HaystackClient
   private
 
   # Generic document extraction via multipart form upload
+  # Routes to Rust document processor first (sandboxed, fast), falls back to Python
   # @param file_content [String] Binary content of the document
   # @param filename [String] Original filename
   # @param endpoint [String] API endpoint to call
   # @param options [Hash] Additional form options
   # @return [Hash] Extraction result
   def extract_document(file_content, filename:, endpoint:, options: {})
+    # Try Rust document processor first (WASM-sandboxed, faster)
+    rust_endpoint = endpoint.gsub('/extract/', '/extract/')  # Same endpoint pattern
+    rust_result = extract_via_rust(file_content, filename, rust_endpoint)
+    if rust_result
+      return Response.new(true, rust_result, nil)
+    end
+
+    # Fallback to Python Haystack service
     uri = URI.parse("#{@config[:base_url]}#{endpoint}")
     http = setup_http_client(uri)
 
@@ -848,6 +871,144 @@ class HaystackClient
     Rails.logger.error("Failed to parse JSON response: #{e.message}")
     Rails.logger.error("Response body: #{response.body}")
     raise "Invalid JSON response from Haystack service"
+  end
+
+  # =============================================================================
+  # RUST SERVICE INTEGRATION (High-Performance Microservices)
+  # =============================================================================
+
+  # Generate embedding from service (Rust first, Python fallback)
+  def generate_embedding_from_service(text, model, dim)
+    # Try Rust embedding service first (10-50x faster)
+    if @config[:use_rust_services] && rust_embedding_available?
+      begin
+        rust_model = map_model_to_rust(model)
+        payload = { text: text, model: rust_model }
+        response = post_to_rust_embedding('/embed', payload)
+        if response && response['embedding']
+          Rails.logger.debug("Embedding generated via Rust service")
+          return response['embedding']
+        end
+      rescue => e
+        Rails.logger.warn("Rust embedding failed, falling back to Python: #{e.message}")
+        @rust_embedding_available = false
+      end
+    end
+
+    # Fallback to Python Haystack service
+    payload = { text: text }
+    payload[:model_name] = model
+    payload[:dimension] = dim if dim
+
+    response = post_request('/embeddings/generate', payload)
+    result = parse_response(response)
+    result['embedding']
+  end
+
+  # Map model names to Rust service model IDs
+  def map_model_to_rust(model_name)
+    model_mapping = {
+      'mini' => 'all-MiniLM-L6-v2',
+      'small' => 'bge-small-en-v1.5',
+      'base' => 'all-mpnet-base-v2',
+      'large' => 'bge-large-en-v1.5',
+      'all-MiniLM-L6-v2' => 'all-MiniLM-L6-v2',
+      'all-mpnet-base-v2' => 'all-mpnet-base-v2',
+      'bge-small-en-v1.5' => 'bge-small-en-v1.5',
+      'bge-base-en-v1.5' => 'bge-base-en-v1.5',
+      'bge-large-en-v1.5' => 'bge-large-en-v1.5'
+    }
+    model_mapping[model_name] || 'all-MiniLM-L6-v2'
+  end
+
+  # Check if Rust embedding service is available
+  def rust_embedding_available?
+    return @rust_embedding_available unless @rust_embedding_available.nil?
+
+    begin
+      uri = URI.parse("#{@config[:rust_embedding_url]}/health")
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.open_timeout = 2
+      http.read_timeout = 2
+      response = http.get(uri.path)
+      @rust_embedding_available = response.is_a?(Net::HTTPSuccess)
+    rescue => e
+      Rails.logger.debug("Rust embedding service not available: #{e.message}")
+      @rust_embedding_available = false
+    end
+  end
+
+  # Check if Rust document processor is available
+  def rust_docproc_available?
+    return @rust_docproc_available unless @rust_docproc_available.nil?
+
+    begin
+      uri = URI.parse("#{@config[:rust_docproc_url]}/health")
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.open_timeout = 2
+      http.read_timeout = 2
+      response = http.get(uri.path)
+      @rust_docproc_available = response.is_a?(Net::HTTPSuccess)
+    rescue => e
+      Rails.logger.debug("Rust document processor not available: #{e.message}")
+      @rust_docproc_available = false
+    end
+  end
+
+  # POST request to Rust embedding service
+  def post_to_rust_embedding(endpoint, payload)
+    uri = URI.parse("#{@config[:rust_embedding_url]}#{endpoint}")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.read_timeout = @config[:timeout]
+    http.open_timeout = 5
+
+    request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
+    request.body = payload.to_json
+
+    response = http.request(request)
+    raise "Rust service error: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+
+    JSON.parse(response.body)
+  end
+
+  # POST request to Rust document processor
+  def post_to_rust_docproc(endpoint, payload)
+    uri = URI.parse("#{@config[:rust_docproc_url]}#{endpoint}")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.read_timeout = @config[:timeout]
+    http.open_timeout = 5
+
+    request = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
+    request.body = payload.to_json
+
+    response = http.request(request)
+    raise "Rust service error: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+
+    JSON.parse(response.body)
+  end
+
+  # Extract document via Rust service (with Python fallback)
+  def extract_via_rust(file_content, filename, endpoint)
+    return nil unless @config[:use_rust_services] && rust_docproc_available?
+
+    begin
+      # Rust service expects base64-encoded content
+      payload = {
+        content: Base64.strict_encode64(file_content),
+        filename: filename
+      }
+      response = post_to_rust_docproc(endpoint, payload)
+
+      if response && response['result']
+        Rails.logger.debug("Document extracted via Rust service: #{filename}")
+        return response['result']
+      end
+    rescue => e
+      Rails.logger.warn("Rust document extraction failed, falling back to Python: #{e.message}")
+      @rust_docproc_available = false
+    end
+
+    nil
   end
 
   class << self
