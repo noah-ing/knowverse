@@ -33,24 +33,26 @@ from typing import Generator, Dict, Any, List, Optional
 # Dataset configurations
 DATASETS = {
     "wikipedia": {
-        "hf_id": "wikipedia",
-        "hf_config": "20220301.en",
+        "hf_id": "wikimedia/wikipedia",
+        "hf_config": "20231101.en",
         "split": "train",
         "text_field": "text",
         "title_field": "title",
         "description": "English Wikipedia - 6M+ articles, comprehensive world knowledge",
         "size": "~20GB",
-        "documents": "6,458,670"
+        "documents": "6,458,670",
+        "trust_remote_code": False
     },
     "wikipedia-simple": {
-        "hf_id": "wikipedia",
-        "hf_config": "20220301.simple",
+        "hf_id": "wikimedia/wikipedia",
+        "hf_config": "20231101.simple",
         "split": "train",
         "text_field": "text",
         "title_field": "title",
         "description": "Simple English Wikipedia - easier language, good for testing",
         "size": "~200MB",
-        "documents": "205,328"
+        "documents": "205,328",
+        "trust_remote_code": False
     },
     "msmarco": {
         "hf_id": "ms_marco",
@@ -270,10 +272,22 @@ def ingest_dataset(
 
     # Load dataset
     print(f"\nLoading dataset from HuggingFace: {config['hf_id']}...")
+    trust_remote_code = config.get("trust_remote_code", True)
     if config.get("hf_config"):
-        dataset = load_dataset(config["hf_id"], config["hf_config"], split=config["split"], streaming=True)
+        dataset = load_dataset(
+            config["hf_id"],
+            config["hf_config"],
+            split=config["split"],
+            streaming=True,
+            trust_remote_code=trust_remote_code
+        )
     else:
-        dataset = load_dataset(config["hf_id"], split=config["split"], streaming=True)
+        dataset = load_dataset(
+            config["hf_id"],
+            split=config["split"],
+            streaming=True,
+            trust_remote_code=trust_remote_code
+        )
 
     # Process and ingest
     print("\nProcessing and ingesting documents...")
@@ -355,10 +369,22 @@ def export_to_jsonl(
 
     print(f"Exporting {dataset_name} to {output_path}...")
 
+    trust_remote_code = config.get("trust_remote_code", True)
     if config.get("hf_config"):
-        dataset = load_dataset(config["hf_id"], config["hf_config"], split=config["split"], streaming=True)
+        dataset = load_dataset(
+            config["hf_id"],
+            config["hf_config"],
+            split=config["split"],
+            streaming=True,
+            trust_remote_code=trust_remote_code
+        )
     else:
-        dataset = load_dataset(config["hf_id"], split=config["split"], streaming=True)
+        dataset = load_dataset(
+            config["hf_id"],
+            split=config["split"],
+            streaming=True,
+            trust_remote_code=trust_remote_code
+        )
 
     with open(output_path, 'w') as f:
         doc_count = 0
