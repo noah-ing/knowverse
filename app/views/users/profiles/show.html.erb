@@ -1,0 +1,59 @@
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+  <div class="mb-6" data-animation="fade-in" data-animation-delay="0">
+    <h1 class="text-2xl font-bold kv-text-primary">Your Profile</h1>
+    <p class="mt-1 text-sm kv-text-secondary">Manage your personal information and avatar</p>
+  </div>
+
+  <% if notice %>
+    <div class="bg-green-50 dark:bg-green-900/20 p-4 mb-6 rounded-md" data-animation="fade-in" data-animation-delay="100">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-green-800 dark:text-green-300"><%= notice %></p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render "shared/card",
+    title: "Personal Information",
+    subtitle: "Your personal details and avatar",
+    animate: "slide-up",
+    animate_delay: "200ms",
+    header_actions: link_to("Edit", edit_users_profile_path, class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-colors duration-200") do %>
+    <div class="border-t border-gray-200 dark:border-gray-700">
+      <dl>
+        <div class="bg-gray-50 dark:bg-gray-800/50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="300ms">
+          <dt class="text-sm font-medium kv-text-secondary">Avatar</dt>
+          <dd class="mt-1 text-sm kv-text-primary sm:col-span-2 sm:mt-0">
+            <% if @user.avatar.attached? %>
+              <%= image_tag @user.avatar.variant(resize_to_limit: [100, 100]), class: "h-20 w-20 rounded-full" %>
+            <% else %>
+              <div class="h-20 w-20 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                <svg class="h-12 w-12" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+            <% end %>
+          </dd>
+        </div>
+        <div class="bg-white dark:bg-gray-900 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="400ms">
+          <dt class="text-sm font-medium kv-text-secondary">Name</dt>
+          <dd class="mt-1 text-sm kv-text-primary sm:col-span-2 sm:mt-0"><%= @user.name.presence || "Not set" %></dd>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-800/50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="500ms">
+          <dt class="text-sm font-medium kv-text-secondary">Email address</dt>
+          <dd class="mt-1 text-sm kv-text-primary sm:col-span-2 sm:mt-0"><%= @user.email %></dd>
+        </div>
+        <div class="bg-white dark:bg-gray-900 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="600ms">
+          <dt class="text-sm font-medium kv-text-secondary">Account created</dt>
+          <dd class="mt-1 text-sm kv-text-primary sm:col-span-2 sm:mt-0"><%= @user.created_at.strftime("%B %d, %Y") %></dd>
+        </div>
+      </dl>
+    </div>
+  <% end %>
+</div>

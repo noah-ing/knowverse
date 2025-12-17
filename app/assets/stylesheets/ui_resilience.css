@@ -1,0 +1,235 @@
+/* 
+ * UI Resilience CSS
+ * 
+ * This stylesheet provides CSS-based solutions for removing hardcoded inline styles
+ * and improving the resilience of UI components in case of asset pipeline failures.
+ */
+
+/* Animation Delay Variables */
+:root {
+  /* Animation delays in 50ms increments for consistent usage */
+  --anim-delay-0: 0ms;
+  --anim-delay-1: 50ms;
+  --anim-delay-2: 100ms;
+  --anim-delay-3: 150ms;
+  --anim-delay-4: 200ms;
+  --anim-delay-5: 250ms;
+  --anim-delay-6: 300ms;
+  --anim-delay-7: 350ms;
+  --anim-delay-8: 400ms;
+  --anim-delay-9: 450ms;
+  --anim-delay-10: 500ms;
+  --anim-delay-12: 600ms;
+  --anim-delay-14: 700ms;
+  --anim-delay-16: 800ms;
+  --anim-delay-18: 900ms;
+  --anim-delay-20: 1000ms;
+  --anim-delay-22: 1100ms;
+  --anim-delay-24: 1200ms;
+}
+
+/* Animation Delay Classes */
+.delay-0 { animation-delay: var(--anim-delay-0); }
+.delay-1 { animation-delay: var(--anim-delay-1); }
+.delay-2 { animation-delay: var(--anim-delay-2); }
+.delay-3 { animation-delay: var(--anim-delay-3); }
+.delay-4 { animation-delay: var(--anim-delay-4); }
+.delay-5 { animation-delay: var(--anim-delay-5); }
+.delay-6 { animation-delay: var(--anim-delay-6); }
+.delay-7 { animation-delay: var(--anim-delay-7); }
+.delay-8 { animation-delay: var(--anim-delay-8); }
+.delay-9 { animation-delay: var(--anim-delay-9); }
+.delay-10 { animation-delay: var(--anim-delay-10); }
+.delay-12 { animation-delay: var(--anim-delay-12); }
+.delay-14 { animation-delay: var(--anim-delay-14); }
+.delay-16 { animation-delay: var(--anim-delay-16); }
+.delay-18 { animation-delay: var(--anim-delay-18); }
+.delay-20 { animation-delay: var(--anim-delay-20); }
+.delay-22 { animation-delay: var(--anim-delay-22); }
+.delay-24 { animation-delay: var(--anim-delay-24); }
+
+/* Progress Bar Width Classes */
+.w-0 { width: 0%; }
+.w-5 { width: 5%; }
+.w-10 { width: 10%; }
+.w-15 { width: 15%; }
+.w-20 { width: 20%; }
+.w-25 { width: 25%; }
+.w-30 { width: 30%; }
+.w-35 { width: 35%; }
+.w-40 { width: 40%; }
+.w-45 { width: 45%; }
+.w-50 { width: 50%; }
+.w-55 { width: 55%; }
+.w-60 { width: 60%; }
+.w-65 { width: 65%; }
+.w-70 { width: 70%; }
+.w-75 { width: 75%; }
+.w-80 { width: 80%; }
+.w-85 { width: 85%; }
+.w-90 { width: 90%; }
+.w-95 { width: 95%; }
+.w-100 { width: 100%; }
+
+/* Dynamic Bar Classes with Width Attributes */
+[data-width] {
+  width: attr(data-width);
+}
+
+/* Animation classes with CSS-based animations */
+@keyframes kv-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes kv-slide-up {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes kv-scale-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.kv-animate-fade-in {
+  animation: kv-fade-in 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+.kv-animate-slide-up {
+  animation: kv-slide-up 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+.kv-animate-scale-in {
+  animation: kv-scale-in 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+/* Progress bar animations */
+@keyframes kv-grow-width {
+  from { width: 0%; }
+  to { width: var(--target-width, 100%); }
+}
+
+.kv-progress-bar {
+  width: 0%;
+  animation: kv-grow-width 1s ease-out forwards;
+  animation-delay: 0.4s;
+}
+
+/* Background image handling */
+.kv-bg-image {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Dark mode toggle styles for resilience */
+.kv-dark-mode-toggle {
+  position: relative;
+  width: 3rem;
+  height: 1.5rem;
+  background-color: #e5e7eb; /* Gray-200 */
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  border: 1px solid #d1d5db; /* Gray-300 */
+}
+
+.dark .kv-dark-mode-toggle {
+  background-color: #4f46e5; /* Indigo-600 */
+  border-color: #4338ca; /* Indigo-700 */
+}
+
+.kv-dark-mode-toggle:before {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.25rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.dark .kv-dark-mode-toggle:before {
+  transform: translateX(1.5rem);
+  background-color: white;
+}
+
+/* Hover and focus states */
+.kv-dark-mode-toggle:hover {
+  background-color: #d1d5db; /* Gray-300 */
+}
+
+.dark .kv-dark-mode-toggle:hover {
+  background-color: #4338ca; /* Indigo-700 */
+}
+
+.kv-dark-mode-toggle:focus {
+  outline: 2px solid #93c5fd; /* Blue-300 */
+  outline-offset: 2px;
+}
+
+.dark .kv-dark-mode-toggle:focus {
+  outline-color: #60a5fa; /* Blue-400 */
+}
+
+/* Icons for light/dark mode */
+.kv-dark-mode-toggle:after {
+  content: "☀️";
+  position: absolute;
+  right: 0.5rem;
+  top: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.dark .kv-dark-mode-toggle:after {
+  content: "🌙";
+  left: 0.5rem;
+  right: auto;
+}
+
+/* Dropdown menu fallback styles */
+[data-controller="dropdown"] {
+  position: relative;
+}
+
+[data-dropdown-target="menu"]:not(.hidden) {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Mobile menu fallback styles */
+[data-controller="mobile-menu"] [data-mobile-menu-target="panel"]:not(.hidden) {
+  display: block;
+}
+
+/* Support for animation counters for iterative animations */
+[data-anim-index] {
+  animation-delay: calc(var(--base-delay, 50ms) * attr(data-anim-index number, 0));
+}
+
+/* Progressive element animations */
+.kv-anim-children > * {
+  opacity: 0;
+  animation: kv-fade-in 0.3s ease-out forwards;
+}
+
+.kv-anim-children > *:nth-child(1) { animation-delay: 50ms; }
+.kv-anim-children > *:nth-child(2) { animation-delay: 100ms; }
+.kv-anim-children > *:nth-child(3) { animation-delay: 150ms; }
+.kv-anim-children > *:nth-child(4) { animation-delay: 200ms; }
+.kv-anim-children > *:nth-child(5) { animation-delay: 250ms; }
+.kv-anim-children > *:nth-child(6) { animation-delay: 300ms; }
+.kv-anim-children > *:nth-child(7) { animation-delay: 350ms; }
+.kv-anim-children > *:nth-child(8) { animation-delay: 400ms; }
+.kv-anim-children > *:nth-child(9) { animation-delay: 450ms; }
+.kv-anim-children > *:nth-child(10) { animation-delay: 500ms; }

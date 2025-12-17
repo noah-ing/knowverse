@@ -1,0 +1,129 @@
+# Knowverse Changelog
+
+All notable changes to the Knowverse project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.1.0] - 2025-12-16
+
+### Changed - Honest Documentation Overhaul
+- Rewrote README.md to remove marketing claims and provide accurate status
+- Created ARCHITECTURE_NEXT_GEN.md with actual architecture details
+- Updated all documentation to reflect real capabilities vs aspirational goals
+
+### Added - Phase 5 Production Hardening
+- `app/services/vector_store/qdrant_cluster_adapter.rb` - Qdrant cluster integration
+- `app/services/wasm/component_sandbox.rb` - WASM orchestration layer (simulation)
+- `app/services/infrastructure/rate_limiter.rb` - Token bucket rate limiting
+- `app/services/infrastructure/metrics_exporter.rb` - Prometheus metrics
+
+### Added - Phase 4 Scalable Index Architecture
+- `app/services/wasm/scalable_index_manager.rb` - Hierarchical partitioning
+- Tiered storage: Hot (memory) / Warm (SSD) / Cold (archive)
+- LRU eviction with configurable limits
+
+### Added - Phase 3 Real Distributed Consensus
+- `app/services/distributed/consensus/raft_node.rb` - Full Raft state machine
+- `app/services/distributed/consensus/raft_rpc.rb` - HTTP transport
+- `app/services/distributed/consensus/raft_storage.rb` - Persistent WAL
+- `app/services/distributed/search/remote_shard_client.rb` - Cross-shard queries
+- `app/services/distributed/monitoring/cluster_health_monitor.rb` - Health tracking
+
+### Added - Phase 2 Search Provider Completion
+- Fixed `domain_aware` provider - now actually implemented
+- Fixed `confidence_aware` provider - multi-strategy parallel execution
+- **CRITICAL FIX**: Removed mock embedding fallback that corrupted search results
+
+### Added - Phase 1 Document Processing
+- Real PDF extraction via Haystack service (pdfplumber)
+- Real DOCX extraction via Haystack service (python-docx)
+- Real Excel extraction via Haystack service (fastexcel)
+- Semantic, sentence, and fixed-size chunking strategies
+
+---
+
+## [2.0.0] - 2025-05-31
+
+### What Actually Works
+- Rails 8 infrastructure with multi-tenant auth
+- PostgreSQL + pgvector for similarity search
+- Redis two-tier caching
+- Sidekiq/SolidQueue background jobs
+- Text file processing (TXT, MD, RTF)
+- 7 of 9 search providers functional (pgvector_cosine, pgvector_l2, haystack, hybrid, hybrid_advanced, distributed, hnsw)
+- SSE streaming for RAG responses
+
+### What Was Claimed But Not Real
+- PDF/DOCX extraction returned placeholder strings
+- Excel support was not implemented
+- HNSW claimed "WebAssembly SIMD acceleration" but was Ruby brute-force
+- Raft consensus was 100% logging stubs
+- Remote shard queries returned empty arrays
+- "Fine-tuned models" did not exist
+- "domain_aware" and "confidence_aware" providers fell through to hybrid
+
+### Documentation Notes
+This release previously claimed metrics like "89/100 Production Ready" and "2,847 queries/second" that were never validated. The security documentation described SOC2 and HIPAA compliance frameworks that are aspirational, not certified.
+
+---
+
+## [1.5.0] - 2025-04-28
+
+### Added
+- SolidQueue integration (replaced Sidekiq)
+- Multi-dimensional vector support (384-2048 dimensions)
+- Domain confidence scoring framework
+- Organization templates
+
+### Changed
+- Upgraded to Rails 8.0
+- Enhanced vector storage schema
+
+---
+
+## [1.0.0] - 2025-04-01
+
+### Added
+- Initial platform with magic link authentication
+- User and organization management
+- Basic PostgreSQL full-text search
+- Document upload (PDF, DOCX, TXT via Active Storage)
+- Admin dashboard
+- Basic analytics
+
+### Technical Foundation
+- Rails 7.0
+- PostgreSQL with full-text search
+- TailwindCSS
+- Hotwire
+- RSpec
+
+---
+
+## Current Status (December 2025)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Rails 8 API | Working | Multi-tenant, auth, background jobs |
+| PostgreSQL + pgvector | Working | Cosine & L2 similarity search |
+| Redis caching | Working | Two-tier cache |
+| Text file processing | Working | TXT, MD, RTF |
+| 9 Search Providers | Working | All functional after remediation |
+| PDF/DOCX/Excel Extraction | Working | Via Haystack service |
+| Raft Consensus | Implemented | Ruby, not battle-tested |
+| WASM Components | Simulated | Orchestration only, needs real WASM |
+| Qdrant Integration | Adapter Only | Requires external Qdrant cluster |
+| Embedding Generation | Conditional | Requires Haystack service |
+| Scale Testing | Not Done | 100M+ vectors untested |
+
+### Known Limitations
+1. HNSW uses Ruby brute-force, not WASM SIMD
+2. Scale architecture designed but untested beyond ~10K vectors
+3. Raft implementation not battle-tested for production
+4. WASM sandbox needs actual WASM component compilation
+5. Security compliance docs are frameworks/aspirations, not certifications
+
+---
+
+*Honest assessment following comprehensive code audit - December 2025*

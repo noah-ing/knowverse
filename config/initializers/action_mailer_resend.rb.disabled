@@ -1,0 +1,88 @@
+# Custom Resend delivery method for ActionMailer in Rails 8
+
+module ActionMailer
+  module DeliveryMethods
+    class ResendDeliveryMethod
+      attr_accessor :settings
+
+      def initialize(settings)
+        @settings = settings
+      end
+
+      def deliver!(mail)
+        Rails.logger.info "[ResendDelivery] Attempting to deliver email using Resend API"
+        Rails.logger.info "[ResendDelivery] From: #{mail.from}"
+        Rails.logger.info "[ResendDelivery] To: #{mail.to}"
+        Rails.logger.info "[ResendDelivery] Subject: #{mail.subject}"
+        
+        # Access the API key either from settings or from the global Resend.api_key
+        api_key = settings[:api_key] || Resend.api_key
+        
+        if api_key.blank?
+          raise "Resend API key is missing. Check your configuration."
+        end
+        
+        # Attempt to send via the Resend gem first
+        begin
+          Rails.logger.info "[ResendDelivery] Trying to send via Resend gem..."
+          # Use the Resend gem's API client if available
+          Resend.send_email(
+            from: mail.from.first,
+            to: mail.to,
+            subject: mail.subject,
+            html: (mail.html_part ? mail.html_part.body.to_s : nil) || mail.body.to_s
+          )
+          Rails.logger.info "[ResendDelivery] Email sent successfully via Resend gem"
+          return true
+        rescue => e
+          Rails.logger.error "[ResendDelivery] Resend gem failed: #{e.class.name} - #{e.message}"
+          Rails.logger.error e.backtrace.join("\n")
+          
+          # Fall back to direct API call
+          begin
+            Rails.logger.info "[ResendDelivery] Falling back to direct API call..."
+            require 'net/http'
+            require 'uri'
+            require 'json'
+            
+            uri = URI.parse('https://api.resend.com/emails')
+            request = Net::HTTP::Post.new(uri)
+            request.content_type = 'application/json'
+            request['Authorization'] = "Bearer #{api_key}"
+            
+            request.body = JSON.dump({
+              'from' => mail.from.first,
+              'to' => mail.to.first,
+              'subject' => mail.subject,
+              'html' => (mail.html_part ? mail.html_part.body.to_s : nil) || mail.body.to_s
+            })
+            
+            response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+              http.request(request)
+            end
+            
+            Rails.logger.info "[ResendDelivery] API Response: #{response.code} #{response.message}"
+            Rails.logger.info "[ResendDelivery] Response body: #{response.body}"
+            
+            if response.code.to_i < 300
+              Rails.logger.info "[ResendDelivery] Email sent successfully via direct API"
+              return true
+            else
+              raise "Resend API returned error: #{response.code} - #{response.body}"
+            end
+          rescue => api_error
+            Rails.logger.error "[ResendDelivery] Direct API call failed: #{api_error.class.name} - #{api_error.message}"
+            Rails.logger.error api_error.backtrace.join("\n")
+            raise api_error
+          end
+        end
+      end
+    end
+  end
+end
+
+# Register our custom delivery method
+ActionMailer::Base.add_delivery_method :resend_custom, ActionMailer::DeliveryMethods::ResendDeliveryMethod
+
+# Make it easy to tell if this initializer has run
+Rails.logger.info "[ResendDelivery] Custom Resend delivery method registered with ActionMailer"

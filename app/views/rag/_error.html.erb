@@ -1,0 +1,41 @@
+<div class="mt-6" id="rag-error">
+  <div class="bg-error-50 dark:bg-error-900 border border-error-200 dark:border-error-800 rounded-lg p-4 transition-colors duration-200 animate-in fade-in duration-300 ease-out">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-error-500 dark:text-error-400 transition-colors duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-error-800 dark:text-error-300 transition-colors duration-200">Error generating answer</h3>
+        <div class="mt-2 text-sm text-error-700 dark:text-error-400 transition-colors duration-200">
+          <p><%= message %></p>
+        </div>
+        <div class="mt-4">
+          <div class="-mx-2 -my-1.5 flex">
+            <%= render 'shared/button',
+                     text: "Try Again",
+                     variant: "danger",
+                     size: "sm",
+                     href: organization_rag_index_path(@organization),
+                     animate: "fade" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <%= render 'shared/card',
+           title: "Troubleshooting Tips",
+           animate: "fade-in",
+           animate_delay: "200ms",
+           classes: "mt-6 shadow-md hover:shadow-lg transition-all duration-200" do %>
+    <ul class="list-disc list-inside kv-text-secondary space-y-2">
+      <li>Check that your Haystack service is running and accessible</li>
+      <li>Verify that you have at least one LLM provider configured in your Haystack service</li>
+      <li>Ensure your documents have been properly indexed with vector embeddings</li>
+      <li>Try adjusting the advanced settings such as similarity threshold or max documents</li>
+      <li>Check the logs for more detailed error information</li>
+    </ul>
+  <% end %>
+</div>

@@ -1,0 +1,3 @@
+web: ruby bin/rails server
+worker: ruby bin/rails solid_queue:start
+css: ruby bin/rails tailwindcss:watch

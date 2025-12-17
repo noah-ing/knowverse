@@ -1,0 +1,378 @@
+<div class="container mx-auto px-4 py-8 animate-in fade-in duration-500">
+  <div class="mb-6 animate-in fade-in duration-300" style="animation-delay: 0.1s">
+    <nav class="flex" aria-label="Breadcrumb">
+      <ol class="flex flex-wrap items-center space-x-2">
+        <li>
+          <%= link_to "Admin", admin_dashboard_path, class: "kv-text-secondary hover:text-blue-600 dark:hover:text-blue-400 transition" %>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          <%= link_to "Organizations", admin_organizations_path, class: "kv-text-secondary hover:text-blue-600 dark:hover:text-blue-400 transition" %>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          <%= link_to @organization.name, admin_organizations_path(@organization), class: "kv-text-secondary hover:text-blue-600 dark:hover:text-blue-400 transition" %>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          <%= link_to "Domain Models", admin_organization_domain_embedding_models_path(@organization), class: "kv-text-secondary hover:text-blue-600 dark:hover:text-blue-400 transition" %>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          <span class="kv-text-primary" aria-current="page"><%= @domain_model.name %></span>
+        </li>
+      </ol>
+    </nav>
+  </div>
+
+  <%= render 'shared/card', 
+              title: @domain_model.name,
+              subtitle: "Domain Embedding Model Details",
+              animate: "fade-in", 
+              animate_delay: "0.2s",
+              header_actions: capture do %>
+    <div class="flex space-x-2">
+      <%= render 'shared/button', 
+                text: "Edit", 
+                href: edit_admin_organization_domain_embedding_model_path(@organization, @domain_model), 
+                variant: "secondary", 
+                icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>', 
+                animate: "fade-in",
+                size: "sm",
+                animate_delay: "0.25s" %>
+      
+      <% if @domain_model.active? %>
+        <%= render 'shared/button', 
+                  text: "Deactivate", 
+                  href: toggle_active_admin_organization_domain_embedding_model_path(@organization, @domain_model), 
+                  data: { method: :post },
+                  variant: "danger", 
+                  icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>', 
+                  animate: "fade-in",
+                  size: "sm",
+                  animate_delay: "0.3s" %>
+      <% else %>
+        <%= render 'shared/button', 
+                  text: "Activate", 
+                  href: toggle_active_admin_organization_domain_embedding_model_path(@organization, @domain_model),
+                  data: { method: :post }, 
+                  variant: "success", 
+                  icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>', 
+                  animate: "fade-in",
+                  size: "sm",
+                  animate_delay: "0.3s" %>
+      <% end %>
+      
+      <%= render 'shared/button', 
+                text: "Retrain Model", 
+                href: retrain_admin_organization_domain_embedding_model_path(@organization, @domain_model), 
+                data: { method: :post },
+                variant: "primary", 
+                icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg>', 
+                animate: "fade-in",
+                size: "sm",
+                animate_delay: "0.35s" %>
+    </div>
+  <% end do %>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Model Details Card -->
+      <%= render 'shared/card', 
+                title: "Model Details",
+                subtitle: "Domain-specific embedding model information",
+                animate: "slide-up", 
+                animate_delay: "0.4s",
+                classes: "md:col-span-2",
+                header_actions: capture do %>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+        </svg>
+      <% end do %>
+        <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+          <div class="animate-in fade-in duration-300" style="animation-delay: 0.45s">
+            <dt class="text-sm font-medium kv-text-secondary">Name</dt>
+            <dd class="mt-1 text-sm kv-text-primary"><%= @domain_model.name %></dd>
+          </div>
+          <div class="animate-in fade-in duration-300" style="animation-delay: 0.5s">
+            <dt class="text-sm font-medium kv-text-secondary
+<div class="container mx-auto px-4 py-8 animate-fade-in">
+  <div class="mb-6 animate-fade-in" style="animation-delay: 0.1s">
+    <nav class="flex" aria-label="Breadcrumb">
+      <ol class="flex items-center space-x-2">
+        <li>
+          <%= link_to "Admin", admin_dashboard_path, class: "kv-text-secondary hover:text-blue-600 dark:hover:text-blue-400 transition" %>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          <%= link_to "Organizations", admin_organizations_path, class: "kv-text-secondary hover:text-blue-600 dark:hover:text-blue-400 transition" %>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          <%= link_to @organization.name, admin_organizations_path(@organization), class: "kv-text-secondary hover:text-blue-600 dark:hover:text-blue-400 transition" %>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          <%= link_to "Domain Models", admin_organization_domain_embedding_models_path(@organization), class: "kv-text-secondary hover:text-blue-600 dark:hover:text-blue-400 transition" %>
+        </li>
+        <li class="flex items-center">
+          <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          <span class="kv-text-primary" aria-current="page"><%= @domain_model.name %></span>
+        </li>
+      </ol>
+    </nav>
+  </div>
+
+  <div class="flex justify-between items-center mb-6 animate-fade-in" style="animation-delay: 0.15s">
+    <h1 class="text-2xl font-bold kv-text-primary"><%= @domain_model.name %></h1>
+    <div class="flex space-x-2">
+      <%= render 'shared/button', 
+                text: "Edit", 
+                url: edit_admin_organization_domain_embedding_model_path(@organization, @domain_model), 
+                variant: "secondary", 
+                icon: "pencil", 
+                animate: true,
+                animation_delay: 0.2 %>
+      
+      <% if @domain_model.active? %>
+        <%= render 'shared/button', 
+                  text: "Deactivate", 
+                  url: toggle_active_admin_organization_domain_embedding_model_path(@organization, @domain_model), 
+                  method: :post,
+                  variant: "danger", 
+                  icon: "x-circle", 
+                  animate: true,
+                  animation_delay: 0.25 %>
+      <% else %>
+        <%= render 'shared/button', 
+                  text: "Activate", 
+                  url: toggle_active_admin_organization_domain_embedding_model_path(@organization, @domain_model),
+                  method: :post, 
+                  variant: "success", 
+                  icon: "check-circle", 
+                  animate: true,
+                  animation_delay: 0.25 %>
+      <% end %>
+      
+      <%= render 'shared/button', 
+                text: "Retrain Model", 
+                url: retrain_admin_organization_domain_embedding_model_path(@organization, @domain_model), 
+                method: :post,
+                variant: "warning", 
+                icon: "refresh", 
+                animate: true,
+                animation_delay: 0.3 %>
+    </div>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Model Details -->
+    <%= render 'shared/card', animation_delay: 0.35, class: "md:col-span-2" do |card| %>
+      <% card.with_header do %>
+        <div class="flex items-center">
+          <div class="mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-medium leading-6 kv-text-primary">Model Details</h3>
+            <p class="mt-1 max-w-2xl text-sm kv-text-secondary">Domain-specific embedding model information</p>
+          </div>
+        </div>
+      <% end %>
+      
+      <% card.with_body do %>
+        <div class="animate-fade-in" style="animation-delay: 0.4s">
+          <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+            <div class="animate-fade-in" style="animation-delay: 0.45s">
+              <dt class="text-sm font-medium kv-text-secondary">Name</dt>
+              <dd class="mt-1 text-sm kv-text-primary"><%= @domain_model.name %></dd>
+            </div>
+            <div class="animate-fade-in" style="animation-delay: 0.5s">
+              <dt class="text-sm font-medium kv-text-secondary">Domain</dt>
+              <dd class="mt-1 text-sm kv-text-primary"><%= @domain_model.domain %></dd>
+            </div>
+            <div class="animate-fade-in" style="animation-delay: 0.55s">
+              <dt class="text-sm font-medium kv-text-secondary">Base Model</dt>
+              <dd class="mt-1 text-sm kv-text-primary"><%= @domain_model.base_model %></dd>
+            </div>
+            <div class="animate-fade-in" style="animation-delay: 0.6s">
+              <dt class="text-sm font-medium kv-text-secondary">Version</dt>
+              <dd class="mt-1 text-sm kv-text-primary"><%= @domain_model.version %></dd>
+            </div>
+            <div class="animate-fade-in" style="animation-delay: 0.65s">
+              <dt class="text-sm font-medium kv-text-secondary">Dimension</dt>
+              <dd class="mt-1 text-sm kv-text-primary"><%= @domain_model.dimension %></dd>
+            </div>
+            <div class="animate-fade-in" style="animation-delay: 0.7s">
+              <dt class="text-sm font-medium kv-text-secondary">Status</dt>
+              <dd class="mt-1 text-sm kv-text-primary">
+                <% if @domain_model.active? %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</span>
+                <% else %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Inactive</span>
+                <% end %>
+              </dd>
+            </div>
+            <div class="animate-fade-in" style="animation-delay: 0.75s">
+              <dt class="text-sm font-medium kv-text-secondary">Created At</dt>
+              <dd class="mt-1 text-sm kv-text-primary"><%= @domain_model.created_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+            </div>
+            <div class="animate-fade-in" style="animation-delay: 0.8s">
+              <dt class="text-sm font-medium kv-text-secondary">Last Trained At</dt>
+              <dd class="mt-1 text-sm kv-text-primary">
+                <% if @domain_model.last_trained_at.present? %>
+                  <%= @domain_model.last_trained_at.strftime("%Y-%m-%d %H:%M:%S") %>
+                <% else %>
+                  Never
+                <% end %>
+              </dd>
+            </div>
+          </dl>
+        </div>
+        
+        <% if @domain_model.description.present? %>
+          <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6 animate-fade-in" style="animation-delay: 0.85s">
+            <dt class="text-sm font-medium kv-text-secondary mb-2">Description</dt>
+            <dd class="mt-1 text-sm kv-text-primary">
+              <%= simple_format @domain_model.description %>
+            </dd>
+          </div>
+        <% end %>
+      <% end %>
+    <% end %>
+    
+    <!-- Performance Metrics -->
+    <%= render 'shared/card', animation_delay: 0.45 do |card| %>
+      <% card.with_header do %>
+        <div class="flex items-center">
+          <div class="mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 3a1 1 0 000 2h14a1 1 0 100-2H3zm0 6a1 1 0 000 2h9a1 1 0 100-2H3zm0 6a1 1 0 100 2h6a1 1 0 100-2H3z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-medium leading-6 kv-text-primary">Performance Metrics</h3>
+            <p class="mt-1 max-w-2xl text-sm kv-text-secondary">Model quality and efficiency statistics</p>
+          </div>
+        </div>
+      <% end %>
+      
+      <% card.with_body do %>
+        <div class="animate-fade-in" style="animation-delay: 0.5s">
+          <% if @domain_model.performance_metrics.present? %>
+            <dl class="grid grid-cols-1 gap-x-4 gap-y-6">
+              <% i = 0 %>
+              <% if @domain_model.performance_metrics['accuracy'].present? %>
+                <% i += 1 %>
+                <div class="animate-fade-in" style="animation-delay: <%= 0.5 + (i * 0.05) %>s">
+                  <dt class="text-sm font-medium kv-text-secondary">Accuracy</dt>
+                  <dd class="mt-1 text-sm kv-text-primary">
+                    <%= number_to_percentage(@domain_model.performance_metrics['accuracy'] * 100, precision: 2) %>
+                  </dd>
+                </div>
+              <% end %>
+              
+              <% if @domain_model.performance_metrics['latency'].present? %>
+                <% i += 1 %>
+                <div class="animate-fade-in" style="animation-delay: <%= 0.5 + (i * 0.05) %>s">
+                  <dt class="text-sm font-medium kv-text-secondary">Latency</dt>
+                  <dd class="mt-1 text-sm kv-text-primary">
+                    <%= number_with_precision(@domain_model.performance_metrics['latency'], precision: 3) %> seconds
+                  </dd>
+                </div>
+              <% end %>
+              
+              <% if @domain_model.performance_metrics['training_examples'].present? %>
+                <% i += 1 %>
+                <div class="animate-fade-in" style="animation-delay: <%= 0.5 + (i * 0.05) %>s">
+                  <dt class="text-sm font-medium kv-text-secondary">Training Examples</dt>
+                  <dd class="mt-1 text-sm kv-text-primary">
+                    <%= number_with_delimiter(@domain_model.performance_metrics['training_examples']) %>
+                  </dd>
+                </div>
+              <% end %>
+              
+              <% if @domain_model.performance_metrics['training_time'].present? %>
+                <% i += 1 %>
+                <div class="animate-fade-in" style="animation-delay: <%= 0.5 + (i * 0.05) %>s">
+                  <dt class="text-sm font-medium kv-text-secondary">Training Time</dt>
+                  <dd class="mt-1 text-sm kv-text-primary">
+                    <%= number_with_precision(@domain_model.performance_metrics['training_time'], precision: 2) %> seconds
+                  </dd>
+                </div>
+              <% end %>
+              
+              <% if @domain_model.performance_metrics['last_error'].present? %>
+                <% i += 1 %>
+                <div class="animate-fade-in" style="animation-delay: <%= 0.5 + (i * 0.05) %>s">
+                  <dt class="text-sm font-medium text-red-600 dark:text-red-400">Last Error</dt>
+                  <dd class="mt-1 text-sm text-red-600 dark:text-red-400">
+                    <%= @domain_model.performance_metrics['last_error'] %>
+                    <% if @domain_model.performance_metrics['last_error_at'].present? %>
+                      <div class="text-xs kv-text-secondary mt-1">
+                        <%= Time.parse(@domain_model.performance_metrics['last_error_at']).strftime("%Y-%m-%d %H:%M:%S") %>
+                      </div>
+                    <% end %>
+                  </dd>
+                </div>
+              <% end %>
+            </dl>
+          <% else %>
+            <p class="text-sm kv-text-secondary animate-fade-in" style="animation-delay: 0.55s">No performance metrics available for this model</p>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+  
+  <!-- Associated Documents -->
+  <%= render 'shared/card', animation_delay: 0.55 do |card| %>
+    <% card.with_header do %>
+      <div class="flex items-center">
+        <div class="mr-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium leading-6 kv-text-primary">Associated Documents</h3>
+          <p class="mt-1 max-w-2xl text-sm kv-text-secondary">Documents using this domain model for embeddings</p>
+        </div>
+      </div>
+    <% end %>
+    
+    <% card.with_body do %>
+      <div class="animate-fade-in" style="animation-delay: 0.6s">
+        <div class="text-sm kv-text-primary">
+          <p class="font-medium">Total documents: <span class="font-bold"><%= @documents_count %></span></p>
+        </div>
+        
+        <div class="mt-6 animate-fade-in" style="animation-delay: 0.65s">
+          <%= render 'shared/button', 
+                text: "Generate Embeddings", 
+                url: generate_embeddings_admin_organization_domain_embedding_models_path(@organization), 
+                variant: "primary", 
+                icon: "document-add", 
+                animate: true,
+                animation_delay: 0.1 %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>

@@ -1,0 +1,121 @@
+<% content_for :title, "KnowVerse RAG - #{@organization.name}" %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold kv-text-primary">KnowVerse RAG</h1>
+      <p class="text-sm kv-text-secondary"><%= @organization.name %> Knowledge Base</p>
+    </div>
+    
+    <div class="flex items-center space-x-4">
+      <!-- Dark mode toggle -->
+      <div class="kv-dark-mode-toggle" data-controller="dark-mode" data-action="click->dark-mode#toggle" 
+          data-dark-mode-target="toggle" title="Toggle dark mode" role="switch" aria-checked="false"></div>
+           
+      <%= render 'shared/button', 
+                text: "Dashboard", 
+                variant: "secondary",
+                href: dashboard_organization_path(@organization),
+                icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                      </svg>',
+                animate: "fade",
+                aria: { label: "Return to organization dashboard" } %>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+    <div class="mb-4">
+      <h2 class="text-xl font-semibold kv-text-primary">Contextual Q&A with RAG</h2>
+      <p class="kv-text-secondary">Ask questions about your documents using Retrieval Augmented Generation.</p>
+    </div>
+
+    <!-- Conversation Thread -->
+    <div class="mb-6 max-h-[70vh] overflow-y-auto">
+      <div id="conversation-thread" class="space-y-4">
+        <!-- Conversation history -->
+        <% if @messages.present? %>
+          <% @messages.each do |message| %>
+            <div class="<%= message.role == 'user' ? 'kv-message-user' : 'kv-message-system' %>">
+              <div class="font-medium"><%= message.role == 'user' ? 'You' : 'KnowVerse' %></div>
+              <div class="mt-1"><%= message.content %></div>
+              <% if message.role != 'user' && message.metadata.present? && message.metadata['sources'].present? %>
+                <div class="mt-2 text-sm">
+                  <div>Sources:</div>
+                  <ul class="list-disc pl-5">
+                    <% message.metadata['sources'].each do |source| %>
+                      <li><%= source[:title] %></li>
+                    <% end %>
+                  </ul>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Query Form -->
+    <form action="<%= stream_organization_rag_index_path(@organization) %>" method="post" class="space-y-4">
+      <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+      
+      <div>
+        <label for="query" class="block font-medium mb-1">Question</label>
+        <textarea name="query" id="query" rows="2" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Ask a question about your documents..."></textarea>
+      </div>
+      
+      <div class="flex items-center justify-between">
+        <div>
+          <!-- Hidden conversation ID field -->
+          <input type="hidden" name="conversation_id" value="<%= @conversation_id %>">
+        </div>
+        
+        <button type="submit" 
+                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+          Generate Answer
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- About RAG Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 class="text-lg font-medium mb-4">About RAG</h3>
+      <div>
+        <p class="mb-2">
+          Retrieval Augmented Generation (RAG) combines the power of large language models with retrieval-based approaches.
+        </p>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>Retrieves relevant documents from your knowledge base</li>
+          <li>Provides context for the language model</li>
+          <li>Generates answers based on your documents</li>
+          <li>Includes source attributions for verification</li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- Tips Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 class="text-lg font-medium mb-4">Tips & Shortcuts</h3>
+      <div>
+        <div class="mb-3">
+          <h4 class="font-medium mb-1">Keyboard Shortcuts</h4>
+          <p class="text-sm">
+            <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">Ctrl+Enter</kbd> Submit query
+          </p>
+        </div>
+        <div>
+          <h4 class="font-medium mb-1">Effective Queries</h4>
+          <ul class="list-disc pl-5 text-sm space-y-1">
+            <li>Be specific and clear</li>
+            <li>Include relevant context</li>
+            <li>Specify document names when known</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

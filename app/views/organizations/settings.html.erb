@@ -1,0 +1,432 @@
+<%# 
+  Organization Settings Page
+  A fully refactored page according to KnowVerse design patterns with:
+  - Card-based structure with consistent styling
+  - Tab-based navigation with anchor links
+  - Proper animations and transitions
+  - Dark mode compatibility
+  - Responsive design
+  - Enhanced team member management
+%>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <%# Page Header with Action %>
+  <div class="flex justify-between items-center mb-6 animate-in slide-down duration-300">
+    <div>
+      <h1 class="text-2xl font-bold kv-text-primary"><%= @organization.name %> Settings</h1>
+      <p class="text-sm kv-text-secondary">Configure your organization and manage team members</p>
+    </div>
+    
+    <%= render partial: "shared/button", locals: {
+      text: "Back to Dashboard",
+      variant: "secondary",
+      size: "sm",
+      href: organization_dashboard_path(@organization),
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+      </svg>'
+    } %>
+  </div>
+  
+  <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <%# Sidebar navigation %>
+    <div class="lg:col-span-1">
+      <div class="kv-card sticky top-4 animate-in slide-up duration-300">
+        <nav class="p-2" aria-label="Settings Navigation">
+          <a href="#organization-details" class="bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300 hover:bg-primary-50 hover:text-primary-700 dark:hover:bg-primary-900 dark:hover:text-primary-300 group flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 transition-all duration-200" aria-current="page">
+            <svg class="text-primary-500 dark:text-primary-400 group-hover:text-primary-500 dark:group-hover:text-primary-400 flex-shrink-0 -ml-1 mr-3 h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span class="truncate">Organization Details</span>
+          </a>
+          
+          <a href="#team-members" class="kv-text-primary hover:bg-gray-50 dark:hover:bg-gray-800 group flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 transition-all duration-200">
+            <svg class="text-gray-400 group-hover:text-primary-500 dark:group-hover:text-primary-400 flex-shrink-0 -ml-1 mr-3 h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span class="truncate">Team Members</span>
+          </a>
+          
+          <a href="#limits-usage" class="kv-text-primary hover:bg-gray-50 dark:hover:bg-gray-800 group flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 transition-all duration-200">
+            <svg class="text-gray-400 group-hover:text-primary-500 dark:group-hover:text-primary-400 flex-shrink-0 -ml-1 mr-3 h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span class="truncate">Limits & Usage</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+    
+    <%# Main content area %>
+    <div class="lg:col-span-2 space-y-6">
+      <%# Organization Details %>
+      <%= render partial: "shared/card", locals: {
+        title: "Organization Details",
+        subtitle: "Basic information about your organization",
+        id: "organization-details",
+        animate: "slide-up",
+        animate_delay: "100ms"
+      } do %>
+        <div class="space-y-6">
+          <div class="flex justify-between items-start">
+            <div class="space-y-4">
+              <h3 class="text-base font-medium kv-text-primary">Organization Information</h3>
+              <div class="mt-2 grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                <div class="sm:col-span-1">
+                  <dt class="text-sm font-medium kv-text-secondary">Name</dt>
+                  <dd class="mt-1 text-sm kv-text-primary"><%= @organization.name %></dd>
+                </div>
+                <div class="sm:col-span-1">
+                  <dt class="text-sm font-medium kv-text-secondary">Slug</dt>
+                  <dd class="mt-1 text-sm kv-text-primary"><%= @organization.slug %></dd>
+                </div>
+                <div class="sm:col-span-1">
+                  <dt class="text-sm font-medium kv-text-secondary">Created</dt>
+                  <dd class="mt-1 text-sm kv-text-primary"><%= @organization.created_at.strftime("%B %d, %Y") %></dd>
+                </div>
+                <div class="sm:col-span-1">
+                  <dt class="text-sm font-medium kv-text-secondary">Status</dt>
+                  <dd class="mt-1">
+                    <% if @organization.active? %>
+                      <span class="kv-badge kv-badge-success">Active</span>
+                    <% else %>
+                      <span class="kv-badge kv-badge-error">Inactive</span>
+                    <% end %>
+                  </dd>
+                </div>
+              </div>
+            </div>
+            
+            <%= render partial: "shared/button", locals: {
+              text: "Edit",
+              variant: "secondary",
+              size: "sm",
+              href: edit_organization_path(@organization),
+              icon: '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>'
+            } %>
+          </div>
+        </div>
+      <% end %>
+      
+      <%# Team Members %>
+      <%= render partial: "shared/card", locals: {
+        title: "Team Members",
+        subtitle: "Manage members and their permissions",
+        id: "team-members",
+        animate: "slide-up",
+        animate_delay: "200ms"
+      } do %>
+        <div class="space-y-6">
+          <%# Team Members Header with Invite Button %>
+          <div class="flex justify-between items-start">
+            <h3 class="text-base font-medium kv-text-primary mt-2">Organization Members</h3>
+            
+            <% if current_user.organization_users.find_by(organization: @organization)&.role == 'owner' || 
+                current_user.organization_users.find_by(organization: @organization)&.role == 'admin' %>
+              <div>
+                <%= render partial: "shared/button", locals: {
+                  text: "Invite Member",
+                  variant: "primary",
+                  size: "sm",
+                  icon: '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>',
+                  data: { 
+                    action: "click->dropdown#toggle"
+                  }
+                } %>
+                
+                <%# Invite form (hidden by default) %>
+                <div id="invite-form" class="hidden mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-md transition-all duration-200" data-controller="dropdown">
+                  <h4 class="text-sm font-medium kv-text-primary mb-2">Invite a new team member</h4>
+                  <%= form_with url: invite_user_organization_path(@organization), method: :post, class: "space-y-4" do |form| %>
+                    <%= text_field_component(form, :email, 
+                                 label: "Email address",
+                                 placeholder: "colleague@example.com", 
+                                 required: true,
+                                 type: "email") %>
+                                 
+                    <div class="mb-4">
+                      <%= form.label :role, "Role", class: "kv-label" %>
+                      <%= form.select :role, 
+                                     Organization.roles.map { |r| [r.capitalize, r] }, 
+                                     {}, 
+                                     { class: "kv-input kv-select" } %>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                      <%= render partial: "shared/button", locals: {
+                        text: "Cancel",
+                        variant: "secondary",
+                        type: "button",
+                        data: { action: "click->dropdown#toggle" }
+                      } %>
+                      
+                      <%= render partial: "shared/button", locals: {
+                        text: "Send Invitation",
+                        variant: "primary",
+                        type: "submit"
+                      } %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+          
+          <%# Team Members Table %>
+          <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">
+                    User
+                  </th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" class="relative px-6 py-3">
+                    <span class="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                <% @members.each do |member| %>
+                  <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                          <div class="bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300 h-10 w-10 rounded-full flex items-center justify-center">
+                            <%= member.user.email[0..1].upcase %>
+                          </div>
+                        </div>
+                        <div class="ml-4">
+                          <div class="text-sm font-medium kv-text-primary">
+                            <%= member.user.email %>
+                          </div>
+                          <div class="text-sm kv-text-secondary">
+                            Joined <%= time_ago_in_words(member.created_at) %> ago
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <% role_badge_class = case member.role
+                                          when 'owner' then 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
+                                          when 'admin' then 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300'
+                                          when 'editor' then 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+                                          else 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                                          end %>
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= role_badge_class %>">
+                        <%= member.role.capitalize %>
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <% if member.invitation_token.present? && member.invitation_accepted_at.nil? %>
+                        <span class="kv-badge kv-badge-warning">Invited</span>
+                      <% else %>
+                        <span class="kv-badge kv-badge-success">Active</span>
+                      <% end %>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <% if current_user.organization_users.find_by(organization: @organization)&.role == 'owner' || 
+                            (current_user.organization_users.find_by(organization: @organization)&.role == 'admin' && 
+                            member.role != 'owner') %>
+                        <div class="flex justify-end space-x-2">
+                          <% if member.invitation_token.present? && member.invitation_accepted_at.nil? %>
+                            <%= render partial: "shared/button", locals: {
+                              text: "Resend Invite",
+                              variant: "link",
+                              size: "sm"
+                            } %>
+                          <% else %>
+                            <% unless member.role == 'owner' && @organization.organization_users.where(role: 'owner').count <= 1 %>
+                              <%= render partial: "shared/button", locals: {
+                                text: "Remove",
+                                variant: "link",
+                                size: "sm",
+                                classes: "text-error-600 hover:text-error-700 dark:text-error-400 dark:hover:text-error-300"
+                              } %>
+                            <% end %>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+      
+      <%# Limits & Usage %>
+      <%= render partial: "shared/card", locals: {
+        title: "Limits & Usage",
+        subtitle: "View your organization's usage and limits",
+        id: "limits-usage",
+        animate: "slide-up",
+        animate_delay: "300ms"
+      } do %>
+        <div class="space-y-6">
+          <h3 class="text-base font-medium kv-text-primary">Current Plan Settings</h3>
+          
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <%# Document Limit Card %>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div class="flex justify-between items-center">
+                <h4 class="text-sm font-medium kv-text-secondary">Document Limit</h4>
+                <span class="text-sm font-medium kv-text-accent"><%= @organization.max_documents %> documents</span>
+              </div>
+              <div class="mt-4">
+                <div class="relative pt-1">
+                  <div class="overflow-hidden h-2.5 mb-1 text-xs flex rounded-full bg-primary-100 dark:bg-primary-900">
+                    <div style="width:<%= @organization.usage_percent(:documents) %>%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-600 dark:bg-primary-400 rounded-full transition-all duration-500"></div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-xs kv-text-secondary mt-1">
+                      <%= @organization.documents.count %> used
+                    </div>
+                    <div class="text-xs font-semibold kv-text-accent mt-1">
+                      <%= @organization.usage_percent(:documents) %>%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <%# Query Limit Card %>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div class="flex justify-between items-center">
+                <h4 class="text-sm font-medium kv-text-secondary">Monthly Query Limit</h4>
+                <span class="text-sm font-medium kv-text-accent"><%= @organization.max_queries_per_month %> queries</span>
+              </div>
+              <div class="mt-4">
+                <div class="relative pt-1">
+                  <div class="overflow-hidden h-2.5 mb-1 text-xs flex rounded-full bg-primary-100 dark:bg-primary-900">
+                    <div style="width:<%= @organization.usage_percent(:queries) %>%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-600 dark:bg-primary-400 rounded-full transition-all duration-500"></div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="text-xs kv-text-secondary mt-1">
+                      0 used this month <!-- TODO: Implement query tracking -->
+                    </div>
+                    <div class="text-xs font-semibold kv-text-accent mt-1">
+                      <%= @organization.usage_percent(:queries) %>%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <%# Features Card %>
+            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg sm:col-span-2">
+              <h4 class="text-sm font-medium kv-text-secondary mb-4">Features</h4>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="flex items-center">
+                  <% if @organization.advanced_search %>
+                    <svg class="h-5 w-5 text-success-500 dark:text-success-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  <% else %>
+                    <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                  <% end %>
+                  <span class="ml-2 text-sm kv-text-primary">Advanced Search</span>
+                </div>
+                
+                <div class="flex items-center">
+                  <% if @organization.api_access %>
+                    <svg class="h-5 w-5 text-success-500 dark:text-success-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  <% else %>
+                    <svg class="h-5 w-5 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                  <% end %>
+                  <span class="ml-2 text-sm kv-text-primary">API Access</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('turbo:load', function() {
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const targetId = this.getAttribute('href');
+        const targetElement = document.querySelector(targetId);
+        
+        if (targetElement) {
+          // Update active state for navigation
+          document.querySelectorAll('nav a').forEach(navLink => {
+            navLink.classList.remove('bg-primary-50', 'text-primary-700', 'dark:bg-primary-900', 'dark:text-primary-300');
+            navLink.classList.add('kv-text-primary');
+            navLink.removeAttribute('aria-current');
+          });
+          
+          this.classList.remove('kv-text-primary');
+          this.classList.add('bg-primary-50', 'text-primary-700', 'dark:bg-primary-900', 'dark:text-primary-300');
+          this.setAttribute('aria-current', 'page');
+          
+          // Smooth scroll to target
+          window.scrollTo({
+            top: targetElement.offsetTop - 20,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+    
+    // Check if URL has hash and scroll to it
+    if (window.location.hash) {
+      const targetElement = document.querySelector(window.location.hash);
+      if (targetElement) {
+        setTimeout(() => {
+          window.scrollTo({
+            top: targetElement.offsetTop - 20,
+            behavior: 'smooth'
+          });
+          
+          // Update active state for navigation
+          const activeLink = document.querySelector(`a[href="${window.location.hash}"]`);
+          if (activeLink) {
+            document.querySelectorAll('nav a').forEach(navLink => {
+              navLink.classList.remove('bg-primary-50', 'text-primary-700', 'dark:bg-primary-900', 'dark:text-primary-300');
+              navLink.classList.add('kv-text-primary');
+              navLink.removeAttribute('aria-current');
+            });
+            
+            activeLink.classList.remove('kv-text-primary');
+            activeLink.classList.add('bg-primary-50', 'text-primary-700', 'dark:bg-primary-900', 'dark:text-primary-300');
+            activeLink.setAttribute('aria-current', 'page');
+          }
+        }, 300);
+      }
+    }
+    
+    // Toggle invite form visibility
+    const inviteButton = document.querySelector('button[data-action="click->dropdown#toggle"]');
+    const inviteForm = document.getElementById('invite-form');
+    
+    if (inviteButton && inviteForm) {
+      inviteButton.addEventListener('click', function() {
+        inviteForm.classList.toggle('hidden');
+      });
+    }
+  });
+</script>

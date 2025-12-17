@@ -1,0 +1,296 @@
+#!/usr/bin/env ruby
+# DALVS - Domain-Aware Lazy Vector Search Benchmarking Tool
+#
+# This script benchmarks the performance of the domain-aware, lazy-loaded
+# vector search implementation, testing latency, throughput, and cache efficiency.
+
+require_relative "../config/environment"
+require "benchmark"
+require "ruby-progressbar"
+require "optparse"
+
+options = {
+  domain_model_id: nil,
+  organization_id: nil,
+  queries: 100,
+  warmup: 10,
+  concurrent: 5,
+  query_file: nil,
+  report_file: nil,
+  verbose: false
+}
+
+OptionParser.new do |opts|
+  opts.banner = "Usage: bin/dalvs_benchmark [options]"
+  
+  opts.on("--domain-model ID", "Domain model ID to use for testing") do |id|
+    options[:domain_model_id] = id.to_i
+  end
+  
+  opts.on("--organization ID", "Organization ID to use for testing") do |id|
+    options[:organization_id] = id.to_i
+  end
+  
+  opts.on("--queries N", "Number of queries to run (default: 100)") do |n|
+    options[:queries] = n.to_i
+  end
+  
+  opts.on("--warmup N", "Number of warmup queries (default: 10)") do |n|
+    options[:warmup] = n.to_i
+  end
+  
+  opts.on("--concurrent N", "Number of concurrent requests (default: 5)") do |n|
+    options[:concurrent] = n.to_i
+  end
+  
+  opts.on("--query-file FILE", "File with test queries, one per line") do |file|
+    options[:query_file] = file
+  end
+  
+  opts.on("--report-file FILE", "Output benchmark results to JSON file") do |file|
+    options[:report_file] = file
+  end
+  
+  opts.on("--verbose", "Show detailed output") do
+    options[:verbose] = true
+  end
+  
+  opts.on("--help", "Show this help message") do
+    puts opts
+    exit
+  end
+end.parse!
+
+# Load test queries
+test_queries = if options[:query_file] && File.exist?(options[:query_file])
+  File.readlines(options[:query_file]).map(&:strip).reject(&:empty?)
+else
+  [
+    "What is vector embedding?",
+    "How does distributed search work?",
+    "Tell me about domain-specific models",
+    "Explain HNSW index",
+    "What is the difference between cosine similarity and euclidean distance?",
+    "How are document clusters formed?",
+    "What are the benefits of domain-aware search?",
+    "How does dimension reduction work?",
+    "What is the purpose of confidence scoring?",
+    "Explain how the cache warming system works"
+  ]
+end
+
+# Ensure we have enough queries
+test_queries = test_queries.cycle.take(options[:queries]) if test_queries.size < options[:queries]
+
+# Set up domain model
+domain_model = if options[:domain_model_id]
+  DomainEmbeddingModel.find_by(id: options[:domain_model_id]) 
+else
+  DomainEmbeddingModel.where(is_default: true).first || DomainEmbeddingModel.first
+end
+
+unless domain_model
+  puts "Error: No domain model found! Please create one first or specify a valid domain model ID."
+  exit 1
+end
+
+organization = options[:organization_id] ? Organization.find_by(id: options[:organization_id]) : nil
+
+puts "===== Domain-Aware Lazy Vector Search Benchmark ====="
+puts "Domain model: #{domain_model.name} (ID: #{domain_model.id})"
+puts "Organization: #{organization&.name || 'None'} (ID: #{organization&.id || 'N/A'})"
+puts "Queries: #{options[:queries]} (with #{options[:warmup]} warmup queries)"
+puts "Concurrent requests: #{options[:concurrent]}"
+puts "=================================================="
+
+# Initialize component bridge and manager
+component_manager = VectorSearch::SearchComponentManager.instance
+bridge = component_manager.bridge_for(
+  domain_model: domain_model,
+  organization: organization
+)
+
+# Clear cache before testing
+if defined?(EmbeddingCache::CacheManager.instance.clear)
+  puts "Clearing embedding cache..."
+  EmbeddingCache::CacheManager.instance.clear
+end
+
+# Pre-warm with a few queries if needed
+unless options[:warmup].zero?
+  puts "Warming up with #{options[:warmup]} queries..."
+  warmup_progress = ProgressBar.create(
+    title: "Warmup",
+    total: options[:warmup],
+    format: "%t: |%B| %p%% %e"
+  )
+  
+  test_queries.sample(options[:warmup]).each do |query|
+    begin
+      bridge.search(query, limit: 5)
+      warmup_progress.increment
+    rescue => e
+      puts "Warning: Warmup query failed: #{e.message}" if options[:verbose]
+    end
+  end
+end
+
+# Store results
+results = {
+  config: options,
+  domain_model: {
+    id: domain_model.id,
+    name: domain_model.name,
+    embedding_dimensions: domain_model.embedding_dimensions
+  },
+  organization: organization ? { id: organization.id, name: organization.name } : nil,
+  timestamp: Time.current.iso8601,
+  summary: {
+    total_queries: options[:queries],
+    cache_hit_rate: 0,
+    avg_latency_ms: 0,
+    p95_latency_ms: 0,
+    p99_latency_ms: 0,
+    throughput_qps: 0
+  },
+  queries: []
+}
+
+puts "\nRunning #{options[:queries]} benchmark queries..."
+benchmark_progress = ProgressBar.create(
+  title: "Benchmark",
+  total: options[:queries],
+  format: "%t: |%B| %p%% %e"
+)
+
+# Run queries and measure performance
+latencies = []
+cache_hits = 0
+start_time = Time.current
+
+if options[:concurrent] <= 1
+  # Single-threaded mode
+  test_queries.each_with_index do |query, i|
+    query_start = Time.current
+    cache_key = "#{domain_model.id}:#{query.hash}"
+    
+    # Check if result is in cache before search
+    cached = EmbeddingCache::CacheManager.instance.exist?(cache_key)
+    
+    begin
+      # Perform search
+      search_results = Benchmark.measure do
+        bridge.search(query, limit: 10)
+      end
+      
+      # Record results
+      elapsed_ms = ((Time.current - query_start) * 1000).round(2)
+      latencies << elapsed_ms
+      cache_hits += 1 if cached
+      
+      # Add to detailed results
+      if options[:verbose]
+        results[:queries] << {
+          query: query,
+          latency_ms: elapsed_ms,
+          cache_hit: cached,
+          result_count: search_results.size
+        }
+      end
+      
+      benchmark_progress.increment
+    rescue => e
+      puts "Error on query #{i+1}: #{e.message}" if options[:verbose]
+      benchmark_progress.increment
+    end
+  end
+else
+  # Multi-threaded mode
+  queue = Queue.new
+  test_queries.each_with_index { |q, i| queue << [i, q] }
+  threads = []
+  
+  options[:concurrent].times do
+    threads << Thread.new do
+      while !queue.empty?
+        idx, query = queue.pop(true) rescue nil
+        break unless query
+        
+        query_start = Time.current
+        cache_key = "#{domain_model.id}:#{query.hash}"
+        
+        # Check if result is in cache before search
+        cached = EmbeddingCache::CacheManager.instance.exist?(cache_key)
+        
+        begin
+          # Perform search
+          search_results = bridge.search(query, limit: 10)
+          
+          # Record results
+          elapsed_ms = ((Time.current - query_start) * 1000).round(2)
+          
+          # Thread-safe updates
+          @mutex ||= Mutex.new
+          @mutex.synchronize do
+            latencies << elapsed_ms
+            cache_hits += 1 if cached
+            
+            # Add to detailed results
+            if options[:verbose]
+              results[:queries] << {
+                query: query,
+                latency_ms: elapsed_ms,
+                cache_hit: cached,
+                result_count: search_results.size
+              }
+            end
+            
+            benchmark_progress.increment
+          end
+        rescue => e
+          puts "Error on query #{idx+1}: #{e.message}" if options[:verbose]
+          @mutex.synchronize { benchmark_progress.increment }
+        end
+      end
+    end
+  end
+  
+  threads.each(&:join)
+end
+
+end_time = Time.current
+total_duration = end_time - start_time
+
+# Calculate statistics
+latencies.sort!
+results[:summary][:avg_latency_ms] = (latencies.sum / latencies.size.to_f).round(2)
+results[:summary][:p95_latency_ms] = latencies[(latencies.size * 0.95).floor].round(2)
+results[:summary][:p99_latency_ms] = latencies[(latencies.size * 0.99).floor].round(2)
+results[:summary][:min_latency_ms] = latencies.first.round(2)
+results[:summary][:max_latency_ms] = latencies.last.round(2)
+results[:summary][:median_latency_ms] = latencies[(latencies.size * 0.5).floor].round(2)
+results[:summary][:throughput_qps] = (options[:queries] / total_duration).round(2)
+results[:summary][:cache_hit_rate] = (cache_hits.to_f / options[:queries]).round(2)
+results[:summary][:total_duration_seconds] = total_duration.round(2)
+
+# Print summary
+puts "\n===== Benchmark Results ====="
+puts "Total queries: #{options[:queries]}"
+puts "Cache hit rate: #{(results[:summary][:cache_hit_rate] * 100).round(1)}%"
+puts "Throughput: #{results[:summary][:throughput_qps]} queries/second"
+puts "Latency:"
+puts "  Average: #{results[:summary][:avg_latency_ms]} ms"
+puts "  Median:  #{results[:summary][:median_latency_ms]} ms"
+puts "  P95:     #{results[:summary][:p95_latency_ms]} ms"
+puts "  P99:     #{results[:summary][:p99_latency_ms]} ms"
+puts "  Min:     #{results[:summary][:min_latency_ms]} ms"
+puts "  Max:     #{results[:summary][:max_latency_ms]} ms"
+puts "Total duration: #{results[:summary][:total_duration_seconds]} seconds"
+puts "============================="
+
+# Save report to file if requested
+if options[:report_file]
+  require 'json'
+  File.write(options[:report_file], JSON.pretty_generate(results))
+  puts "Detailed report saved to #{options[:report_file]}"
+end

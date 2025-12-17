@@ -1,0 +1,29 @@
+# PostgreSQL configuration for development with pgvector support
+#
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  timeout: 5000
+
+development:
+  <<: *default
+  database: knowverse_development
+  username: postgres
+  host: localhost
+  port: 5432
+
+# Warning: The database defined as "test" will be erased and
+# re-generated from your development database when you run "rake".
+# Do not set this db to the same as development or production.
+test:
+  <<: *default
+  database: knowverse_test
+  username: postgres
+  password: No$$ah10304632
+  host: localhost
+  port: 5432
+
+# For production, use DATABASE_URL environment variable
+production:
+  url: <%= ENV['DATABASE_URL'] %>

@@ -1,0 +1,133 @@
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Subscription Usage</h1>
+    <p class="mt-1 text-sm text-gray-500">Track your subscription usage and statistics</p>
+  </div>
+
+  <% if notice %>
+    <div class="bg-green-50 p-4 mb-6 rounded-md">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-green-800"><%= notice %></p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Subscription Overview Section -->
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Subscription Overview</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">Current plan and billing information</p>
+    </div>
+    <div class="border-t border-gray-200">
+      <dl>
+        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Current plan</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            <% if @user.subscribed? %>
+              <span class="font-medium"><%= @subscription_plan %></span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">
+                Active
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                No active subscription
+              </span>
+            <% end %>
+          </dd>
+        </div>
+        <% if @user.subscribed? %>
+          <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Billing period</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <%= @current_period_start.strftime("%B %d, %Y") %> - <%= @current_period_end.strftime("%B %d, %Y") %>
+            </dd>
+          </div>
+          <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Next billing date</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <%= @next_billing_date.strftime("%B %d, %Y") %>
+            </dd>
+          </div>
+        <% end %>
+        <div class="<%= @user.subscribed? ? 'bg-white' : 'bg-gray-50' %> px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Upgrade options</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            <%= link_to "View available plans", subscriptions_path, class: "text-indigo-600 hover:text-indigo-900" %>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Resource Usage Section -->
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Resource Usage</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">Current usage metrics for this billing period</p>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+      <div class="space-y-6">
+        <!-- API Calls Usage -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <h4 class="text-sm font-medium text-gray-700">API Calls</h4>
+            <span class="text-sm text-gray-500"><%= @usage_stats[:api_calls][:current] %> / <%= @usage_stats[:api_calls][:limit] %></span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div class="bg-indigo-600 h-2.5 rounded-full" style="width: <%= @usage_stats[:api_calls][:percent] %>%"></div>
+          </div>
+          <p class="mt-1 text-xs text-gray-500">
+            <%= @usage_stats[:api_calls][:percent] %>% of your monthly allowance used
+          </p>
+        </div>
+
+        <!-- Storage Usage -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <h4 class="text-sm font-medium text-gray-700">Storage</h4>
+            <span class="text-sm text-gray-500"><%= @usage_stats[:storage][:current] %> <%= @usage_stats[:storage][:unit] %> / <%= @usage_stats[:storage][:limit] %> <%= @usage_stats[:storage][:unit] %></span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div class="bg-indigo-600 h-2.5 rounded-full" style="width: <%= @usage_stats[:storage][:percent] %>%"></div>
+          </div>
+          <p class="mt-1 text-xs text-gray-500">
+            <%= @usage_stats[:storage][:percent] %>% of your storage allowance used
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Usage Section -->
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Feature Usage</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">Features you've used in the current billing period</p>
+    </div>
+    <div class="border-t border-gray-200">
+      <ul role="list" class="divide-y divide-gray-200">
+        <% @usage_stats[:features_used].each do |feature| %>
+          <li class="px-4 py-4 sm:px-6">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-gray-900 truncate">
+                <%= feature[:name] %>
+              </p>
+              <div class="ml-2 flex-shrink-0 flex">
+                <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                  Used <%= feature[:usage_count] %> times
+                </p>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</div>
