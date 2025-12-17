@@ -73,6 +73,11 @@ uuid = { version = "1.11", features = ["v4", "serde"] }
 # Bytes handling
 bytes = "1.8"
 
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+hyper = "1.5"
+axum-test = "16"
+
 [profile.release]
 opt-level = 3
 lto = true

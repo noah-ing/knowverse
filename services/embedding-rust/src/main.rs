@@ -9,6 +9,9 @@ mod error;
 mod models;
 mod routes;
 
+#[cfg(test)]
+mod tests;
+
 use axum::{
     routing::{get, post},
     Router,

@@ -9,6 +9,9 @@ mod extractors;
 mod routes;
 mod sandbox;
 
+#[cfg(test)]
+mod tests;
+
 use axum::{
     routing::{get, post},
     Router,
