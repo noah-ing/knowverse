@@ -97,6 +97,33 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_28_093000) do
     t.index ["document_id"], name: "index_cluster_memberships_on_document_id"
   end
 
+  create_table "conversation_messages", force: :cascade do |t|
+    t.bigint "conversation_session_id", null: false
+    t.string "role", null: false
+    t.text "content", null: false
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["conversation_session_id", "created_at"], name: "idx_conv_msgs_on_conv_session_id_and_created_at"
+    t.index ["conversation_session_id"], name: "index_conversation_messages_on_conversation_session_id"
+    t.index ["role"], name: "index_conversation_messages_on_role"
+  end
+
+  create_table "conversation_sessions", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "user_id", null: false
+    t.string "title", null: false
+    t.boolean "pinned", default: false
+    t.jsonb "metadata", default: {}
+    t.datetime "last_message_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["last_message_at"], name: "index_conversation_sessions_on_last_message_at"
+    t.index ["organization_id", "user_id"], name: "idx_conversation_sessions_org_use"
+    t.index ["organization_id"], name: "index_conversation_sessions_on_organization_id"
+    t.index ["user_id"], name: "index_conversation_sessions_on_user_id"
+  end
+
   create_table "document_clusters", force: :cascade do |t|
     t.bigint "organization_id"
     t.string "name"
@@ -124,6 +151,42 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_28_093000) do
     t.string "status", default: "pending", null: false
     t.index ["organization_id"], name: "index_documents_on_organization_id"
     t.index ["user_id"], name: "index_documents_on_user_id"
+  end
+
+  create_table "domain_confidence_scores", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "query_text", null: false
+    t.string "domain", null: false
+    t.float "total_score", null: false
+    t.jsonb "factor_scores"
+    t.boolean "was_successful"
+    t.float "semantic_similarity"
+    t.float "corpus_coverage"
+    t.float "query_characteristics"
+    t.float "historical_performance"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "query_text", "domain"], name: "idx_domain_confidence_scores_org_que_dom"
+    t.index ["organization_id"], name: "index_domain_confidence_scores_on_organization_id"
+  end
+
+  create_table "domain_embedding_models", force: :cascade do |t|
+    t.string "name", null: false
+    t.bigint "organization_id", null: false
+    t.string "base_model", null: false
+    t.string "domain", null: false
+    t.integer "dimension", null: false
+    t.string "version"
+    t.text "description"
+    t.jsonb "configuration", default: {}
+    t.jsonb "performance_metrics", default: {}
+    t.boolean "active", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["domain"], name: "index_domain_embedding_models_on_domain"
+    t.index ["organization_id", "domain"], name: "idx_domain_models_on_org_and_domain"
+    t.index ["organization_id", "name"], name: "idx_domain_models_on_org_and_name", unique: true
+    t.index ["organization_id"], name: "index_domain_embedding_models_on_organization_id"
   end
 
   create_table "organization_templates", force: :cascade do |t|
@@ -176,6 +239,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_28_093000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "features", default: [], array: true
+  end
+
+  create_table "rag_message_elements", force: :cascade do |t|
+    t.bigint "conversation_message_id", null: false
+    t.text "content"
+    t.integer "token_index"
+    t.boolean "complete"
+    t.jsonb "source_references"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["conversation_message_id"], name: "index_rag_message_elements_on_conversation_message_id"
   end
 
   create_table "search_feedbacks", id: :serial, force: :cascade do |t|
@@ -337,6 +411,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_28_093000) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "streaming_elements", force: :cascade do |t|
+    t.bigint "conversation_session_id", null: false
+    t.string "token"
+    t.integer "token_index"
+    t.boolean "complete", default: false
+    t.jsonb "source_references"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "metadata", default: {}
+    t.index ["conversation_session_id"], name: "index_streaming_elements_on_conversation_session_id"
+    t.index ["token_index"], name: "index_streaming_elements_on_token_index"
+  end
+
   create_table "template_usages", force: :cascade do |t|
     t.bigint "organization_template_id", null: false
     t.bigint "user_id", null: false
@@ -408,7 +495,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_28_093000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "conversation_messages", "conversation_sessions"
+  add_foreign_key "conversation_sessions", "organizations"
+  add_foreign_key "conversation_sessions", "users"
+  add_foreign_key "domain_confidence_scores", "organizations"
+  add_foreign_key "domain_embedding_models", "organizations"
   add_foreign_key "organization_templates", "organizations"
+  add_foreign_key "rag_message_elements", "conversation_messages"
   add_foreign_key "search_feedbacks", "documents", name: "search_feedbacks_document_id_fkey"
   add_foreign_key "search_feedbacks", "organizations", name: "search_feedbacks_organization_id_fkey"
   add_foreign_key "search_feedbacks", "search_queries", name: "search_feedbacks_search_query_id_fkey"
@@ -421,6 +514,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_28_093000) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "streaming_elements", "conversation_sessions"
   add_foreign_key "template_usages", "organization_templates"
   add_foreign_key "template_usages", "users"
   add_foreign_key "vector_projections", "vector_embeddings", on_delete: :cascade
