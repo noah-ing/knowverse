@@ -385,15 +385,16 @@ class LocalEmbedder:
 class OpenAIEmbedder:
     """OpenAI embedding client for high-precision domains."""
 
-    def __init__(self, model: str = "text-embedding-ada-002"):
+    def __init__(self, model: str = "text-embedding-3-small"):
         self.model = model
         self.dimension = 1536 if "ada" in model or "3-small" in model else 3072
         self.api_key = os.getenv("OPENAI_API_KEY")
+        self.total_tokens = 0
 
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY required for OpenAI embeddings")
 
-    def embed_batch(self, texts: List[str], batch_size: int = 100) -> List[List[float]]:
+    def embed_batch(self, texts: List[str], batch_size: int = 2000) -> List[List[float]]:
         """Generate embeddings using OpenAI API."""
         import openai
         client = openai.OpenAI(api_key=self.api_key)
@@ -402,8 +403,8 @@ class OpenAIEmbedder:
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
 
-            # Rate limiting
-            time.sleep(0.1)
+            # Minimal rate limiting (OpenAI allows high throughput)
+            time.sleep(0.05)
 
             try:
                 response = client.embeddings.create(
@@ -704,6 +705,9 @@ def ingest_dataset(
     if use_openai:
         embedder = OpenAIEmbedder()
         quantization = "scalar"  # Higher precision for OpenAI
+        # Use larger batches for OpenAI (much faster)
+        batch_size = max(batch_size, 500)  # Larger upsert batches
+        embedding_batch_size = 2000  # OpenAI handles up to 2048 per call
     else:
         embedder = LocalEmbedder("intfloat/e5-large-v2")
         quantization = "binary"  # Good compression for local
