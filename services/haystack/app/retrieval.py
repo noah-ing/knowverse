@@ -11,7 +11,7 @@ import re
 from app.document_store import get_document_store
 from app.query_parser import QueryParser
 from app.search import search_documents, hybrid_search_documents
-from app.embeddings import get_embedding
+from app.embeddings import get_embedding, get_openai_embedding
 from app.qdrant_client import get_qdrant_client
 
 # Setup logging
@@ -72,19 +72,31 @@ class ContextRetriever:
             # Use explicit strategy
             use_hybrid = strategy.lower() in ["hybrid", "both"]
         
-        # Get query embedding for Qdrant search
-        query_embedding = get_embedding(query)
+        # Determine collection and embedding type
+        collection = options.get("collection", "sec_edgar")  # Default to SEC EDGAR for rich data
+        embedding_type = options.get("embedding_type", "openai")  # openai or local
+
+        # Get query embedding based on type
+        if embedding_type == "openai" or collection == "sec_edgar":
+            # SEC EDGAR uses OpenAI ada-002 embeddings
+            query_embedding = get_openai_embedding(query, model='ada002')
+            logger.info(f"Using OpenAI ada-002 embeddings (1536d)")
+        else:
+            query_embedding = get_embedding(query)
+            logger.info(f"Using local embeddings (768d)")
+
         top_k = max_documents * 2  # Get more results initially for filtering
 
         # Search Qdrant directly (where actual documents are stored)
-        logger.info(f"Searching Qdrant for org {org_id}: '{query}'")
+        logger.info(f"Searching Qdrant collection '{collection}' for org {org_id}: '{query}'")
         try:
             qdrant = get_qdrant_client()
             results = qdrant.search(
                 org_id=org_id,
                 query_vector=query_embedding,
                 limit=top_k,
-                score_threshold=min_similarity
+                score_threshold=min_similarity,
+                collection=collection
             )
             logger.info(f"Qdrant returned {len(results)} results")
         except Exception as e:

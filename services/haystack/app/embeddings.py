@@ -9,12 +9,25 @@ from functools import lru_cache
 from sentence_transformers import SentenceTransformer, losses, InputExample
 from torch.utils.data import DataLoader
 from config.settings import (
-    EMBEDDING_MODEL_NAME, EMBEDDING_MODELS, DEFAULT_DOMAIN, 
+    EMBEDDING_MODEL_NAME, EMBEDDING_MODELS, DEFAULT_DOMAIN,
     DOMAIN_MODEL_CACHE_SIZE, ENABLE_DOMAIN_DETECTION,
     DOMAIN_DETECTION_THRESHOLD, ENABLE_MODEL_FINETUNING,
     MODEL_TRAINING_BATCH_SIZE, MODEL_TRAINING_EPOCHS, MODEL_SAVE_PATH,
     DB_CONNECTION_STRING
 )
+
+# OpenAI embedding support
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+OPENAI_EMBEDDING_MODELS = {
+    'ada002': {'name': 'text-embedding-ada-002', 'dimension': 1536},
+    'text-embedding-3-small': {'name': 'text-embedding-3-small', 'dimension': 1536},
+    'text-embedding-3-large': {'name': 'text-embedding-3-large', 'dimension': 3072},
+}
 
 logger = logging.getLogger(__name__)
 
@@ -419,12 +432,89 @@ def get_embedding(text: str, model_name: str = 'base', domain: str = DEFAULT_DOM
 def get_available_domains(organization_id: Optional[int] = None) -> List[str]:
     """
     Get list of available domains for an organization
-    
+
     Args:
         organization_id: Organization ID
-        
+
     Returns:
         List of domain names
     """
     detector = DomainDetector(organization_id)
     return detector._get_available_domains()
+
+
+# OpenAI Embedding Functions
+_openai_client = None
+
+def get_openai_client():
+    """Get or create OpenAI client"""
+    global _openai_client
+    if _openai_client is None:
+        if not OPENAI_AVAILABLE:
+            raise RuntimeError("OpenAI package not installed")
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY not set")
+        _openai_client = OpenAI(api_key=api_key)
+    return _openai_client
+
+
+def get_openai_embedding(text: str, model: str = 'ada002') -> np.ndarray:
+    """
+    Generate embedding using OpenAI API.
+
+    Args:
+        text: Text to embed
+        model: Model key (ada002, text-embedding-3-small, text-embedding-3-large)
+
+    Returns:
+        Embedding vector as numpy array
+    """
+    if not text:
+        model_info = OPENAI_EMBEDDING_MODELS.get(model, OPENAI_EMBEDDING_MODELS['ada002'])
+        return np.zeros(model_info['dimension'])
+
+    model_info = OPENAI_EMBEDDING_MODELS.get(model, OPENAI_EMBEDDING_MODELS['ada002'])
+    model_name = model_info['name']
+
+    try:
+        client = get_openai_client()
+        response = client.embeddings.create(
+            input=text,
+            model=model_name
+        )
+        embedding = response.data[0].embedding
+        return np.array(embedding)
+    except Exception as e:
+        logger.error(f"OpenAI embedding error: {e}")
+        raise
+
+
+def get_openai_embeddings(texts: List[str], model: str = 'ada002') -> np.ndarray:
+    """
+    Generate embeddings for multiple texts using OpenAI API.
+
+    Args:
+        texts: List of texts to embed
+        model: Model key
+
+    Returns:
+        Array of embedding vectors
+    """
+    if not texts:
+        return np.array([])
+
+    model_info = OPENAI_EMBEDDING_MODELS.get(model, OPENAI_EMBEDDING_MODELS['ada002'])
+    model_name = model_info['name']
+
+    try:
+        client = get_openai_client()
+        response = client.embeddings.create(
+            input=texts,
+            model=model_name
+        )
+        embeddings = [item.embedding for item in response.data]
+        return np.array(embeddings)
+    except Exception as e:
+        logger.error(f"OpenAI embeddings error: {e}")
+        raise
