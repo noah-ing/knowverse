@@ -49,6 +49,11 @@ export default class extends Controller {
     this.dialogTarget.classList.remove('hidden')
     this.dialogTarget.setAttribute('aria-hidden', 'false')
     
+    // Show overlay first
+    if (this.hasOverlayTarget) {
+      this.overlayTarget.classList.remove('hidden', 'pointer-events-none')
+    }
+
     // Add animation classes
     setTimeout(() => {
       if (this.hasOverlayTarget) {
@@ -84,7 +89,12 @@ export default class extends Controller {
     setTimeout(() => {
       this.dialogTarget.classList.add('hidden')
       this.dialogTarget.setAttribute('aria-hidden', 'true')
-      
+
+      // Hide overlay and disable pointer events
+      if (this.hasOverlayTarget) {
+        this.overlayTarget.classList.add('hidden', 'pointer-events-none')
+      }
+
       // Restore focus
       if (this.previousFocus) {
         this.previousFocus.focus()
@@ -93,13 +103,25 @@ export default class extends Controller {
   }
   
   handleKeyDown(event) {
+    // Skip all keyboard shortcuts when user is typing in an input field
+    const target = event.target
+    const isTyping = target.tagName === 'INPUT' ||
+                     target.tagName === 'TEXTAREA' ||
+                     target.isContentEditable ||
+                     target.closest('[contenteditable="true"]')
+
+    if (isTyping) {
+      // Don't intercept keystrokes when typing - allow question marks, etc.
+      return
+    }
+
     // Check for keyboard shortcuts
     if (event.key === '?' && (event.metaKey || event.ctrlKey)) {
       // Show keyboard shortcuts dialog
       event.preventDefault()
       this.show()
     }
-    
+
     // Add other global shortcuts as needed
     const shortcuts = {
       // Navigation shortcuts
@@ -107,16 +129,16 @@ export default class extends Controller {
       's': () => this.navigateTo('/search'),
       'r': () => this.navigateTo('/rag'),
       'u': () => this.navigateTo('/upload'),
-      
+
       // Actions
       't': () => this.toggleDarkMode(),
-      
+
       // Jump to sections
       '1': () => this.jumpToSection('documents'),
       '2': () => this.jumpToSection('search'),
       '3': () => this.jumpToSection('analytics')
     }
-    
+
     // Check if a key combo is pressed while holding Alt
     if (event.altKey && shortcuts[event.key]) {
       event.preventDefault()
@@ -140,8 +162,8 @@ export default class extends Controller {
     const overlay = document.createElement('div')
     overlay.setAttribute('data-keyboard-shortcuts-target', 'overlay')
     overlay.classList.add(
-      'fixed', 'inset-0', 'bg-gray-500', 'bg-opacity-75', 'transition-opacity', 
-      'duration-300', 'ease-out', 'opacity-0'
+      'fixed', 'inset-0', 'bg-gray-500', 'bg-opacity-75', 'transition-opacity',
+      'duration-300', 'ease-out', 'opacity-0', 'pointer-events-none', 'hidden'
     )
     
     // Create dialog content

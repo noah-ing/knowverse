@@ -8,8 +8,7 @@ class ConversationMessage < ApplicationRecord
   validates :role, presence: true, inclusion: { in: VALID_ROLES }
   validates :content, presence: true
   
-  # Store metadata as JSON
-  serialize :metadata, JSON
+  # metadata column is PostgreSQL JSONB - serialization handled natively
   
   # Get approximate token count
   def token_count

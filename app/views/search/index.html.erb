@@ -41,13 +41,7 @@
   <% end %>
 
   <!-- Search Form Card -->
-  <%= render partial: "shared/card", locals: {
-    title: "Semantic Search",
-    subtitle: "Ask questions in natural language to find information across your documents",
-    animate: "fade-in",
-    animate_delay: "100ms",
-    classes: "mb-6 transition-all duration-200 hover:shadow-lg"
-  } do %>
+  <%= render "shared/card", title: "Semantic Search", subtitle: "Ask questions in natural language to find information across your documents", animate: "fade-in", animate_delay: "100ms", classes: "mb-6 transition-all duration-200 hover:shadow-lg" do %>
     <div class="relative flex flex-col items-center justify-center pt-4 pb-6">
       <div class="relative mx-auto w-16 h-16 flex items-center justify-center bg-gradient-to-br from-primary-500 to-indigo-600 dark:from-primary-600 dark:to-indigo-700 rounded-full mb-4 transition-colors duration-200">
         <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -58,7 +52,7 @@
       </div>
       
       <div class="max-w-4xl mx-auto w-full">
-        <%= form_with url: query_search_path, method: :post, local: true, class: "space-y-6", data: { controller: "search-form" } do |form| %>
+        <%= form_with url: search_query_path, method: :post, local: true, class: "space-y-6", data: { controller: "search-form" } do |form| %>
           <%= form.hidden_field :organization_id, value: @organization&.id %>
           
           <div class="space-y-2">
@@ -317,15 +311,17 @@
   <% end %>
   
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <%# Document Filter Card %>
-    <%= render partial: "shared/card", locals: {
-      title: "Search Specific Documents",
-      subtitle: "Filter by title or content",
-      animate: "fade-in",
-      animate_delay: "200ms",
-      classes: "md:col-span-2 transition-all duration-200 hover:shadow-lg"
-    } do %>
-      <%= form_with url: @organization.present? ? organization_documents_path(@organization) : "#", method: :get, class: "space-y-4" do |form| %>
+    <% if @organization.present? %>
+    <%# Document Filter Card - only show when organization exists %>
+    <div class="kv-card md:col-span-2 animate-in fade-in" style="animation-delay: 200ms">
+      <div class="kv-card-header">
+        <div class="kv-card-header-content">
+          <h3 class="kv-card-title">Search Specific Documents</h3>
+          <p class="kv-card-subtitle">Filter by title or content</p>
+        </div>
+      </div>
+      <div class="kv-card-body">
+      <%= form_with url: organization_documents_path(@organization), method: :get, class: "space-y-4" do |form| %>
         <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div class="sm:col-span-5">
             <%= form.label :q, "Search by title or content", class: "kv-label" %>
@@ -380,16 +376,19 @@
           </div>
         </div>
       <% end %>
+      </div>
+    </div>
     <% end %>
-    
+
     <%# Search Tips Card %>
-    <%= render partial: "shared/card", locals: {
-      title: "Search Tips",
-      subtitle: "Get better results with these search techniques",
-      animate: "fade-in",
-      animate_delay: "300ms",
-      classes: "transition-all duration-200 hover:shadow-lg"
-    } do %>
+    <div class="kv-card animate-in fade-in transition-all duration-200 hover:shadow-lg" style="animation-delay: 300ms">
+      <div class="kv-card-header">
+        <div class="kv-card-header-content">
+          <h3 class="kv-card-title">Search Tips</h3>
+          <p class="kv-card-subtitle">Get better results with these search techniques</p>
+        </div>
+      </div>
+      <div class="kv-card-body">
       <div class="space-y-4">
         <!-- Tip 1 -->
         <div class="bg-gray-50 dark:bg-gray-800 rounded-md p-4 flex items-start transition-colors duration-200">
@@ -443,6 +442,7 @@
           </div>
         </div>
       </div>
-    <% end %>
+      </div>
+    </div>
   </div> <!-- end grid -->
 </div> <!-- end page container -->

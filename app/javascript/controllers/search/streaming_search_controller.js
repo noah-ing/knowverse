@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { createStreamingElement } from "../../components/streaming_text_display"
+import { createStreamingElement } from "components/streaming_text_display"
 
 /**
  * Streaming Search Controller

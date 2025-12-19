@@ -14,7 +14,7 @@ import asyncio
 # Import custom modules
 from app.document_store import get_document_store
 from app.embeddings import (
-    get_embedding_model, generate_embeddings, detect_query_domain, 
+    get_embedding_model, generate_embeddings, detect_query_domain,
     get_available_domains, fine_tune_domain_model, model_registry
 )
 from app.search import get_retriever, get_search_pipeline, get_qa_pipeline, get_hybrid_searcher
@@ -23,6 +23,15 @@ from app.query_parser import QueryParser
 from app.retrieval import retrieve_and_rank, get_context_retriever
 from app.generation import llm_registry
 from app.health import router as health_router
+
+# Import elite RAG modules
+from app.query_understanding import analyze_query, QueryAnalysis, QueryIntent
+from app.advanced_retrieval import (
+    AdvancedRetriever, RAGFusion, CrossEncoderReranker,
+    RetrievalConfig, RetrievalResult
+)
+from app.quality import check_response_quality, QualityReport
+from app.memory import get_memory_manager
 
 # Import settings
 from config.settings import DEBUG, ENVIRONMENT, DEFAULT_DOMAIN, EMBEDDING_MODELS
@@ -150,6 +159,78 @@ class RAGResponse(BaseModel):
     metadata: Dict[str, Any]
     query: str
     processing_time: float
+
+
+# Advanced RAG request/response models
+class AdvancedRAGRequest(BaseModel):
+    """Request for advanced RAG with elite features."""
+    query: str = Field(..., description="Question or query for RAG")
+    org_id: int = Field(..., description="Organization ID for tenant isolation")
+    session_id: Optional[str] = Field(None, description="Session ID for memory/conversation context")
+
+    # Retrieval strategy
+    strategy: str = Field(
+        default="auto",
+        description="Retrieval strategy: auto, basic, rag_fusion, hyde, rerank"
+    )
+
+    # Collection routing
+    collections: Optional[List[str]] = Field(
+        None,
+        description="Specific collections to search (None = auto-route based on query)"
+    )
+
+    # Advanced options
+    top_k: int = Field(default=10, description="Number of documents to retrieve")
+    rerank: bool = Field(default=True, description="Whether to apply cross-encoder reranking")
+    include_quality_check: bool = Field(default=True, description="Include hallucination risk assessment")
+    include_query_analysis: bool = Field(default=True, description="Include query understanding in response")
+
+    # LLM options
+    provider: Optional[str] = Field(None, description="LLM provider (openai, anthropic)")
+    generation_options: Dict[str, Any] = Field(default_factory=dict, description="LLM generation options")
+
+
+class QueryAnalysisResponse(BaseModel):
+    """Query understanding results."""
+    intent: str
+    intent_confidence: float
+    entities: List[Dict[str, Any]]
+    domain: str
+    domain_confidence: float
+    complexity: str
+    suggested_collections: List[str]
+
+
+class QualityCheckResponse(BaseModel):
+    """Response quality assessment."""
+    hallucination_risk: str  # low, medium, high
+    confidence_score: float
+    grounding_ratio: float
+    flagged_claims: List[str]
+    recommendation: str
+
+
+class AdvancedRAGResponse(BaseModel):
+    """Response from advanced RAG with full diagnostics."""
+    answer: str
+    context: List[RAGContextItem]
+    query: str
+    processing_time: float
+
+    # Advanced metadata
+    strategy_used: str
+    collections_searched: List[str]
+
+    # Optional analysis
+    query_analysis: Optional[QueryAnalysisResponse] = None
+    quality_check: Optional[QualityCheckResponse] = None
+
+    # Performance metrics
+    retrieval_time: float
+    generation_time: float
+    total_documents_considered: int
+
 
 class LLMProviderInfo(BaseModel):
     name: str
@@ -959,6 +1040,250 @@ async def rag_answer(request: RAGRequest):
         )
 
 
+@app.post("/rag/advanced", response_model=AdvancedRAGResponse, tags=["rag"])
+async def advanced_rag_answer(request: AdvancedRAGRequest):
+    """
+    Advanced RAG with elite retrieval features.
+
+    Features:
+    - Query understanding (intent, entities, domain detection)
+    - Advanced retrieval strategies (RAG-Fusion, HyDE, reranking)
+    - Multi-collection search with intelligent routing
+    - Quality checks (hallucination detection, grounding verification)
+    - Conversation memory (optional)
+
+    Args:
+        request: AdvancedRAGRequest with query and options
+
+    Returns:
+        AdvancedRAGResponse with answer, context, and full diagnostics
+    """
+    start_time = time.time()
+    retrieval_start = time.time()
+    memory_manager = None
+
+    try:
+        # =================================================================
+        # Step 1: Query Understanding
+        # =================================================================
+        query_analysis = None
+        suggested_collections = []
+        is_complex = False
+
+        if request.include_query_analysis:
+            try:
+                analysis = await asyncio.to_thread(
+                    analyze_query,
+                    request.query
+                )
+                is_complex = analysis.is_complex
+                query_analysis = QueryAnalysisResponse(
+                    intent=analysis.intent.value if hasattr(analysis.intent, 'value') else str(analysis.intent),
+                    intent_confidence=analysis.intent_confidence,
+                    entities=[{"text": e.text, "type": e.type.value if hasattr(e.type, 'value') else str(e.type), "value": e.normalized or e.text}
+                              for e in analysis.entities] if analysis.entities else [],
+                    domain=analysis.domain.value if hasattr(analysis.domain, 'value') else str(analysis.domain),
+                    domain_confidence=analysis.domain_confidence,
+                    complexity="complex" if analysis.is_complex else "simple",
+                    suggested_collections=analysis.suggested_collections or []
+                )
+                suggested_collections = analysis.suggested_collections or []
+            except Exception as e:
+                logger.warning(f"Query analysis failed, continuing without: {e}")
+
+        # =================================================================
+        # Step 2: Determine Collections to Search
+        # =================================================================
+        collections_to_search = request.collections or suggested_collections
+        if not collections_to_search:
+            # Default fallback based on org_id
+            collections_to_search = [f"org_{request.org_id}_documents"]
+
+        # =================================================================
+        # Step 3: Memory Context (if session provided)
+        # =================================================================
+        memory_context = ""
+        if request.session_id:
+            try:
+                memory_manager = get_memory_manager()
+                working_memory = await asyncio.to_thread(
+                    memory_manager.start_request,
+                    request.query,
+                    request.session_id
+                )
+                # Get context from working memory
+                memory_context = await asyncio.to_thread(
+                    memory_manager.get_context_for_generation,
+                    include_memories=True,
+                    include_conversation=True,
+                    max_tokens=500
+                )
+            except Exception as e:
+                logger.warning(f"Memory retrieval failed, continuing without: {e}")
+
+        # =================================================================
+        # Step 4: Advanced Retrieval
+        # =================================================================
+        strategy = request.strategy
+
+        # Auto-select strategy based on query analysis
+        if strategy == "auto":
+            if is_complex:
+                strategy = "rag_fusion"
+            elif query_analysis and query_analysis.intent in ["comparative", "analytical"]:
+                strategy = "rag_fusion"
+            else:
+                strategy = "basic"
+
+        # Initialize advanced retriever
+        retriever = AdvancedRetriever()
+
+        # Configure retrieval based on strategy
+        use_rag_fusion = strategy in ["rag_fusion", "auto"]
+        use_hyde = strategy == "hyde"
+
+        config = RetrievalConfig(
+            use_rag_fusion=use_rag_fusion,
+            use_hyde=use_hyde,
+            use_reranking=request.rerank,
+            final_k=request.top_k,
+            initial_k=request.top_k * 3  # Get more initially for fusion/reranking
+        )
+
+        # Execute retrieval for each collection
+        all_results = []
+        for collection in collections_to_search:
+            try:
+                results = await asyncio.to_thread(
+                    retriever.retrieve,
+                    request.query,
+                    collection=collection,
+                    org_id=request.org_id,
+                    config=config
+                )
+                all_results.extend(results)
+            except Exception as e:
+                logger.warning(f"Retrieval from {collection} failed: {e}")
+
+        # Sort by score and limit
+        all_results.sort(key=lambda x: x.score, reverse=True)
+        all_results = all_results[:request.top_k]
+
+        retrieval_time = time.time() - retrieval_start
+
+        # =================================================================
+        # Step 5: Build Context
+        # =================================================================
+        context_items = []
+        for result in all_results:
+            context_items.append(RAGContextItem(
+                document_id=result.id,
+                title=result.metadata.get("title", ""),
+                source=result.metadata.get("source", result.collection),
+                text=result.content,
+                score=result.score
+            ))
+
+        total_considered = len(all_results)
+
+        # =================================================================
+        # Step 6: Generate Response
+        # =================================================================
+        generation_start = time.time()
+
+        provider = request.provider or "openai"
+        llm = llm_registry.get_provider(provider)
+
+        # Build enhanced prompt with memory context
+        enhanced_query = f"{memory_context}\n\n{request.query}" if memory_context else request.query
+
+        answer = await asyncio.to_thread(
+            llm.generate,
+            enhanced_query,
+            [{"text": item.text, "title": item.title, "source": item.source} for item in context_items],
+            request.generation_options
+        )
+
+        generation_time = time.time() - generation_start
+
+        # =================================================================
+        # Step 7: Quality Check
+        # =================================================================
+        quality_check = None
+
+        if request.include_quality_check and context_items:
+            try:
+                # Build sources list for quality check
+                sources = [{"text": item.text, "title": item.title, "source": item.source}
+                          for item in context_items]
+
+                quality_report = await asyncio.to_thread(
+                    check_response_quality,
+                    answer,
+                    sources,
+                    request.query
+                )
+
+                # Map hallucination_risk float (0-1) to category
+                risk_level = "low"
+                if quality_report.hallucination_risk > 0.6:
+                    risk_level = "high"
+                elif quality_report.hallucination_risk > 0.3:
+                    risk_level = "medium"
+
+                quality_check = QualityCheckResponse(
+                    hallucination_risk=risk_level,
+                    confidence_score=quality_report.confidence_score,
+                    grounding_ratio=quality_report.source_coverage,
+                    flagged_claims=quality_report.warnings or [],
+                    recommendation="Response appears well-grounded" if risk_level == "low" else "Review flagged claims"
+                )
+            except Exception as e:
+                logger.warning(f"Quality check failed, continuing without: {e}")
+
+        # =================================================================
+        # Step 8: Store in Memory (if session provided)
+        # =================================================================
+        if request.session_id and memory_manager:
+            try:
+                await asyncio.to_thread(
+                    memory_manager.end_request,
+                    request.session_id,
+                    None,  # user_id
+                    None,  # org_id
+                    answer,
+                    False  # save_to_ltm
+                )
+            except Exception as e:
+                logger.warning(f"Memory storage failed: {e}")
+
+        # =================================================================
+        # Build Response
+        # =================================================================
+        processing_time = time.time() - start_time
+
+        return AdvancedRAGResponse(
+            answer=answer,
+            context=context_items,
+            query=request.query,
+            processing_time=processing_time,
+            strategy_used=strategy,
+            collections_searched=collections_to_search,
+            query_analysis=query_analysis,
+            quality_check=quality_check,
+            retrieval_time=retrieval_time,
+            generation_time=generation_time,
+            total_documents_considered=total_considered
+        )
+
+    except Exception as e:
+        logger.error(f"Advanced RAG failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Advanced RAG failed: {str(e)}"
+        )
+
+
 @app.post("/rag/stream", tags=["rag"])
 async def rag_stream(request: RAGRequest):
     """
@@ -981,7 +1306,7 @@ async def rag_stream(request: RAGRequest):
                 retrieve_and_rank,
                 query=request.query,
                 org_id=request.org_id,
-                **request.retrieval_options
+                options=request.retrieval_options
             )
 
             # Send context event

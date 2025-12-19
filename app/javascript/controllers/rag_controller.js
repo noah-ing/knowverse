@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { createStreamingTextDisplay } from "../components/streaming_text_display"
+import { createStreamingElement } from "components/streaming_text_display"
 
 /**
  * RAG Controller
@@ -119,18 +119,11 @@ export default class extends Controller {
   
   // Initialize the streaming text display component
   initStreamingDisplay() {
-    // Create enhanced streaming display with our design system classes
-    this.streamingDisplay = createStreamingTextDisplay({
-      container: this.streamingResponseTarget,
-      cursor: this.streamingCursorTarget,
+    // Create streaming display with our design system classes
+    this.streamingDisplay = createStreamingElement(this.streamingResponseTarget, {
       typingSpeed: 20, // ms per token (lower = faster)
-      typingVariability: 10, // ms of random variation
-      highlightSources: true,
-      highlightClass: 'kv-source-citation',
-      highlightActiveClass: 'kv-source-hover-highlight',
-      accessibility: true, // Enable accessibility features
-      sentenceEndPause: 15, // Extra pause at end of sentences for natural reading
-      commaClausePause: 8 // Extra pause at commas
+      cursorBlink: true,
+      className: 'kv-streaming-text'
     })
   }
   
@@ -155,20 +148,54 @@ export default class extends Controller {
     this.sourceReferences = []
     this.lastEventId = 0
     
-    // Handle incoming tokens
-    this.eventSource.addEventListener('token', this.handleToken.bind(this))
-    
-    // Handle source references
-    this.eventSource.addEventListener('sources', this.handleSources.bind(this))
-    
-    // Handle metadata
-    this.eventSource.addEventListener('metadata', this.handleMetadata.bind(this))
-    
-    // Handle completion
-    this.eventSource.addEventListener('done', this.handleStreamingComplete.bind(this))
-    
-    // Handle errors
-    this.eventSource.onerror = this.handleStreamingError.bind(this)
+    // Handle all messages - SSE sends generic 'message' events with type in JSON
+    this.eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        console.log('SSE event:', data.type, data)
+
+        switch (data.type) {
+          case 'token':
+            this.handleToken({ data: event.data })
+            break
+          case 'context':
+            // Context event with documents - can show sources
+            console.log('Context received:', data.documents?.length || 0, 'documents')
+            break
+          case 'sources':
+            this.handleSources({ data: event.data })
+            break
+          case 'metadata':
+            this.handleMetadata({ data: event.data })
+            break
+          case 'complete':
+            this.handleStreamingComplete({ data: event.data })
+            // Close EventSource on completion to prevent reconnect
+            this.closeEventSource()
+            break
+          case 'error':
+            console.error('Server error:', data)
+            this.handleStreamingError(event)
+            this.closeEventSource()
+            break
+          default:
+            console.log('Unknown event type:', data.type)
+        }
+      } catch (e) {
+        console.error('Failed to parse SSE data:', e, event.data)
+      }
+    }
+
+    // Handle EventSource connection errors (not server-sent errors)
+    this.eventSource.onerror = (event) => {
+      // Only handle as error if we're not just completing
+      if (this.eventSource.readyState === EventSource.CLOSED) {
+        console.log('EventSource closed')
+        return
+      }
+      console.error('EventSource error:', event)
+      this.handleStreamingError(event)
+    }
   }
   
   // Start a standard non-streaming request
@@ -223,43 +250,33 @@ export default class extends Controller {
   // Handle streaming token events
   handleToken(event) {
     if (!this.isStreaming) return
-    
+
     // Parse the data
     const data = JSON.parse(event.data)
-    
-    // Check for sequential order
-    if (data.id) {
-      if (this.lastEventId + 1 !== data.id) {
-        console.warn(`Token out of order, expected ${this.lastEventId + 1}, got ${data.id}`)
+
+    // Token content comes as 'content' from SSE
+    const token = data.content || data.token || ''
+
+    // Check for sequential order using index
+    if (data.index) {
+      if (this.lastEventId + 1 !== data.index) {
+        console.warn(`Token out of order, expected ${this.lastEventId + 1}, got ${data.index}`)
       }
-      this.lastEventId = data.id
+      this.lastEventId = data.index
     }
-    
+
     // Add to current response
-    this.currentResponse += data.token
-    
-    // If this is the first token, initialize streaming
-    if (this.currentResponse.length === data.token.length) {
-      this.streamingDisplay.streamText([data.token])
-      
-      // Start displaying performance metrics
-      if (this.hasPerformanceMetricsTarget) {
-        this.performanceMetricsTarget.classList.remove('hidden')
-      }
-      
-      // Display time to first token
-      if (this.hasTtftValueTarget) {
-        const ttft = Math.round(this.streamingDisplay.timeToFirstToken)
-        this.ttftValueTarget.textContent = ttft
-      }
-    } else {
-      // Stream just this token
-      this.streamingDisplay.tokens.push(data.token)
-      this.streamingDisplay.text = this.currentResponse // Ensure synchronized
+    this.currentResponse += token
+
+    // Append token directly to response element
+    if (this.hasStreamingResponseTarget) {
+      this.streamingResponseTarget.textContent = this.currentResponse
     }
-    
-    // Update metrics as tokens arrive
-    this.updatePerformanceMetrics()
+
+    // Hide cursor while actively streaming
+    if (this.hasStreamingCursorTarget) {
+      this.streamingCursorTarget.classList.remove('hidden')
+    }
   }
   
   // Update the performance metrics display
@@ -379,43 +396,30 @@ export default class extends Controller {
   handleStreamingComplete(event) {
     // Mark streaming as done
     this.isStreaming = false
-    
+
     // Close the event source
     this.closeEventSource()
-    
-    // Apply final formatting to text with source highlighting
-    if (this.streamingDisplay) {
-      this.streamingDisplay.finishStreaming(() => {
-        // Final update of performance metrics with complete flag
-        this.updatePerformanceMetrics(true)
-      })
+
+    // Hide the cursor
+    if (this.hasStreamingCursorTarget) {
+      this.streamingCursorTarget.classList.add('hidden')
     }
-    
+
     // Update status
     this.updateStatus('complete')
-    
+
     // Re-enable submit button
     this.submitTarget.disabled = false
-    
+
     // Show feedback container
     if (this.hasFeedbackContainerTarget) {
       this.feedbackContainerTarget.classList.remove('hidden')
     }
-    
+
     // Add the assistant response to the conversation history
     this.addAssistantMessage(this.currentResponse, this.sourceReferences, this.streamingMetadata)
-    
-    // Hide performance metrics after 10 seconds
-    setTimeout(() => {
-      if (this.hasPerformanceMetricsTarget) {
-        this.performanceMetricsTarget.classList.add('hidden')
-      }
-      
-      // Also hide floating metrics panel if it exists
-      if (this.hasFloatingMetricsTarget) {
-        this.floatingMetricsTarget.classList.add('hidden')
-      }
-    }, 10000)
+
+    console.log('Streaming complete. Response:', this.currentResponse.substring(0, 100))
   }
   
   // Handle streaming errors
