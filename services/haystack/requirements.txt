@@ -17,14 +17,18 @@ python-dotenv==1.0.0      # Environment management
 # HTTP and networking - Production optimized
 httpx==0.27.0             # Updated HTTP client for FastAPI 0.110
 
-# Data processing - Stable versions
-numpy==1.24.3             # Pinned for ML compatibility
-pandas==2.1.2             # Data manipulation
+# Data processing - Use compatible versions with pre-built wheels
+numpy>=1.24.0,<2.0.0      # Allow any 1.x version with pre-built wheel
+pandas>=2.0.0,<3.0.0      # Allow any 2.x version with pre-built wheel
 
 # ML and AI dependencies - Version locked for stability
 sentence-transformers==2.2.2  # Embedding models
 scikit-learn==1.3.0          # ML algorithms
 huggingface_hub==0.16.4      # Model downloads
+
+# LLM Provider SDKs - For RAG generation
+openai>=1.0.0                 # OpenAI API client
+anthropic>=0.18.0             # Anthropic Claude API client
 
 # Web server - Production deployment
 gunicorn==21.2.0           # WSGI server for production

@@ -125,10 +125,10 @@ module VectorStore
           success: true,
           results: response[:result].map do |r|
             {
-              id: r['id'],
-              score: r['score'],
-              distance: 1.0 - r['score'],  # Convert cosine similarity to distance
-              payload: r['payload']
+              id: r[:id],
+              score: r[:score],
+              distance: 1.0 - r[:score],  # Convert cosine similarity to distance
+              payload: r[:payload]
             }
           end,
           latency_ms: duration
@@ -211,12 +211,13 @@ module VectorStore
       response = http_get("/cluster")
 
       if response[:result]
+        result = response[:result]
         {
-          status: response[:result]['status'],
-          peer_id: response[:result]['peer_id'],
-          peers: response[:result]['peers'],
-          raft_info: response[:result]['raft_info'],
-          consensus_thread_status: response[:result]['consensus_thread_status']
+          status: result[:status],
+          peer_id: result[:peer_id],
+          peers: result[:peers],
+          raft_info: result[:raft_info],
+          consensus_thread_status: result[:consensus_thread_status]
         }
       else
         { status: 'error', error: response[:error] }
@@ -295,8 +296,15 @@ module VectorStore
     def build_filter(filter)
       return nil unless filter
 
-      # Convert simple hash filter to Qdrant filter format
+      # Check if already in Qdrant format (has must/should/must_not keys)
       if filter.is_a?(Hash)
+        qdrant_keys = [:must, :should, :must_not, 'must', 'should', 'must_not']
+        if (filter.keys & qdrant_keys).any?
+          # Already in Qdrant format, pass through
+          return filter
+        end
+
+        # Convert simple hash filter to Qdrant filter format
         must_conditions = filter.map do |key, value|
           if value.is_a?(Array)
             { key: key.to_s, match: { any: value } }

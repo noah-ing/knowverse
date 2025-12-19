@@ -1,8 +1,7 @@
 # Health check endpoint for container orchestration and monitoring
 class HealthController < ApplicationController
-  # Skip authentication for health checks
-  skip_before_action :authenticate_user!, if: :devise_controller?
-  
+  # Health checks are public - no authentication required
+
   def show
     health_status = {
       status: "healthy",

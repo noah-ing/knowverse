@@ -35,6 +35,18 @@ class SearchRouter
     hybrid: 'Combined semantic + keyword'
   }.freeze
 
+  # Embedding model dimensions (used by HaystackClient)
+  MODELS = {
+    'base' => 768,
+    'small' => 384,
+    'large' => 1024,
+    'all-MiniLM-L6-v2' => 384,
+    'all-mpnet-base-v2' => 768,
+    'text-embedding-3-small' => 1536,
+    'text-embedding-3-large' => 3072,
+    'text-embedding-ada-002' => 1536
+  }.freeze
+
   class << self
     # Main entry point - backwards compatible
     def route_query(query_text, organization_id, options = {})

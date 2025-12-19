@@ -12,6 +12,7 @@ from app.document_store import get_document_store
 from app.query_parser import QueryParser
 from app.search import search_documents, hybrid_search_documents
 from app.embeddings import get_embedding
+from app.qdrant_client import get_qdrant_client
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -52,42 +53,48 @@ class ContextRetriever:
         
         # Extract retrieval options
         max_documents = options.get("max_documents", 5)
-        min_similarity = options.get("min_similarity", 0.75)
+        # Use lower threshold if not specified or if specified value is too high
+        min_similarity = options.get("min_similarity")
+        if min_similarity is None or min_similarity > 0.5:
+            min_similarity = 0.3  # Lower threshold for more results
         strategy = options.get("strategy", "auto")
         
         # Parse query to understand intent and complexity
-        parsed_query = self.query_parser.parse(query)
-        logger.info(f"Query parsed as: {parsed_query.query_type}, complexity: {parsed_query.complexity}")
+        parsed_query = self.query_parser.parse_query(query)
+        logger.info(f"Query parsed with complexity: {parsed_query.get('complexity', 'unknown')}")
         
         # Choose retrieval strategy
         if strategy == "auto":
             # Auto-select strategy based on query characteristics
-            use_hybrid = parsed_query.is_complex or parsed_query.has_filters or parsed_query.complexity > 0.6
+            complexity = parsed_query.get('complexity', 'simple')
+            use_hybrid = complexity in ['complex', 'medium'] or len(parsed_query.get('exact_phrases', [])) > 0
         else:
             # Use explicit strategy
             use_hybrid = strategy.lower() in ["hybrid", "both"]
         
-        # Retrieve documents
-        if use_hybrid:
-            logger.info(f"Using hybrid search for query: '{query}'")
-            results = hybrid_search_documents(
-                query=query,
+        # Get query embedding for Qdrant search
+        query_embedding = get_embedding(query)
+        top_k = max_documents * 2  # Get more results initially for filtering
+
+        # Search Qdrant directly (where actual documents are stored)
+        logger.info(f"Searching Qdrant for org {org_id}: '{query}'")
+        try:
+            qdrant = get_qdrant_client()
+            results = qdrant.search(
                 org_id=org_id,
-                limit=max_documents * 2,  # Get more results initially for filtering
-                min_score=min_similarity,
-                options=options
+                query_vector=query_embedding,
+                limit=top_k,
+                score_threshold=min_similarity
             )
-        else:
-            logger.info(f"Using vector search for query: '{query}'")
-            # Get query embedding
-            embedding = get_embedding(query)
-            results = search_documents(
-                embedding=embedding,
-                org_id=org_id,
-                limit=max_documents * 2,  # Get more results initially for filtering
-                min_score=min_similarity,
-                options=options
-            )
+            logger.info(f"Qdrant returned {len(results)} results")
+        except Exception as e:
+            logger.error(f"Qdrant search failed: {e}")
+            # Fallback to local search (will likely return empty)
+            if use_hybrid:
+                logger.info(f"Falling back to local hybrid search")
+                results = hybrid_search_documents(query=query, filters=None, top_k=top_k)
+            else:
+                results = search_documents(query=query, filters=None, top_k=top_k)
         
         # Process and format results
         context = self._process_results(results, query, max_documents)
@@ -95,43 +102,69 @@ class ContextRetriever:
         logger.info(f"Retrieved {len(context)} context items in {time.time() - start_time:.2f}s")
         return context
     
-    def _process_results(self, results: List[Dict], query: str, max_documents: int) -> List[Dict[str, Any]]:
+    def _process_results(self, results: List[Any], query: str, max_documents: int) -> List[Dict[str, Any]]:
         """
         Process search results into context documents.
-        
+
         Args:
-            results: Search results
+            results: Search results (Haystack Document objects or dicts)
             query: Original query
             max_documents: Maximum number of documents to include
-            
+
         Returns:
             Processed context documents
         """
         # Extract key terms from query for highlighting
         query_terms = self._extract_key_terms(query)
-        
+
         # Process each result
         processed_results = []
-        for result in results[:max_documents * 2]:  # Process more than we need for better selection
-            document_id = result.get("id") or result.get("document_id")
-            title = result.get("title", "")
-            source = result.get("source") or result.get("filename", "")
-            text = result.get("content") or result.get("text", "")
-            score = result.get("score", 0)
+        logger.info(f"Processing {len(results)} raw results")
+        for i, result in enumerate(results[:max_documents * 2]):  # Process more than we need for better selection
+            # Debug: log raw result
+            if i == 0:
+                logger.info(f"Sample result keys: {result.keys() if isinstance(result, dict) else 'not a dict'}")
+                if isinstance(result, dict):
+                    logger.info(f"Sample content length: {len(result.get('content', '') or '')}")
+
+            # Handle both Haystack Document objects and dicts
+            if hasattr(result, 'id'):
+                # Haystack Document object
+                document_id = result.id
+                meta = getattr(result, 'meta', {}) or {}
+                title = meta.get("title", "")
+                source = meta.get("source") or meta.get("filename", "")
+                text = getattr(result, 'content', "") or ""
+                score = getattr(result, 'score', 0) or 0
+            else:
+                # Dict format
+                document_id = result.get("id") or result.get("document_id")
+                title = result.get("title", "")
+                source = result.get("source") or result.get("filename", "")
+                text = result.get("content") or result.get("text", "")
+                score = result.get("score", 0)
             
-            # Extract the most relevant passage from the text
-            passage, passage_score = self._extract_relevant_passage(text, query, query_terms)
-            
+            # For short texts, use directly; for longer texts, extract relevant passage
+            if len(text) < 500:
+                passage = text
+                passage_score = 0.5
+            else:
+                passage, passage_score = self._extract_relevant_passage(text, query, query_terms)
+
             # Combine document and passage score
             combined_score = (score + passage_score) / 2
-            
+
+            final_text = passage if passage else text[:500]
+            if i == 0:
+                logger.info(f"Final text for first result: '{final_text[:100]}...' (len={len(final_text)})")
+
             processed_results.append({
                 "document_id": document_id,
                 "title": title,
                 "source": source,
-                "text": passage,  # Use the extracted passage
+                "text": final_text,
                 "score": combined_score,
-                "full_text": text  # Keep full text for reference
+                "full_text": text
             })
         
         # Sort by combined score and take top documents

@@ -32,8 +32,11 @@ module EmbeddingCache
       begin
         @redis.ping
         Rails.logger.info "RedisStore connected to #{redis_url} with namespace '#{@namespace}'"
-      rescue Redis::CannotConnectError => e
-        Rails.logger.error "RedisStore failed to connect to #{redis_url}: #{e.message}"
+      rescue Redis::CannotConnectError, Redis::ConnectionError, Errno::ECONNRESET, Errno::ECONNREFUSED => e
+        Rails.logger.warn "RedisStore failed to connect to #{redis_url}: #{e.message} - falling back to memory-only caching"
+        @redis = nil
+      rescue => e
+        Rails.logger.warn "RedisStore unexpected error: #{e.class} #{e.message} - falling back to memory-only caching"
         @redis = nil
       end
     end

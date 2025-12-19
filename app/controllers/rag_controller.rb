@@ -324,9 +324,12 @@ class RagController < ApplicationController
         user_id: current_user.id
       )
       
-      # If template_id is provided and conversation exists, update its template
-      if conversation.present? && template_id.present? && conversation.organization_template_id != template_id
-        conversation.update(organization_template_id: template_id)
+      # If template_id is provided and conversation exists, store in metadata
+      if conversation.present? && template_id.present?
+        current_template = conversation.metadata&.dig('template_id')
+        if current_template != template_id
+          conversation.update(metadata: conversation.metadata.merge('template_id' => template_id))
+        end
       end
       
       return conversation if conversation.present?
@@ -336,8 +339,8 @@ class RagController < ApplicationController
     ConversationSession.create!(
       organization: @organization,
       user: current_user,
-      organization_template_id: template_id,
       title: "Q&A #{Time.current.strftime('%Y-%m-%d %H:%M')}",
+      metadata: template_id.present? ? { 'template_id' => template_id } : {},
       last_message_at: Time.current
     )
   end

@@ -53,6 +53,9 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - QDRANT_URL=http://qdrant:6333
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-anthropic}
+      - DEFAULT_OPENAI_MODEL=${DEFAULT_OPENAI_MODEL:-gpt-4o}
       - DEBUG=true
       - API_HOST=0.0.0.0
       - API_PORT=8000
@@ -130,7 +133,7 @@ services:
       - QDRANT__SERVICE__GRPC_PORT=6334
       - QDRANT__LOG_LEVEL=INFO
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/6333 && echo -e \"GET /readyz HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q ready <&3'"]
       interval: 10s
       timeout: 5s
       retries: 5
