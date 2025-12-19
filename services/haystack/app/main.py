@@ -852,11 +852,14 @@ async def generate_embedding(request: EmbeddingRequest):
     start_time = time.time()
 
     try:
-        # Generate embedding using the specified model
-        embedding = generate_embeddings(
-            text=request.text,
+        # Generate embedding using the specified model (wraps text in list)
+        embeddings = generate_embeddings(
+            texts=[request.text],
             model_name=request.model_name or "base"
         )
+
+        # Get first embedding result
+        embedding = embeddings[0] if len(embeddings) > 0 else []
 
         # Convert to list if numpy array
         if isinstance(embedding, np.ndarray):
@@ -906,17 +909,17 @@ async def rag_answer(request: RAGRequest):
             retrieve_and_rank,
             query=request.query,
             org_id=request.org_id,
-            **request.retrieval_options
+            options=request.retrieval_options  # Pass as options dict, not spread
         )
 
         # Build context string
         context_items = []
         for doc in context_docs:
             context_items.append(RAGContextItem(
-                document_id=doc.get("id"),
-                title=doc.get("title"),
-                source=doc.get("source"),
-                text=doc.get("content", ""),
+                document_id=doc.get("document_id") or doc.get("id"),
+                title=doc.get("title", ""),
+                source=doc.get("source", ""),
+                text=doc.get("text") or doc.get("content", ""),  # retrieval returns 'text'
                 score=doc.get("score", 0.0)
             ))
 
@@ -924,18 +927,15 @@ async def rag_answer(request: RAGRequest):
 
         # Generate response using LLM
         provider = request.provider or "openai"
-        llm = llm_registry.get_llm(provider)
+        llm = llm_registry.get_provider(provider)
 
-        prompt = f"""Based on the following context, answer the question. If the answer cannot be found in the context, say so.
-
-Context:
-{context_text}
-
-Question: {request.query}
-
-Answer:"""
-
-        answer = await asyncio.to_thread(llm.generate, prompt, **request.generation_options)
+        # LLM generate expects (prompt, context, options)
+        answer = await asyncio.to_thread(
+            llm.generate,
+            request.query,
+            [{"text": item.text, "title": item.title, "source": item.source} for item in context_items],
+            request.generation_options
+        )
 
         processing_time = time.time() - start_time
 
@@ -1012,10 +1012,13 @@ Answer:"""
 
             # Get LLM and stream response
             provider = request.provider or "openai"
-            llm = llm_registry.get_llm(provider)
+            llm = llm_registry.get_provider(provider)
+
+            # Prepare context for LLM
+            context_for_llm = [{"text": doc.get("content", ""), "title": doc.get("title"), "source": doc.get("source")} for doc in context_docs]
 
             # Stream tokens
-            async for token in llm.stream(prompt, **request.generation_options):
+            async for token in llm.generate_stream(request.query, context_for_llm, request.generation_options):
                 tracker.add_token()
                 token_data = {
                     "type": "token",
@@ -1059,8 +1062,8 @@ async def get_rag_providers():
     providers = []
 
     # Check which providers are available
-    available = llm_registry.get_available_providers()
-    default_provider = llm_registry.get_default_provider()
+    available = llm_registry.list_providers()
+    default_provider = llm_registry._default_provider
 
     for name in available:
         providers.append(LLMProviderInfo(
@@ -1091,7 +1094,7 @@ async def parse_query(request: ParseQueryRequest):
     """
     try:
         parser = QueryParser()
-        result = parser.parse(request.query)
+        result = parser.parse_query(request.query)
 
         return ParseQueryResponse(
             vector_query=result.get("vector_query", request.query),

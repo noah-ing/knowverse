@@ -222,7 +222,7 @@ module EmbeddingCache
           max_entries: @max_entries,
           max_memory: @max_memory,
           organization_count: @org_counters.size,
-          organizations: @org_counters.map { |org_id, counter| [org_id, counter.value] }.to_h
+          organizations: @org_counters.each_pair.map { |org_id, counter| [org_id, counter.value] }.to_h
         }
       end
     end
@@ -240,7 +240,7 @@ module EmbeddingCache
         target_usage = (current_usage + needed_space) - (@max_memory * 0.8)
         
         # Sort entries by access time (oldest first)
-        sorted_entries = @access_times.map { |k, v| [k, v] }.sort_by { |_, v| v }
+        sorted_entries = @access_times.each_pair.map { |k, v| [k, v] }.sort_by { |_, v| v }
         
         # Track how much space we've freed
         freed_bytes = 0

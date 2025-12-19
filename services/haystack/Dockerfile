@@ -1,8 +1,8 @@
-# ENTERPRISE SECURITY DOCKERFILE - Zero Vulnerabilities
-# Alpine Linux base for maximum security
+# ENTERPRISE SECURITY DOCKERFILE
+# Slim Debian base for better binary wheel compatibility
 
 # Stage 1: Builder (compile dependencies)
-FROM python:3.13-alpine as builder
+FROM python:3.11-slim AS builder
 
 # Set build args for optimization
 ARG DEBIAN_FRONTEND=noninteractive
@@ -11,18 +11,12 @@ ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install build dependencies for Alpine
-RUN apk add --no-cache \
-    build-base \
-    postgresql-dev \
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
     libffi-dev \
-    musl-dev \
-    openblas-dev \
-    lapack-dev \
-    gfortran \
-    rust \
-    cargo \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
 RUN python -m venv /opt/venv
@@ -34,7 +28,7 @@ RUN pip install --upgrade pip setuptools wheel && \
     pip install -r requirements.txt
 
 # Stage 2: Production (lightweight runtime)
-FROM python:3.13-alpine as production
+FROM python:3.11-slim AS production
 
 # Enterprise environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -43,13 +37,13 @@ ENV PYTHONPATH=/app
 ENV HAYSTACK_TELEMETRY_ENABLED=false
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install only runtime dependencies for Alpine
-RUN apk add --no-cache \
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     curl \
     netcat-openbsd \
     ca-certificates \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
@@ -58,8 +52,8 @@ COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 
 # Create enterprise user with proper permissions
-RUN addgroup -g 1000 haystack && \
-    adduser -D -s /bin/sh -u 1000 -G haystack haystack && \
+RUN groupadd -g 1000 haystack && \
+    useradd -m -s /bin/bash -u 1000 -g haystack haystack && \
     mkdir -p /app/models /app/data /app/logs && \
     chown -R haystack:haystack /app && \
     chmod -R 755 /app

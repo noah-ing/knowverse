@@ -38,13 +38,13 @@ DOCUMENT_STORE_TYPE = os.getenv('DOCUMENT_STORE_TYPE', 'pgvector')  # 'pgvector'
 # Search performance settings
 MAX_SEARCH_TIME_MS = int(os.getenv('MAX_SEARCH_TIME_MS', '100'))  # Maximum search time in milliseconds for early termination
 
-# Embedding model configurations
+# Embedding model configurations (matched to Rails VectorEmbedding::SUPPORTED_MODELS)
 EMBEDDING_MODELS = {
     'mini': 'sentence-transformers/all-MiniLM-L6-v2',           # 384 dimensions
-    'small': 'sentence-transformers/all-mpnet-base-v2',         # 768 dimensions
-    'base': 'sentence-transformers/multi-qa-mpnet-base-dot-v1', # 1024 dimensions (default)
-    'large': 'sentence-transformers/all-roberta-large-v1',      # 1536 dimensions
-    'xl': 'sentence-transformers/nli-mpnet-base-v2'             # 2048 dimensions (approximated)
+    'small': 'sentence-transformers/all-mpnet-base-v2',         # 768 dimensions (Rails default)
+    'base': 'sentence-transformers/all-mpnet-base-v2',          # 768 dimensions (alias for small)
+    'large': 'sentence-transformers/all-roberta-large-v1',      # 1024 dimensions
+    'xl': 'sentence-transformers/gtr-t5-xl'                     # 768 dimensions (T5-based)
 }
 
 # Domain-specific embedding settings
@@ -67,6 +67,6 @@ LOCAL_LLM_PATH = os.getenv('LOCAL_LLM_PATH', 'meta-llama/Llama-2-7b-chat-hf')
 
 # LLM Configuration
 DEFAULT_LLM_PROVIDER = os.getenv('DEFAULT_LLM_PROVIDER', 'openai')
-DEFAULT_OPENAI_MODEL = os.getenv('DEFAULT_OPENAI_MODEL', 'gpt-4')
+DEFAULT_OPENAI_MODEL = os.getenv('DEFAULT_OPENAI_MODEL', 'gpt-4o')
 DEFAULT_ANTHROPIC_MODEL = os.getenv('DEFAULT_ANTHROPIC_MODEL', 'claude-3-haiku-20240307')
 MAX_RAG_CONTEXT_DOCUMENTS = int(os.getenv('MAX_RAG_CONTEXT_DOCUMENTS', '5'))

@@ -94,16 +94,13 @@ module DocumentProcessing
 
         embedding_record.update!(
           embedding_data: primary_embedding,
-          status: VectorEmbedding::STATUS_PROCESSED,
-          chunk_count: chunks.size
+          status: VectorEmbedding::STATUS_PROCESSED
         )
 
-        # For backward compatibility, also store in document.embedding
-        if document.primary_embedding_type == model_name || document.primary_embedding_type.nil?
+        # Update document's primary embedding type
+        if document.primary_embedding_type.nil?
           document.update(
-            embedding: primary_embedding,
             embedding_status: 'processed',
-            vector_dimension: dimension,
             primary_embedding_type: model_name
           )
         end
@@ -143,8 +140,8 @@ module DocumentProcessing
           strategy: CHUNKING_STRATEGY
         )
 
-        if response.success? && response.result['chunks'].present?
-          response.result['chunks']
+        if response.success? && response.data['chunks'].present?
+          response.data['chunks']
         else
           # Fallback: simple word-based chunking if Haystack fails
           Rails.logger.warn("Haystack chunking failed, using fallback chunking")
@@ -217,9 +214,12 @@ module DocumentProcessing
 
       begin
         # Build points for all chunks
+        # Qdrant requires IDs to be unsigned integers or UUIDs
         points = chunks.zip(embeddings).map.with_index do |(chunk, embedding), index|
+          # Generate a deterministic UUID from document_id and chunk_index
+          uuid = Digest::UUID.uuid_v5(Digest::UUID::DNS_NAMESPACE, "#{document.id}_chunk_#{index}")
           {
-            id: "#{document.id}_chunk_#{index}",
+            id: uuid,
             vector: embedding,
             payload: {
               document_id: document.id,
@@ -244,11 +244,6 @@ module DocumentProcessing
             indexed_in_hnsw: true,
             hnsw_index_reference: "qdrant:#{document.organization_id}:#{document.id}:chunks:#{chunks.size}"
           ) if embedding_record.respond_to?(:indexed_in_hnsw)
-
-          document.update(
-            indexed_in_hnsw: true,
-            hnsw_index_reference: "qdrant:#{document.organization_id}:#{document.id}:chunks:#{chunks.size}"
-          )
 
           Rails.logger.info("Successfully indexed #{chunks.size} chunks for document #{document.id} in Qdrant")
         else
@@ -315,12 +310,7 @@ module DocumentProcessing
             hnsw_index_reference: "qdrant:#{document.organization_id}:#{document.id}"
           ) if embedding_record.respond_to?(:indexed_in_hnsw)
 
-          if document.primary_embedding_type == embedding_record.embedding_model
-            document.update(
-              indexed_in_hnsw: true,
-              hnsw_index_reference: "qdrant:#{document.organization_id}:#{document.id}"
-            )
-          end
+          # Document indexed in Qdrant
 
           Rails.logger.info("Successfully indexed document #{document.id} in Qdrant")
         else
@@ -333,14 +323,14 @@ module DocumentProcessing
     end
 
     def ensure_indexed_in_qdrant(document)
-      return if document.indexed_in_hnsw
+      return if document.respond_to?(:indexed_in_hnsw) && document.indexed_in_hnsw
 
       search_service = Search::UnifiedSearchService.new
       return unless search_service.healthy?
 
       begin
         search_service.index_document(document)
-        document.update(indexed_in_hnsw: true)
+        Rails.logger.info("Document #{document.id} indexed in Qdrant")
       rescue => e
         Rails.logger.warn("Could not ensure document #{document.id} indexed in Qdrant: #{e.message}")
       end
@@ -352,12 +342,7 @@ module DocumentProcessing
         error_message: error_message
       ) if embedding_record.respond_to?(:indexed_in_hnsw)
 
-      if document.primary_embedding_type == embedding_record.embedding_model
-        document.update(
-          migration_priority: 10,
-          migration_error: error_message
-        )
-      end
+      Rails.logger.warn("Document #{document.id} marked for later indexing: #{error_message}")
     end
 
     def handle_error(error, document, document_id, embedding_record)

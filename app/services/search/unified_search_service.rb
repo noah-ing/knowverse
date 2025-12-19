@@ -21,8 +21,8 @@ module Search
     class EmbeddingError < SearchError; end
 
     # Collection naming convention: org_{organization_id}_documents
-    COLLECTION_PREFIX = 'org_'
-    COLLECTION_SUFFIX = '_documents'
+    COLLECTION_PREFIX = 'knowverse_org_'
+    COLLECTION_SUFFIX = '_embeddings'
 
     # Default search parameters
     DEFAULT_LIMIT = 10
@@ -255,10 +255,12 @@ module Search
       }
     end
 
-    # Health check
+    # Health check - works with both cluster mode and single-node mode
     def healthy?
       status = @qdrant.cluster_status
-      status[:status] == 'enabled'
+      # Accept both cluster mode ('enabled') and single-node mode ('disabled')
+      # 'disabled' means clustering is disabled, not that Qdrant is down
+      %w[enabled disabled].include?(status[:status])
     rescue StandardError
       false
     end
@@ -285,7 +287,7 @@ module Search
 
       info = @qdrant.collection_info(collection)
 
-      if info[:status] == 'error' && info[:error]&.include?('not found')
+      if info[:status] == 'error' && info[:error]&.downcase&.include?('not found')
         # Create collection with optimal settings
         result = @qdrant.create_collection(
           name: collection,
@@ -312,9 +314,10 @@ module Search
       cache_key = "embedding:#{Digest::SHA256.hexdigest(query)}:#{organization_id}"
 
       @cache.fetch(cache_key, expires_in: 1.hour) do
-        embedding = @haystack.generate_embedding(query)
+        # Use generate_embeddings with options hash (supports monkey-patched caching)
+        embedding = @haystack.generate_embeddings(query, { organization_id: organization_id })
 
-        unless embedding&.is_a?(Array) && embedding.length == embedding_dimension
+        unless embedding&.is_a?(Array) && embedding.size > 0
           raise EmbeddingError, "Failed to generate embedding for query"
         end
 

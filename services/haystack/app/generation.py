@@ -104,21 +104,21 @@ class OpenAIProvider(LLMProvider):
             Generated text response
         """
         options = options or {}
-        model = options.get("model", DEFAULT_OPENAI_MODEL)
-        temperature = options.get("temperature", 0.7)
-        max_tokens = options.get("max_tokens", 500)
-        
+        model = options.get("model") or DEFAULT_OPENAI_MODEL  # Handle None values
+        temperature = options.get("temperature") or 0.7
+        max_tokens = options.get("max_tokens") or 500
+
         formatted_context = self.format_context(context)
-        
-        system_prompt = options.get("system_prompt", 
+
+        system_prompt = options.get("system_prompt") or (
             "You are a knowledgeable assistant. Answer the user's question based only on the provided context. "
             "If the answer cannot be determined from the context, say so clearly.")
-        
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Context information:\n\n{formatted_context}\n\nQuestion: {prompt}"}
         ]
-        
+
         try:
             start_time = time.time()
             response = self.client.chat.completions.create(
@@ -149,21 +149,21 @@ class OpenAIProvider(LLMProvider):
             Token-by-token generated text response
         """
         options = options or {}
-        model = options.get("model", DEFAULT_OPENAI_MODEL)
-        temperature = options.get("temperature", 0.7)
-        max_tokens = options.get("max_tokens", 500)
-        
+        model = options.get("model") or DEFAULT_OPENAI_MODEL  # Handle None values
+        temperature = options.get("temperature") or 0.7
+        max_tokens = options.get("max_tokens") or 500
+
         formatted_context = self.format_context(context)
-        
-        system_prompt = options.get("system_prompt", 
+
+        system_prompt = options.get("system_prompt") or (
             "You are a knowledgeable assistant. Answer the user's question based only on the provided context. "
             "If the answer cannot be determined from the context, say so clearly.")
-        
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Context information:\n\n{formatted_context}\n\nQuestion: {prompt}"}
         ]
-        
+
         try:
             start_time = time.time()
             stream = await asyncio.to_thread(

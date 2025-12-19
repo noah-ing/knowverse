@@ -24,8 +24,5 @@ def get_document_store():
     Enterprise deployments should configure persistent document stores.
     """
     logger.info("Using Haystack 2.x InMemoryDocumentStore for development")
-    return InMemoryDocumentStore(
-        embedding_dim=768,
-        similarity="cosine",
-        return_embedding=True
-    )
+    # Haystack 2.x InMemoryDocumentStore has a simpler API
+    return InMemoryDocumentStore()

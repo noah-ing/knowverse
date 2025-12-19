@@ -101,7 +101,7 @@ Rails.application.config.after_initialize do
           # The new method with caching
           def generate_embeddings(text, options = {})
             # Skip cache if explicitly disabled
-            return generate_embeddings_without_cache(text, options) unless options[:use_cache] != false
+            return generate_embeddings_without_cache(text, **options.symbolize_keys) unless options[:use_cache] != false
             
             # Get organization ID, domain, and model
             organization_id = options[:organization_id]
@@ -109,7 +109,7 @@ Rails.application.config.after_initialize do
             model_name = options[:model_name] || 'base'
             
             # Skip cache if no organization ID
-            return generate_embeddings_without_cache(text, options) unless organization_id.present?
+            return generate_embeddings_without_cache(text, **options.symbolize_keys) unless organization_id.present?
             
             # Get cache manager
             cache_manager = EmbeddingCache::CacheManager.instance
@@ -120,11 +120,11 @@ Rails.application.config.after_initialize do
             cache_key = "embedding:#{normalized_text.hash}"
             
             # Try to get from cache
-            embedding = cache_manager.fetch(organization_id, cache_key, 
-                                          domain: domain, 
+            embedding = cache_manager.fetch(organization_id, cache_key,
+                                          domain: domain,
                                           model_name: model_name) do
-              # Generate if not in cache
-              generate_embeddings_without_cache(text, options)
+              # Generate if not in cache - use ** to splat options into keyword args
+              generate_embeddings_without_cache(text, **options.symbolize_keys)
             end
             
             embedding

@@ -36,14 +36,14 @@ class HybridSearcher:
         self.document_store = document_store or get_document_store()
         self.embedding_model = embedding_model or get_embedding_model()
         self.query_parser = QueryParser()
-        
+
+        # Default search settings (must be set before creating retrievers)
+        self.default_top_k = RETRIEVER_TOP_K
+        self.max_search_time_ms = MAX_SEARCH_TIME_MS
+
         # Initialize retrievers with new Haystack 2.x API
         self.vector_retriever = self._create_vector_retriever()
         self.keyword_retriever = self._create_keyword_retriever()
-        
-        # Default search settings
-        self.default_top_k = RETRIEVER_TOP_K
-        self.max_search_time_ms = MAX_SEARCH_TIME_MS
         
     def _create_vector_retriever(self):
         """Create vector retriever using embedding model with Haystack 2.x API"""
