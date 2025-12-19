@@ -22,9 +22,30 @@ class QdrantClient:
         self.client = httpx.Client(timeout=30.0)
         logger.info(f"Qdrant client initialized with URL: {self.url}")
 
-    def get_collection_name(self, org_id: int) -> str:
-        """Get the collection name for an organization (matches Rails naming)."""
-        return f"knowverse_org_{org_id}_embeddings"
+    def get_collection_name(self, org_id: int, collection_type: str = 'default') -> str:
+        """Get the collection name for an organization.
+
+        Args:
+            org_id: Organization ID
+            collection_type: 'default', 'sec_edgar', or custom collection name
+        """
+        if collection_type == 'sec_edgar':
+            return f"org_{org_id}_v1_ada002"
+        elif collection_type == 'default':
+            return f"org_{org_id}_documents"
+        else:
+            return collection_type  # Allow custom collection names
+
+    def list_collections(self) -> List[str]:
+        """List all available collections."""
+        try:
+            response = self.client.get(f"{self.url}/collections")
+            response.raise_for_status()
+            data = response.json()
+            return [c['name'] for c in data.get('result', {}).get('collections', [])]
+        except Exception as e:
+            logger.error(f"Error listing collections: {e}")
+            return []
 
     def search(
         self,
@@ -32,7 +53,8 @@ class QdrantClient:
         query_vector: Union[List[float], np.ndarray],
         limit: int = 10,
         score_threshold: float = 0.0,
-        filters: Optional[Dict[str, Any]] = None
+        filters: Optional[Dict[str, Any]] = None,
+        collection: str = None
     ) -> List[Dict[str, Any]]:
         """
         Search for similar documents in Qdrant.
@@ -43,11 +65,13 @@ class QdrantClient:
             limit: Maximum number of results
             score_threshold: Minimum similarity score
             filters: Optional Qdrant filters
+            collection: Collection type or name (default, sec_edgar, or custom)
 
         Returns:
             List of search results with id, score, and payload
         """
-        collection_name = self.get_collection_name(org_id)
+        # Map collection type to actual collection name
+        collection_name = self.get_collection_name(org_id, collection or 'default')
 
         # Convert numpy array to list if needed
         if isinstance(query_vector, np.ndarray):
