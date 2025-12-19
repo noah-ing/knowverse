@@ -17,9 +17,16 @@
     
     <%# Main application stylesheet %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+
+    <%# Additional stylesheets (Propshaft doesn't support @import) %>
+    <%= stylesheet_link_tag "knowverse_design_system", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "streaming", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "ui_resilience", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "ui_fixes", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "ui_component_fallbacks", "data-turbo-track": "reload" %>
     
     <%# Main application javascript (includes Stimulus controllers via application.js) %>
-    <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+    <%= javascript_importmap_tags %>
     
     <%# Ensure keyboard shortcuts are available globally %>
     <script defer>
@@ -131,8 +138,8 @@
                     </svg>
                   </button>
                 
-                  <div data-dropdown-target="menu" 
-                       class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 transition-all transform duration-300 origin-top-right scale-95 opacity-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none"
+                  <div data-dropdown-target="menu"
+                       class="dropdown-menu hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none"
                        role="menu" aria-orientation="vertical">
                     <p class="px-4 py-2 text-sm kv-text-secondary border-b border-gray-200 dark:border-gray-700">
                       <% if current_user.current_plan %>
@@ -338,13 +345,6 @@
             <a href="#" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200">Privacy</a>
             <a href="#" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200">Terms</a>
             <a href="#" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200">Documentation</a>
-            <button type="button" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200"
-                    data-action="click->dark-mode#toggle" 
-                    aria-label="Toggle dark mode">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            </button>
           </div>
         </div>
       </div>

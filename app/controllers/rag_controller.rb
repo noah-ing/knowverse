@@ -1,12 +1,30 @@
 class RagController < ApplicationController
   include ActionController::Live
-  
+
+  # Handle Warden authentication errors gracefully (can occur with ActionController::Live)
+  rescue_from UncaughtThrowError do |e|
+    if e.message.include?(':warden')
+      redirect_to new_user_session_path, alert: 'Please sign in to continue.'
+    else
+      raise e
+    end
+  end
+
   before_action :authenticate_user!
   before_action :set_organization
   
   # Set organization from params
   private def set_organization
-    @organization = Organization.find(params[:organization_id])
+    if params[:organization_id].present?
+      @organization = Organization.find(params[:organization_id])
+    else
+      # Fallback to user's first organization for top-level routes
+      @organization = current_user.organizations.first
+
+      if @organization.nil?
+        redirect_to organizations_path, alert: 'Please create or join an organization first.'
+      end
+    end
   end
   
   # Display RAG interface

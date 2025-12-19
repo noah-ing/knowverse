@@ -3,6 +3,11 @@ Rails.application.routes.draw do
   get '/health', to: 'health#show'
   root 'home#index'
   get 'dashboard', to: 'home#dashboard'
+
+  # Convenience routes that redirect to organization-scoped resources
+  get '/documents', to: 'documents#index', as: :documents_root
+  get '/rag', to: 'rag#index', as: :rag_root
+  get '/conversations', to: 'conversations#index', as: :conversations_root
   
   # Organization and document routes
   resources :organizations do

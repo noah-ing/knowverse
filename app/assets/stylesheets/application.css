@@ -9,15 +9,8 @@
  * Consider organizing styles into separate files for maintainability.
  */
 
-/* Import design system */
-@import "knowverse_design_system.css";
-
-/* Import component-specific stylesheets */
-@import "streaming.css";
-@import "ui_debug.css";
-@import "ui_resilience.css";
-@import "ui_fixes.css"; /* UI fixes for dropdown and dark mode toggle */
-@import "ui_component_fallbacks.css"; /* New fallbacks with higher CSS specificity */
+/* Note: Additional stylesheets are loaded via stylesheet_link_tag in layout */
+/* (Propshaft doesn't support CSS @import) */
 
 /* Global Styles */
 body {

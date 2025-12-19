@@ -206,7 +206,16 @@ class DocumentsController < ApplicationController
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_organization
-      @organization = Organization.find(params[:organization_id])
+      if params[:organization_id].present?
+        @organization = Organization.find(params[:organization_id])
+      else
+        # Fallback to user's first organization for top-level routes
+        @organization = current_user.organizations.first
+
+        if @organization.nil?
+          redirect_to organizations_path, alert: 'Please create or join an organization first.'
+        end
+      end
     end
     
     def set_document

@@ -1,0 +1,60 @@
+<div class="min-h-[60vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div class="text-center">
+      <h2 class="text-3xl font-bold kv-text-primary">Create your account</h2>
+      <p class="mt-2 text-sm kv-text-secondary">Start managing your knowledge with KnowVerse</p>
+    </div>
+
+    <%= render "shared/card" do %>
+      <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { class: "space-y-6" }) do |f| %>
+        <%= render "devise/shared/error_messages", resource: resource %>
+
+        <div>
+          <%= f.label :name, class: "kv-label" %>
+          <div class="mt-1">
+            <%= f.text_field :name, autofocus: true, autocomplete: "name", placeholder: "Your name",
+                class: "kv-input w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
+          </div>
+        </div>
+
+        <div>
+          <%= f.label :email, class: "kv-label" %>
+          <div class="mt-1">
+            <%= f.email_field :email, autocomplete: "email", placeholder: "you@example.com",
+                class: "kv-input w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
+          </div>
+        </div>
+
+        <div>
+          <%= f.label :password, class: "kv-label" %>
+          <div class="mt-1">
+            <%= f.password_field :password, autocomplete: "new-password", placeholder: "Create a password",
+                class: "kv-input w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
+          </div>
+          <p class="mt-1 text-xs kv-text-secondary">
+            <% if @minimum_password_length %>
+              <%= @minimum_password_length %> characters minimum
+            <% end %>
+          </p>
+        </div>
+
+        <div>
+          <%= f.label :password_confirmation, class: "kv-label" %>
+          <div class="mt-1">
+            <%= f.password_field :password_confirmation, autocomplete: "new-password", placeholder: "Confirm your password",
+                class: "kv-input w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" %>
+          </div>
+        </div>
+
+        <div>
+          <%= f.submit "Create account", class: "kv-btn kv-btn-primary w-full py-2 px-4 text-center" %>
+        </div>
+      <% end %>
+
+      <p class="mt-6 text-center text-sm kv-text-secondary">
+        Already have an account?
+        <%= link_to "Sign in", new_session_path(resource_name), class: "kv-text-accent hover:underline font-medium" %>
+      </p>
+    <% end %>
+  </div>
+</div>

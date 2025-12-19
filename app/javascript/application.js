@@ -5,7 +5,7 @@
 import "@hotwired/turbo-rails";
 
 // Import all controllers
-import "./controllers";
+import "controllers";
 
 // Apply dark mode from localStorage on page load before Stimulus initializes
 // to prevent flash of incorrect theme

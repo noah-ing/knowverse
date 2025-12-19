@@ -120,15 +120,18 @@ class SearchController < ApplicationController
       else
         # If no organization is specified, use the first organization the user belongs to
         @organization = current_user.organizations.first
-        
-        if @organization.nil?
+
+        unless @organization
           redirect_to organizations_path, alert: 'Please create or join an organization first.'
         end
       end
     end
-    
+
     # Check if current user belongs to the organization
     def ensure_organization_member
+      return if performed?  # Already redirected by set_organization
+      return unless @organization  # Safety check
+
       unless @organization.users.include?(current_user)
         redirect_to organizations_path, alert: 'You do not have access to this organization.'
       end

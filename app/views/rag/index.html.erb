@@ -55,29 +55,85 @@
       </div>
     </div>
 
-    <!-- Query Form -->
-    <form action="<%= stream_organization_rag_index_path(@organization) %>" method="post" class="space-y-4">
-      <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-      
-      <div>
-        <label for="query" class="block font-medium mb-1">Question</label>
-        <textarea name="query" id="query" rows="2" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="Ask a question about your documents..."></textarea>
-      </div>
-      
-      <div class="flex items-center justify-between">
-        <div>
-          <!-- Hidden conversation ID field -->
-          <input type="hidden" name="conversation_id" value="<%= @conversation_id %>">
+    <!-- Query Form with Stimulus Controller -->
+    <div data-controller="rag">
+      <!-- Response Container (hidden by default) -->
+      <div data-rag-target="responseContainer" class="hidden mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-medium kv-text-primary">KnowVerse</span>
+          <span data-rag-target="status" class="text-xs kv-text-secondary">
+            <span data-rag-target="waiting" class="hidden">Thinking...</span>
+            <span data-rag-target="streaming" class="hidden">Generating...</span>
+            <span data-rag-target="complete" class="hidden">Complete</span>
+          </span>
         </div>
-        
-        <button type="submit" 
-                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
-          Generate Answer
-        </button>
+        <div data-rag-target="streamingResponse" class="prose dark:prose-invert max-w-none"></div>
+        <span data-rag-target="streamingCursor" class="animate-pulse">|</span>
+
+        <!-- Sources -->
+        <div data-rag-target="sourcesContainer" class="hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+          <div class="text-sm font-medium kv-text-secondary mb-2">Sources:</div>
+          <div data-rag-target="sources" class="space-y-2"></div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div data-rag-target="performanceMetrics" class="hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-600 text-xs kv-text-secondary">
+          <div class="flex flex-wrap gap-4">
+            <span>TTFT: <span data-rag-target="ttftValue">-</span>ms</span>
+            <span>TPS: <span data-rag-target="tpsValue">-</span></span>
+            <span>Tokens: <span data-rag-target="totalTokens">-</span></span>
+            <span>Time: <span data-rag-target="totalTime">-</span>s</span>
+          </div>
+        </div>
+
+        <!-- Feedback -->
+        <div data-rag-target="feedbackContainer" class="hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+          <div class="flex items-center gap-2">
+            <span class="text-sm kv-text-secondary">Was this helpful?</span>
+            <button data-action="rag#sendFeedback" data-feedback="positive" class="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
+            </button>
+            <button data-action="rag#sendFeedback" data-feedback="negative" class="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path></svg>
+            </button>
+          </div>
+        </div>
       </div>
-    </form>
+
+      <form action="<%= stream_organization_rag_index_path(@organization) %>"
+            method="post"
+            class="space-y-4"
+            data-rag-target="form"
+            data-action="submit->rag#submitQuery"
+            data-turbo="false">
+        <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+
+        <!-- Enable streaming by default (checkbox hidden but checked) -->
+        <input type="checkbox" data-rag-target="streamingToggle" name="streaming" value="1" checked class="hidden">
+
+        <div>
+          <label for="query" class="block font-medium mb-1">Question</label>
+          <textarea name="query" id="query" rows="2"
+                  data-rag-target="query"
+                  data-action="keydown->rag#handleKeydown"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-md focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Ask a question about your documents..."></textarea>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <!-- Hidden conversation ID field -->
+            <input type="hidden" name="conversation_id" data-rag-target="conversationId" value="<%= @conversation_id %>">
+          </div>
+
+          <button type="submit"
+                  data-rag-target="submit"
+                  class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            Generate Answer
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

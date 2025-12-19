@@ -116,7 +116,18 @@ class ConversationsController < ApplicationController
   private
   
   def set_organization
-    @organization = Current.organization
+    if params[:organization_id].present?
+      @organization = Organization.find(params[:organization_id])
+    elsif Current.organization.present?
+      @organization = Current.organization
+    else
+      # Fallback to user's first organization for top-level routes
+      @organization = current_user.organizations.first
+
+      if @organization.nil?
+        redirect_to organizations_path, alert: 'Please create or join an organization first.'
+      end
+    end
   end
   
   def set_conversation
