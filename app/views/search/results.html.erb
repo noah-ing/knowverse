@@ -5,10 +5,6 @@
       <p class="kv-text-secondary">Results for: "<span class="font-medium kv-text-accent"><%= @query %></span>"</p>
     </div>
     <div class="flex items-center space-x-4">
-      <!-- Dark mode toggle -->
-      <div class="kv-dark-mode-toggle animate-in fade-in" data-controller="dark-mode" data-action="click->dark-mode#toggle" 
-          data-dark-mode-target="toggle" title="Toggle dark mode" role="switch" aria-checked="false"></div>
-          
       <div class="flex flex-wrap gap-3">
         <%= render partial: "shared/button", locals: {
           text: "New Search",
