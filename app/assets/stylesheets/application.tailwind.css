@@ -1,6 +1,12 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
+
+/* Tailwind v4: Use class-based dark mode selector strategy */
+@variant dark (&:is(.dark *));
+
+/* Source paths for content scanning */
+@source "../../../app/views/**/*.erb";
+@source "../../../app/helpers/**/*.rb";
+@source "../../../app/javascript/**/*.js";
 
 /* Import custom stylesheets */
 @import "knowverse_design_system.css";

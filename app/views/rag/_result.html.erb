@@ -5,7 +5,7 @@
             animate: "fade-in",
             animate_delay: "150ms",
             classes: "mb-6 shadow-md hover:shadow-lg transition-all duration-200" do %>
-    <div class="prose prose-primary dark:prose-invert max-w-none transition-colors duration-200">
+    <div class="prose prose-primary max-w-none transition-colors duration-200">
       <%= simple_format(result["answer"], class: "kv-text-primary") %>
     </div>
   <% end %>
@@ -22,9 +22,9 @@
             subtitle = doc["source"].present? ? "Source: #{doc["source"]}" : nil
             
             # Prepare header actions (score badge and document link)
-            score_class = doc["score"] >= 0.8 ? 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-300' : 
-                        (doc["score"] >= 0.6 ? 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-300' : 
-                        'bg-gray-100 kv-text-secondary dark:bg-gray-800')
+            score_class = doc["score"] >= 0.8 ? 'bg-success-100 text-success-800' : 
+                        (doc["score"] >= 0.6 ? 'bg-warning-100 text-warning-800' : 
+                        'bg-gray-100 kv-text-secondary')
             
             header_actions_content = capture do 
           %>

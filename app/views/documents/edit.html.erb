@@ -65,13 +65,13 @@
       </div>
       
       <% if @document.errored? || @document.embedding_errored? %>
-        <div class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800">
-          <h4 class="text-sm font-medium text-red-800 dark:text-red-300 mb-1">Error Information</h4>
+        <div class="mt-4 p-3 bg-red-50/20 rounded-md border border-red-200">
+          <h4 class="text-sm font-medium text-red-800 mb-1">Error Information</h4>
           <% if @document.errored? && @document.metadata && @document.metadata[:error_message].present? %>
-            <p class="text-sm text-red-700 dark:text-red-400"><%= @document.metadata[:error_message] %></p>
+            <p class="text-sm text-red-700"><%= @document.metadata[:error_message] %></p>
           <% end %>
           <% if @document.embedding_errored? && @document.metadata && @document.metadata[:embedding_error].present? %>
-            <p class="text-sm text-red-700 dark:text-red-400"><%= @document.metadata[:embedding_error] %></p>
+            <p class="text-sm text-red-700"><%= @document.metadata[:embedding_error] %></p>
           <% end %>
         </div>
       <% end %>
@@ -124,7 +124,7 @@
       <%# Metadata Tags (if implemented) %>
       <div class="animate-in fade-in duration-300 ease-out" style="animation-delay: 300ms;">
         <label class="kv-label">Document Tags</label>
-        <div class="mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+        <div class="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200">
           <p class="kv-text-secondary text-sm">
             Tags help categorize your documents. Add up to 10 tags to make this document easier to find.
           </p>
@@ -132,9 +132,9 @@
           <div class="mt-2 flex flex-wrap gap-2">
             <% if @document.metadata && @document.metadata["tags"].present? %>
               <% @document.metadata["tags"].each do |tag| %>
-                <div class="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900 px-2.5 py-0.5 text-sm font-medium text-primary-800 dark:text-primary-300">
+                <div class="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-sm font-medium text-primary-800">
                   <%= tag %>
-                  <button type="button" class="ml-1 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-800 hover:text-primary-800 dark:hover:text-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <button type="button" class="ml-1 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-primary-600 hover:bg-primary-200 hover:text-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500">
                     <span class="sr-only">Remove tag</span>
                     <svg class="h-2 w-2" stroke="currentColor" fill="none" viewBox="0 0 8 8">
                       <path stroke-linecap="round" stroke-width="1.5" d="M1 1l6 6m0-6L1 7" />
@@ -143,12 +143,12 @@
                 </div>
               <% end %>
             <% else %>
-              <div class="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-0.5 text-sm font-medium kv-text-secondary">
+              <div class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-sm font-medium kv-text-secondary">
                 No tags added
               </div>
             <% end %>
             
-            <button type="button" class="inline-flex items-center rounded-full bg-primary-50 dark:bg-primary-950 px-2.5 py-0.5 text-sm font-medium text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900">
+            <button type="button" class="inline-flex items-center rounded-full bg-primary-50 px-2.5 py-0.5 text-sm font-medium text-primary-700 hover:bg-primary-100">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
               </svg>
@@ -184,10 +184,10 @@
     animate: "slide-up",
     animate_delay: "300ms",
     border: true,
-    classes: "mt-6 border-red-200 dark:border-red-900"
+    classes: "mt-6 border-red-200"
   } do %>
     <div class="space-y-4">
-      <div class="p-4 bg-red-50 dark:bg-red-900/20 rounded-md">
+      <div class="p-4 bg-red-50/20 rounded-md">
         <div class="flex items-start">
           <div class="flex-shrink-0">
             <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -195,8 +195,8 @@
             </svg>
           </div>
           <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Delete Document</h3>
-            <div class="mt-2 text-sm text-red-700 dark:text-red-400">
+            <h3 class="text-sm font-medium text-red-800">Delete Document</h3>
+            <div class="mt-2 text-sm text-red-700">
               <p>
                 Once deleted, this document will be removed from all search results and cannot be recovered.
                 Vector embeddings and all related data will also be permanently deleted.
@@ -248,14 +248,14 @@
           <div class="text-sm font-medium kv-text-secondary">Search Ready</div>
           <div class="mt-1 text-sm kv-text-primary">
             <% if @document.search_ready? %>
-              <span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-300">
+              <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
                 Ready
               </span>
             <% else %>
-              <span class="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-300">
+              <span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                 </svg>

@@ -5,7 +5,7 @@
   </div>
 
   <% if notice %>
-    <div class="bg-green-50 dark:bg-green-900/20 p-4 mb-6 rounded-md" data-animation="fade-in" data-animation-delay="100">
+    <div class="bg-green-50/20 p-4 mb-6 rounded-md" data-animation="fade-in" data-animation-delay="100">
       <div class="flex">
         <div class="flex-shrink-0">
           <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
@@ -13,7 +13,7 @@
           </svg>
         </div>
         <div class="ml-3">
-          <p class="text-sm font-medium text-green-800 dark:text-green-300"><%= notice %></p>
+          <p class="text-sm font-medium text-green-800"><%= notice %></p>
         </div>
       </div>
     </div>
@@ -24,16 +24,16 @@
     subtitle: "Your personal details and avatar",
     animate: "slide-up",
     animate_delay: "200ms",
-    header_actions: link_to("Edit", edit_users_profile_path, class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900 transition-colors duration-200") do %>
-    <div class="border-t border-gray-200 dark:border-gray-700">
+    header_actions: link_to("Edit", edit_users_profile_path, class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200") do %>
+    <div class="border-t border-gray-200">
       <dl>
-        <div class="bg-gray-50 dark:bg-gray-800/50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="300ms">
+        <div class="bg-gray-50/50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="300ms">
           <dt class="text-sm font-medium kv-text-secondary">Avatar</dt>
           <dd class="mt-1 text-sm kv-text-primary sm:col-span-2 sm:mt-0">
             <% if @user.avatar.attached? %>
               <%= image_tag @user.avatar.variant(resize_to_limit: [100, 100]), class: "h-20 w-20 rounded-full" %>
             <% else %>
-              <div class="h-20 w-20 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400">
+              <div class="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
                 <svg class="h-12 w-12" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
@@ -41,15 +41,15 @@
             <% end %>
           </dd>
         </div>
-        <div class="bg-white dark:bg-gray-900 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="400ms">
+        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="400ms">
           <dt class="text-sm font-medium kv-text-secondary">Name</dt>
           <dd class="mt-1 text-sm kv-text-primary sm:col-span-2 sm:mt-0"><%= @user.name.presence || "Not set" %></dd>
         </div>
-        <div class="bg-gray-50 dark:bg-gray-800/50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="500ms">
+        <div class="bg-gray-50/50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="500ms">
           <dt class="text-sm font-medium kv-text-secondary">Email address</dt>
           <dd class="mt-1 text-sm kv-text-primary sm:col-span-2 sm:mt-0"><%= @user.email %></dd>
         </div>
-        <div class="bg-white dark:bg-gray-900 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="600ms">
+        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6" data-animation="fade-in" data-animation-delay="600ms">
           <dt class="text-sm font-medium kv-text-secondary">Account created</dt>
           <dd class="mt-1 text-sm kv-text-primary sm:col-span-2 sm:mt-0"><%= @user.created_at.strftime("%B %d, %Y") %></dd>
         </div>

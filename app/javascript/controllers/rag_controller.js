@@ -13,12 +13,13 @@ import { createStreamingElement } from "components/streaming_text_display"
  */
 export default class extends Controller {
   static targets = [
-    "form", "query", "submit", "streamingToggle", "conversationId", 
-    "advancedOptions", "responseContainer", "streamingResponse", 
+    "form", "query", "submit", "streamingToggle", "conversationId",
+    "advancedOptions", "responseContainer", "streamingResponse",
     "streamingCursor", "sources", "sourcesContainer", "conversationContainer",
     "status", "waiting", "streaming", "complete", "feedbackContainer",
     "performanceMetrics", "ttftValue", "tpsValue", "totalTokens", "totalTime",
-    "floatingMetrics", "floatingTtft", "floatingTps", "floatingTokens", "floatingTime"
+    "floatingMetrics", "floatingTtft", "floatingTps", "floatingTokens", "floatingTime",
+    "chatContainer", "userMessageContainer", "userMessageText"
   ]
   
   connect() {
@@ -43,12 +44,24 @@ export default class extends Controller {
       this.submitQuery(new Event('submit'))
       event.preventDefault()
     }
-    
+
     // Handle Escape to clear input
     if (event.key === 'Escape') {
       this.queryTarget.value = ''
       event.preventDefault()
     }
+  }
+
+  // Auto-resize textarea based on content
+  autoResize(event) {
+    const textarea = event.target
+
+    // Reset height to auto to get the proper scroll height
+    textarea.style.height = 'auto'
+
+    // Calculate new height (capped at max-height set in CSS)
+    const newHeight = Math.min(textarea.scrollHeight, 120)
+    textarea.style.height = `${newHeight}px`
   }
   
   // Handle form submission for query
@@ -455,104 +468,28 @@ export default class extends Controller {
   
   // Add a user message to the conversation history
   addUserMessage(message) {
-    // Create the HTML elements
-    const container = document.createElement('div')
-    container.className = 'kv-message kv-message-user'
-    
-    const header = document.createElement('div')
-    header.className = 'kv-message-header'
-    header.textContent = 'User'
-    
-    const content = document.createElement('div')
-    content.className = 'kv-message-content'
-    content.textContent = message
-    
-    // Assemble and add to conversation
-    container.appendChild(header)
-    container.appendChild(content)
-    
-    const thread = document.getElementById('conversation-thread')
-    thread.appendChild(container)
-    
-    // Scroll to the bottom
-    if (this.hasConversationContainerTarget) {
-      this.conversationContainerTarget.scrollTop = this.conversationContainerTarget.scrollHeight
+    // Show the user message in the streaming container
+    if (this.hasUserMessageContainerTarget && this.hasUserMessageTextTarget) {
+      this.userMessageTextTarget.textContent = message
+      this.userMessageContainerTarget.classList.remove('hidden')
+    }
+
+    // Scroll to the bottom of the chat container
+    if (this.hasChatContainerTarget) {
+      setTimeout(() => {
+        this.chatContainerTarget.scrollTop = this.chatContainerTarget.scrollHeight
+      }, 100)
     }
   }
   
   // Add an assistant message to the conversation history
   addAssistantMessage(message, sources = [], metadata = {}) {
-    // Create the HTML elements with design system classes
-    const container = document.createElement('div')
-    container.className = 'kv-message kv-message-assistant'
-    
-    const header = document.createElement('div')
-    header.className = 'kv-message-header'
-    header.textContent = 'KnowVerse'
-    
-    const content = document.createElement('div')
-    content.className = 'kv-message-content'
-    content.textContent = message
-    
-    // Add the basic elements
-    container.appendChild(header)
-    container.appendChild(content)
-    
-    // Add source references if present
-    if (sources && sources.length > 0) {
-      const sourcesContainer = document.createElement('div')
-      sourcesContainer.className = 'kv-message-sources'
-      
-      const sourcesList = document.createElement('div')
-      sourcesList.innerHTML = 'Sources: '
-      
-      sources.forEach((source, index) => {
-        if (index > 0) {
-          sourcesList.innerHTML += ', '
-        }
-        
-        const sourceLink = document.createElement('a')
-        sourceLink.href = `/organizations/${this.getOrganizationId()}/documents/${source.id}`
-        sourceLink.className = 'kv-link'
-        sourceLink.textContent = source.title || `Document ${source.id}`
-        sourceLink.target = '_blank'
-        
-        sourcesList.appendChild(sourceLink)
-      })
-      
-      sourcesContainer.appendChild(sourcesList)
-      container.appendChild(sourcesContainer)
-    }
-    
-    // Add metrics if present
-    if (metadata && metadata.metrics) {
-      const metricsContainer = document.createElement('div')
-      metricsContainer.className = 'kv-message-metrics'
-      
-      if (metadata.metrics.time_to_first_token) {
-        const ttft = document.createElement('span')
-        ttft.title = 'Time to first token'
-        ttft.textContent = `${metadata.metrics.time_to_first_token}ms TTF`
-        metricsContainer.appendChild(ttft)
-      }
-      
-      if (metadata.metrics.tokens_per_second) {
-        const tps = document.createElement('span')
-        tps.title = 'Tokens per second'
-        tps.textContent = `${metadata.metrics.tokens_per_second} tokens/s`
-        metricsContainer.appendChild(tps)
-      }
-      
-      container.appendChild(metricsContainer)
-    }
-    
-    // Add to conversation thread
-    const thread = document.getElementById('conversation-thread')
-    thread.appendChild(container)
-    
-    // Scroll to the bottom
-    if (this.hasConversationContainerTarget) {
-      this.conversationContainerTarget.scrollTop = this.conversationContainerTarget.scrollHeight
+    // The streaming display already shows the response in the response container
+    // Just scroll to the bottom when complete
+    if (this.hasChatContainerTarget) {
+      setTimeout(() => {
+        this.chatContainerTarget.scrollTop = this.chatContainerTarget.scrollHeight
+      }, 100)
     }
   }
   

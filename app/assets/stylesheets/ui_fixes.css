@@ -1,73 +1,8 @@
 /**
  * KnowVerse UI Fixes & Enhancements
  * This file contains CSS fixes for various UI components across the application
+ * Note: Dark mode has been removed - app is statically light mode only
  */
-
-/* Dark Mode Toggle Enhancements */
-.kv-dark-mode-toggle {
-  position: relative;
-  width: 48px;
-  height: 24px;
-  border-radius: 999px;
-  background-color: #e5e7eb; /* Default light mode background */
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.1);
-}
-
-.dark .kv-dark-mode-toggle {
-  background-color: #4f46e5; /* Dark mode - active state */
-}
-
-.kv-dark-mode-toggle::after {
-  content: "";
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background-color: white;
-  top: 3px;
-  left: 3px;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.dark .kv-dark-mode-toggle::after {
-  transform: translateX(24px);
-}
-
-.kv-dark-mode-toggle .light-icon,
-.kv-dark-mode-toggle .dark-icon {
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-}
-
-.kv-dark-mode-toggle .light-icon {
-  color: #818cf8;
-  margin-left: 1px;
-}
-
-.kv-dark-mode-toggle .dark-icon {
-  color: #c7d2fe;
-  margin-right: 1px;
-}
-
-.dark .kv-dark-mode-toggle .light-icon {
-  color: #c7d2fe;
-}
-
-.dark .kv-dark-mode-toggle .dark-icon {
-  color: white;
-}
 
 /* Dropdown Menu Fixes */
 .dropdown-menu {
@@ -76,11 +11,6 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(229, 231, 235, 0.8);
   z-index: 50;
-}
-
-.dark .dropdown-menu {
-  border-color: rgba(55, 65, 81, 0.8);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
 }
 
 .dropdown-menu:not(.hidden) {
@@ -128,10 +58,6 @@
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-.dark .document-card:hover {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-}
-
 /* Document Status Indicators */
 .document-status {
   display: inline-flex;
@@ -164,26 +90,6 @@
   color: rgb(220, 38, 38);
 }
 
-.dark .document-status.status-pending {
-  background-color: rgba(37, 99, 235, 0.2);
-  color: rgb(147, 197, 253);
-}
-
-.dark .document-status.status-processing {
-  background-color: rgba(161, 98, 7, 0.2);
-  color: rgb(253, 230, 138);
-}
-
-.dark .document-status.status-processed {
-  background-color: rgba(22, 163, 74, 0.2);
-  color: rgb(134, 239, 172);
-}
-
-.dark .document-status.status-error {
-  background-color: rgba(220, 38, 38, 0.2);
-  color: rgb(252, 165, 165);
-}
-
 /* View Toggle Buttons */
 .view-toggle-btn {
   transition: all 0.2s ease;
@@ -191,51 +97,6 @@
 
 .view-toggle-btn:hover {
   background-color: rgba(0, 0, 0, 0.05);
-}
-
-.dark .view-toggle-btn {
-  color: rgb(209, 213, 219);
-}
-
-.dark .view-toggle-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* General UI Improvements */
-.kv-text-primary {
-  @apply text-gray-900 dark:text-gray-100 transition-colors duration-200;
-}
-
-.kv-text-secondary {
-  @apply text-gray-600 dark:text-gray-400 transition-colors duration-200;
-}
-
-.kv-text-accent {
-  @apply text-indigo-600 dark:text-indigo-400 transition-colors duration-200;
-}
-
-.kv-card {
-  @apply bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 transition-colors duration-200;
-}
-
-.kv-card-body {
-  @apply p-6;
-}
-
-.kv-label {
-  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors duration-200;
-}
-
-.kv-input {
-  @apply block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition-colors duration-200;
-}
-
-.kv-select {
-  @apply block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition-colors duration-200;
-}
-
-.kv-radio {
-  @apply h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-700 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-colors duration-200;
 }
 
 /* Fix for Turbo Frame flashing during navigation */

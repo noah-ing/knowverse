@@ -28,7 +28,7 @@
                 <div class="flex items-center">
                   <%= f.range_field :domain_confidence_primary_threshold, min: 0, max: 1, step: 0.05, class: "w-full mr-3 accent-primary", 
                      data: { controller: "range-slider", action: "input->range-slider#updateValue" } %>
-                  <span data-range-slider-target="value" class="w-12 text-center px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded kv-text-primary">
+                  <span data-range-slider-target="value" class="w-12 text-center px-2 py-1 bg-gray-100 rounded kv-text-primary">
                     <%= @organization.domain_confidence_primary_threshold %>
                   </span>
                 </div>
@@ -42,7 +42,7 @@
                 <div class="flex items-center">
                   <%= f.range_field :domain_confidence_secondary_threshold, min: 0, max: 1, step: 0.05, class: "w-full mr-3 accent-primary", 
                      data: { controller: "range-slider", action: "input->range-slider#updateValue" } %>
-                  <span data-range-slider-target="value" class="w-12 text-center px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded kv-text-primary">
+                  <span data-range-slider-target="value" class="w-12 text-center px-2 py-1 bg-gray-100 rounded kv-text-primary">
                     <%= @organization.domain_confidence_secondary_threshold %>
                   </span>
                 </div>
@@ -63,7 +63,7 @@
               <div class="form-group">
                 <div class="flex items-start">
                   <div class="flex items-center h-5">
-                    <%= f.check_box :enable_domain_fallback, class: "h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded" %>
+                    <%= f.check_box :enable_domain_fallback, class: "h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" %>
                   </div>
                   <div class="ml-3 text-sm">
                     <%= f.label :enable_domain_fallback, "Enable Domain Fallback Chain", class: "font-medium kv-text-primary" %>
@@ -76,7 +76,7 @@
             <div class="kv-animation-fade-in" style="--kv-animation-delay: 500ms;">
               <%= render partial: "shared/card", locals: {
                 title: "How Confidence Thresholds Work",
-                background: "bg-gray-50 dark:bg-gray-800",
+                background: "bg-gray-50",
                 content: capture do %>
                   <p class="text-sm kv-text-secondary mb-3">
                     The system calculates confidence scores based on multiple factors including semantic similarity, corpus coverage, and historical performance.
@@ -94,7 +94,7 @@
       } %>
     </div>
     
-    <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-700 kv-animation-fade-in" style="--kv-animation-delay: 600ms;">
+    <div class="mt-6 pt-5 border-t border-gray-200 kv-animation-fade-in" style="--kv-animation-delay: 600ms;">
       <div class="flex justify-end gap-3">
         <%= render partial: "shared/button", locals: {
           text: "Cancel",

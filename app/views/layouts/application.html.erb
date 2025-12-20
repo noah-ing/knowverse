@@ -4,8 +4,8 @@
     <title><%= content_for?(:title) ? yield(:title) : "KnowVerse" %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="KnowVerse - AI-powered knowledge base with semantic search and RAG capabilities">
-    <meta name="theme-color" content="#4f46e5" data-dark-mode-target="themeColor">
-    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="color-scheme" content="light">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
@@ -27,23 +27,8 @@
     
     <%# Main application javascript (includes Stimulus controllers via application.js) %>
     <%= javascript_importmap_tags %>
-    
-    <%# Ensure keyboard shortcuts are available globally %>
-    <script defer>
-      document.addEventListener('keydown', function(event) {
-        // Show keyboard shortcuts when ? is pressed
-        if (event.key === '?' && !event.ctrlKey && !event.altKey && !event.metaKey) {
-          const shortcutsPanel = document.getElementById('keyboard-shortcuts-panel');
-          if (shortcutsPanel) shortcutsPanel.classList.remove('hidden');
-        }
-        
-        // Toggle dark mode with Shift + D
-        if (event.key === 'D' && event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-          const darkModeToggle = document.querySelector('[data-dark-mode-target="toggle"]');
-          if (darkModeToggle) darkModeToggle.click();
-        }
-      });
-    </script>
+
+    <%# Keyboard shortcuts handled by Stimulus controller - no inline JS needed %>
     
     <%# Ahoy.js for analytics tracking (Temporarily removed to debug JS issues) %>
     <%# if Rails.env.production? || Rails.env.development? %>
@@ -55,81 +40,67 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   </head>
 
-  <body class="min-h-screen flex flex-col transition-colors duration-300 bg-gray-50 dark:bg-gray-900 <%= user_signed_in? ? 'user-signed-in' : 'user-signed-out' %>" 
-        data-controller="dark-mode" 
+  <body class="min-h-screen flex flex-col bg-gray-50 <%= user_signed_in? ? 'user-signed-in' : 'user-signed-out' %>"
         id="application-body">
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white dark:bg-gray-800 p-2 kv-text-accent z-50">Skip to content</a>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white p-2 kv-text-accent z-50">Skip to content</a>
     
-    <header class="sticky top-0 z-30 shadow-md transition-all duration-300 ease-in-out border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <header class="sticky top-0 z-30 shadow-md border-b border-gray-200 bg-white">
       <nav class="container mx-auto px-4 py-3" data-controller="mobile-menu">
         <div class="flex justify-between items-center">
-          <a href="<%= root_path %>" class="group text-2xl font-bold kv-text-accent transition-all duration-300 hover:text-primary-700 dark:hover:text-primary-300 relative">
+          <a href="<%= root_path %>" class="group text-2xl font-bold kv-text-accent transition-all duration-300 hover:text-primary-700 relative">
             <span class="relative inline-block">KnowVerse
-              <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+              <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
             </span>
           </a>
-          
+
           <div class="flex items-center space-x-3">
-            <!-- Dark mode toggle -->
-            <div class="kv-dark-mode-toggle mr-2 relative transition-all duration-300 ease-in-out transform hover:scale-110" 
-                 data-dark-mode-target="toggle" 
-                 data-action="click->dark-mode#toggle" 
-                 role="switch" 
-                 aria-checked="false" 
-                 aria-label="Toggle dark mode">
-              <span class="sr-only">Toggle dark mode</span>
-              <span class="absolute right-full mr-2 text-xs kv-text-secondary hidden md:inline-block">
-                <span data-dark-mode-target="modeText">Light</span>
-              </span>
-            </div>
-            
             <% if user_signed_in? %>
               <div class="hidden md:flex items-center space-x-4">
-                <%= link_to dashboard_path, { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+                <%= link_to dashboard_path, { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 group relative" } do %>
                   <span class="relative inline-block">Dashboard
-                    <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                    <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
                   </span>
                 <% end %>
-                
-                <%= link_to organizations_path, { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+
+                <%= link_to organizations_path, { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 group relative" } do %>
                   <span class="relative inline-block">Organizations
-                    <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                    <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
                   </span>
                 <% end %>
-                
+
                 <% if current_organization %>
-                  <%= link_to organization_documents_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+                  <%= link_to organization_documents_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 group relative" } do %>
                     <span class="relative inline-block">Documents
-                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
                     </span>
                   <% end %>
-                  
-                  <%= link_to organization_vectors_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+
+                  <%= link_to organization_vectors_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 group relative" } do %>
                     <span class="relative inline-block">Vectors
-                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
                     </span>
                   <% end %>
-                  
-                  <%= link_to organization_rag_index_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 group relative" } do %>
+
+                  <%= link_to organization_rag_index_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 group relative" } do %>
                     <span class="relative inline-block">RAG
-                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
                     </span>
                   <% end %>
                 <% end %>
                 
                 <div class="relative" data-controller="dropdown">
-                  <button data-action="dropdown#toggle click@window->dropdown#hide" 
+                  <button data-action="dropdown#toggle click@window->dropdown#hide"
                           data-dropdown-target="button"
-                          class="flex items-center px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 group"
+                          class="flex items-center px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 group"
                           aria-haspopup="true" aria-expanded="false">
                     <span class="mr-1 relative">
                       <%= current_user.display_name %>
-                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 dark:bg-primary-400 transition-all duration-300 group-hover:w-full"></span>
+                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
                     </span>
                     <% if current_user.avatar.attached? %>
                       <%= image_tag current_user.avatar.variant(resize_to_limit: [32, 32]), class: "h-8 w-8 rounded-full ml-1 ring-2 ring-transparent group-hover:ring-primary-400 transition-all duration-300" %>
                     <% else %>
-                      <div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center ml-1 ring-2 ring-transparent group-hover:ring-primary-400 transition-all duration-300">
+                      <div class="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center ml-1 ring-2 ring-transparent group-hover:ring-primary-400 transition-all duration-300">
                         <span class="text-sm kv-text-secondary"><%= current_user.display_name[0].upcase %></span>
                       </div>
                     <% end %>
@@ -137,42 +108,42 @@
                       <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                   </button>
-                
+
                   <div data-dropdown-target="menu"
-                       class="dropdown-menu hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none"
+                       class="dropdown-menu hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white border border-gray-200 focus:outline-none"
                        role="menu" aria-orientation="vertical">
-                    <p class="px-4 py-2 text-sm kv-text-secondary border-b border-gray-200 dark:border-gray-700">
+                    <p class="px-4 py-2 text-sm kv-text-secondary border-b border-gray-200">
                       <% if current_user.current_plan %>
                         <span class="font-semibold"><%= current_user.current_plan.name %> Plan</span>
                       <% else %>
                         <span class="font-semibold">Free Plan</span>
                       <% end %>
                     </p>
-                    
-                    <%= link_to 'Profile', users_profile_path, 
-                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 hover:kv-text-accent transition-all duration-200", 
+
+                    <%= link_to 'Profile', users_profile_path,
+                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 hover:kv-text-accent transition-all duration-200",
                         role: "menuitem" %>
-                    <%= link_to 'Notification Settings', users_preferences_path, 
-                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 hover:kv-text-accent transition-all duration-200", 
+                    <%= link_to 'Notification Settings', users_preferences_path,
+                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 hover:kv-text-accent transition-all duration-200",
                         role: "menuitem" %>
-                    <%= link_to 'Usage Statistics', users_usage_path, 
-                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 hover:kv-text-accent transition-all duration-200", 
+                    <%= link_to 'Usage Statistics', users_usage_path,
+                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 hover:kv-text-accent transition-all duration-200",
                         role: "menuitem" %>
-                    <%= link_to 'Account Settings', users_account_path, 
-                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 dark:hover:bg-gray-700 hover:kv-text-accent transition-all duration-200", 
+                    <%= link_to 'Account Settings', users_account_path,
+                        class: "block px-4 py-2 text-sm kv-text-secondary hover:bg-gray-100 hover:kv-text-accent transition-all duration-200",
                         role: "menuitem" %>
-                    
+
                     <% if current_user.admin? %>
-                      <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                      <%= link_to 'Admin Dashboard', admin_dashboard_path, 
-                          class: "block px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200", 
+                      <div class="border-t border-gray-200 my-1"></div>
+                      <%= link_to 'Admin Dashboard', admin_dashboard_path,
+                          class: "block px-4 py-2 text-sm text-purple-600 hover:bg-gray-100 transition-all duration-200",
                           role: "menuitem" %>
                     <% end %>
-                    
-                    <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-            <%= button_to 'Sign out', destroy_user_session_path, method: :delete, 
-                class: "block w-full text-left px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-error-800 dark:hover:text-error-300 bg-transparent border-0 cursor-pointer transition-all duration-200", 
-                role: "menuitem" %>
+
+                    <div class="border-t border-gray-200 my-1"></div>
+                    <%= button_to 'Sign out', destroy_user_session_path, method: :delete,
+                        class: "block w-full text-left px-4 py-2 text-sm text-error-600 hover:bg-gray-100 hover:text-error-800 bg-transparent border-0 cursor-pointer transition-all duration-200",
+                        role: "menuitem" %>
                   </div>
                 </div>
               </div>
@@ -205,26 +176,26 @@
         
         <!-- Mobile menu panel -->
         <% if user_signed_in? %>
-          <div id="mobile-menu-panel" 
-               class="md:hidden hidden mt-4 pb-3 border-t border-gray-200 dark:border-gray-700 transition-all transform duration-300 origin-top opacity-0 scale-95"
+          <div id="mobile-menu-panel"
+               class="md:hidden hidden mt-4 pb-3 border-t border-gray-200 transition-all transform duration-300 origin-top opacity-0 scale-95"
                data-mobile-menu-target="panel"
                role="menu">
             <div class="space-y-1 py-2">
-              <%= link_to 'Dashboard', dashboard_path, class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
-              <%= link_to 'Organizations', organizations_path, class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
+              <%= link_to 'Dashboard', dashboard_path, class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 transition-all duration-200 rounded-md" %>
+              <%= link_to 'Organizations', organizations_path, class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 transition-all duration-200 rounded-md" %>
               <% if current_organization %>
-                <%= link_to 'Documents', organization_documents_path(current_organization), class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
-                <%= link_to 'Vectors', organization_vectors_path(current_organization), class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
-                <%= link_to 'RAG', organization_rag_index_path(current_organization), class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 rounded-md" %>
+                <%= link_to 'Documents', organization_documents_path(current_organization), class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 transition-all duration-200 rounded-md" %>
+                <%= link_to 'Vectors', organization_vectors_path(current_organization), class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 transition-all duration-200 rounded-md" %>
+                <%= link_to 'RAG', organization_rag_index_path(current_organization), class: "block px-4 py-2 kv-text-secondary hover:kv-text-accent hover:bg-gray-100 transition-all duration-200 rounded-md" %>
               <% end %>
             </div>
-            
-            <div class="pt-4 pb-2 border-t border-gray-200 dark:border-gray-700">
+
+            <div class="pt-4 pb-2 border-t border-gray-200">
               <div class="flex items-center px-4">
                 <% if current_user.avatar.attached? %>
-                  <%= image_tag current_user.avatar.variant(resize_to_limit: [40, 40]), class: "h-10 w-10 rounded-full ring-2 ring-primary-200 dark:ring-primary-700 transition-all duration-300" %>
+                  <%= image_tag current_user.avatar.variant(resize_to_limit: [40, 40]), class: "h-10 w-10 rounded-full ring-2 ring-primary-200 transition-all duration-300" %>
                 <% else %>
-                  <div class="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                  <div class="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
                     <span class="text-sm kv-text-secondary font-medium"><%= current_user.display_name[0].upcase %></span>
                   </div>
                 <% end %>
@@ -233,16 +204,16 @@
                   <p class="text-sm kv-text-secondary"><%= current_user.email %></p>
                 </div>
               </div>
-              
+
               <div class="mt-3 space-y-1 px-2">
-                <%= link_to 'Profile', users_profile_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
-                <%= link_to 'Notifications', users_preferences_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
-                <%= link_to 'Usage', users_usage_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
-                <%= link_to 'Account', users_account_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
+                <%= link_to 'Profile', users_profile_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 transition-colors duration-200" %>
+                <%= link_to 'Notifications', users_preferences_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 transition-colors duration-200" %>
+                <%= link_to 'Usage', users_usage_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 transition-colors duration-200" %>
+                <%= link_to 'Account', users_account_path, class: "block px-3 py-2 rounded-md text-base kv-text-secondary hover:kv-text-accent hover:bg-gray-100 transition-colors duration-200" %>
                 <% if current_user.admin? %>
-                  <%= link_to 'Admin', admin_dashboard_path, class: "block px-3 py-2 rounded-md text-base text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" %>
+                  <%= link_to 'Admin', admin_dashboard_path, class: "block px-3 py-2 rounded-md text-base text-purple-600 hover:bg-gray-100 transition-colors duration-200" %>
                 <% end %>
-                <%= button_to 'Sign out', destroy_user_session_path, method: :delete, class: "w-full text-left block px-3 py-2 rounded-md text-base text-error-600 dark:text-error-400 hover:bg-gray-100 dark:hover:bg-gray-800 bg-transparent border-0 cursor-pointer transition-colors duration-200" %>
+                <%= button_to 'Sign out', destroy_user_session_path, method: :delete, class: "w-full text-left block px-3 py-2 rounded-md text-base text-error-600 hover:bg-gray-100 bg-transparent border-0 cursor-pointer transition-colors duration-200" %>
               </div>
             </div>
           </div>
@@ -334,7 +305,7 @@
       <%= yield %>
     </main>
     
-    <footer class="shadow-inner py-6 mt-8 transition-colors duration-300 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <footer class="shadow-inner py-6 mt-8 border-t border-gray-200 bg-white">
       <div class="container mx-auto px-4">
         <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div class="text-center md:text-left kv-text-secondary text-sm">
@@ -350,7 +321,7 @@
       </div>
     </footer>
     
-    <!-- Keyboard shortcuts helper (hidden by default) -->
-    <div id="keyboard-shortcuts-panel" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" role="dialog" aria-modal="true" data-controller="keyboard-shortcuts">
-      <div class="bg-white dark:bg-gray-800 max-w-2xl w-full mx-auto rounded-lg shadow-xl p-6 transform transition-all scale-in duration-300 ease-out">
-        <div class="flex justify-between items-center
+    <!-- Keyboard shortcuts controller - dialog created dynamically -->
+    <div data-controller="keyboard-shortcuts" class="hidden"></div>
+  </body>
+</html>

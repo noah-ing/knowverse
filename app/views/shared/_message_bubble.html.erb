@@ -20,12 +20,12 @@
         <% if local_assigns[:avatar_url].present? %>
           <img src="<%= avatar_url %>" alt="<%= name || 'You' %>" class="h-8 w-8 rounded-full mr-2">
         <% else %>
-          <div class="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mr-2">
+          <div class="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center mr-2">
             <span class="text-sm kv-text-secondary font-medium"><%= name&.first&.upcase || 'Y' %></span>
           </div>
         <% end %>
       <% else %>
-        <div class="h-8 w-8 bg-primary-600 dark:bg-primary-700 rounded-full flex items-center justify-center text-white mr-2">
+        <div class="h-8 w-8 bg-primary-600 rounded-full flex items-center justify-center text-white mr-2">
           <span class="text-sm font-medium">K</span>
         </div>
       <% end %>
@@ -66,12 +66,12 @@
       <span class="kv-text-secondary text-sm">Was this helpful?</span>
       <div class="flex gap-2">
         <button type="button" class="feedback-button" aria-label="Helpful">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-success-600 dark:text-success-500">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-success-600">
             <path d="M1 8.25a1.25 1.25 0 112.5 0v7.5a1.25 1.25 0 11-2.5 0v-7.5zM11 3V1.7c0-.268.14-.526.395-.607A2 2 0 0114 3c0 .995-.182 1.948-.514 2.826-.204.54.166 1.174.744 1.174h2.52c1.243 0 2.261 1.01 2.146 2.247a23.864 23.864 0 01-1.341 5.974C17.153 16.323 16.072 17 14.9 17h-3.192a3 3 0 01-1.341-.317l-2.734-1.366A3 3 0 016.292 15H5V8h.963c.685 0 1.258-.483 1.612-1.068a4.011 4.011 0 012.166-1.73c.432-.143.853-.386 1.011-.814.16-.432.248-.9.248-1.388z" />
           </svg>
         </button>
         <button type="button" class="feedback-button" aria-label="Not helpful">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-error-600 dark:text-error-500">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-error-600">
             <path d="M18.905 12.75a1.25 1.25 0 01-2.5 0v-.68l-1.084-.16c-2.339-.341-4.361-1.168-5.82-2.354-1.46-1.186-2.548-2.635-3.215-4.08-1.076-.345-2.272.527-2.272 1.664v1.75a6.25 6.25 0 01-1.983 4.582A6.25 6.25 0 016.25 18.75c.42 0 .83-.162 1.14-.462.42-.4.118-.896-.254-1.17A5 5 0 005.5 12.791v-1.086c.55.31 1.113.553 1.672.724a10.2 10.2 0 001.614 2.82 10.25 10.25 0 01-2.082-.584 3.01 3.01 0 00-2.938.747 3.004 3.004 0 00-1.683.748A2.252 2.252 0 000 13.997v-2.997c0-4.16 3.377-7.554 7.53-7.554a2.25 2.25 0 012.037 3.084c-.145.425-.26.909-.33 1.428a6.606 6.606 0 01-.419-2.512c0-.736.45-1.365 1.087-1.635a7.584 7.584 0 014.41-.582c.79.22 1.314.967 1.314 1.777v8.741z" />
           </svg>
         </button>
