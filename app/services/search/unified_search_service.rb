@@ -26,7 +26,9 @@ module Search
 
     # Default search parameters
     DEFAULT_LIMIT = 10
-    DEFAULT_SCORE_THRESHOLD = 0.5
+    # Score threshold for cosine similarity (0-1 scale)
+    # Lower threshold to capture more semantic matches - 0.2 works well for sentence-transformers
+    DEFAULT_SCORE_THRESHOLD = 0.2
 
     def initialize(qdrant: nil, haystack: nil)
       @qdrant = qdrant || default_qdrant_client
@@ -326,9 +328,9 @@ module Search
     end
 
     def build_filter(organization_id, additional_filter = nil)
+      # Only filter by organization_id - chunks don't have document-level status
       must_conditions = [
-        { key: 'organization_id', match: { value: organization_id } },
-        { key: 'status', match: { value: 'active' } }
+        { key: 'organization_id', match: { value: organization_id } }
       ]
 
       if additional_filter

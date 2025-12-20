@@ -111,12 +111,13 @@ class DocumentsController < ApplicationController
     if @organization.documents.count >= @organization.max_documents.to_i
       return redirect_to organization_documents_path(@organization), alert: 'Organization has reached maximum number of documents.'
     end
-    
+
     # Handle file upload
     if params[:files].present?
       files = params[:files]
-      
-      # Process each uploaded file
+      saved_documents = []
+
+      # First, save all documents (quick DB operation)
       files.each do |file|
         document = @organization.documents.new(
           title: file.original_filename,
@@ -124,17 +125,27 @@ class DocumentsController < ApplicationController
           status: 'pending',
           embedding_status: 'pending'
         )
-        
+
         # Attach the file using ActiveStorage
         document.file.attach(file)
-        
+
         if document.save
-          # Enqueue background job for text extraction
+          saved_documents << document
+        end
+      end
+
+      # Process documents based on environment
+      if Rails.env.development? && ENV['SYNC_PROCESSING'] != 'false'
+        # Synchronous parallel processing for fast development feedback
+        process_documents_parallel(saved_documents)
+      else
+        # Async processing for production
+        saved_documents.each do |document|
           DocumentProcessing::TextExtractionWorker.perform_async(document.id)
         end
       end
-      
-      redirect_to organization_documents_path(@organization), notice: 'Documents were successfully uploaded and are being processed.'
+
+      redirect_to organization_documents_path(@organization), notice: "#{saved_documents.size} document(s) uploaded and processing."
     else
       redirect_to organization_documents_path(@organization), alert: 'No files were selected for upload.'
     end
@@ -287,6 +298,30 @@ class DocumentsController < ApplicationController
       documents
     end
     
+    # Process documents in parallel for faster bulk uploads
+    def process_documents_parallel(documents)
+      return if documents.empty?
+
+      # Use thread pool for parallel processing (4 threads default)
+      pool = Concurrent::FixedThreadPool.new([documents.size, 4].min)
+
+      documents.each do |document|
+        pool.post do
+          begin
+            # Run full pipeline synchronously
+            DocumentProcessing::TextExtractionWorker.new.perform(document.id)
+            DocumentProcessing::EmbeddingGenerationWorker.new.perform(document.id)
+            Rails.logger.info("Document #{document.id} processed successfully")
+          rescue => e
+            Rails.logger.error("Document #{document.id} processing failed: #{e.message}")
+          end
+        end
+      end
+
+      # Don't wait for completion - redirect immediately and process in background threads
+      # This gives user faster feedback while processing continues
+    end
+
     # Apply sorting to the document query
     def apply_sorting(documents)
       @sort_field = params[:sort_by] || 'created_at'
