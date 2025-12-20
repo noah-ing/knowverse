@@ -134,18 +134,25 @@ class DocumentsController < ApplicationController
         end
       end
 
-      # Process documents based on environment
-      if Rails.env.development? && ENV['SYNC_PROCESSING'] != 'false'
-        # Synchronous parallel processing for fast development feedback
-        process_documents_parallel(saved_documents)
-      else
-        # Async processing for production
-        saved_documents.each do |document|
-          DocumentProcessing::TextExtractionWorker.perform_async(document.id)
-        end
-      end
+      # Process documents - sync in development, async in production
+      if Rails.env.development?
+        # Synchronous processing - wait for completion
+        results = process_documents_parallel(saved_documents)
 
-      redirect_to organization_documents_path(@organization), notice: "#{saved_documents.size} document(s) uploaded and processing."
+        if results[:failed] > 0
+          redirect_to organization_documents_path(@organization),
+            alert: "Uploaded #{saved_documents.size} doc(s): #{results[:success]} succeeded, #{results[:failed]} failed. Check logs for errors."
+        else
+          redirect_to organization_documents_path(@organization),
+            notice: "#{saved_documents.size} document(s) uploaded and processed successfully!"
+        end
+      else
+        # Async processing for production (requires SolidQueue running)
+        saved_documents.each do |document|
+          DocumentProcessing::TextExtractionWorker.perform_later(document.id)
+        end
+        redirect_to organization_documents_path(@organization), notice: "#{saved_documents.size} document(s) uploaded and queued for processing."
+      end
     else
       redirect_to organization_documents_path(@organization), alert: 'No files were selected for upload.'
     end
@@ -299,27 +306,57 @@ class DocumentsController < ApplicationController
     end
     
     # Process documents in parallel for faster bulk uploads
+    # WAITS for completion and returns results
     def process_documents_parallel(documents)
-      return if documents.empty?
+      return { success: 0, failed: 0 } if documents.empty?
+
+      results = Concurrent::Hash.new
 
       # Use thread pool for parallel processing (4 threads default)
       pool = Concurrent::FixedThreadPool.new([documents.size, 4].min)
+      latch = Concurrent::CountDownLatch.new(documents.size)
 
       documents.each do |document|
         pool.post do
           begin
-            # Run full pipeline synchronously
+            Rails.logger.info("Starting processing for document #{document.id}: #{document.title}")
+
+            # Run text extraction
             DocumentProcessing::TextExtractionWorker.new.perform(document.id)
-            DocumentProcessing::EmbeddingGenerationWorker.new.perform(document.id)
-            Rails.logger.info("Document #{document.id} processed successfully")
+
+            # Reload to check status
+            document.reload
+            if document.status == 'processed'
+              # Run embedding generation
+              DocumentProcessing::EmbeddingGenerationWorker.new.perform(document.id)
+              document.reload
+              results[document.id] = document.embedding_status == 'completed' ? :success : :partial
+            else
+              results[document.id] = :failed
+            end
+
+            Rails.logger.info("Document #{document.id} processing complete: #{results[document.id]}")
           rescue => e
             Rails.logger.error("Document #{document.id} processing failed: #{e.message}")
+            Rails.logger.error(e.backtrace.first(5).join("\n"))
+            results[document.id] = :failed
+            # Mark document as error
+            document.update(status: 'error') rescue nil
+          ensure
+            latch.count_down
           end
         end
       end
 
-      # Don't wait for completion - redirect immediately and process in background threads
-      # This gives user faster feedback while processing continues
+      # Wait for all documents to complete (max 5 minutes)
+      latch.wait(300)
+      pool.shutdown
+
+      success = results.values.count { |v| v == :success }
+      partial = results.values.count { |v| v == :partial }
+      failed = results.values.count { |v| v == :failed }
+
+      { success: success, partial: partial, failed: failed }
     end
 
     # Apply sorting to the document query
