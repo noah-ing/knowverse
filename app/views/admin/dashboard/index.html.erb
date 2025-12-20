@@ -24,7 +24,7 @@
           title: "Active Subscriptions", 
           border: true,
           classes: "h-full" do %>
-          <p class="text-4xl font-bold mt-2 text-green-500 dark:text-green-400"><%= @active_subscriptions %></p>
+          <p class="text-4xl font-bold mt-2 text-green-500"><%= @active_subscriptions %></p>
           <p class="kv-text-secondary text-sm mt-2">Current paying customers</p>
         <% end %>
       </div>
@@ -34,7 +34,7 @@
           title: "Trialing Users", 
           border: true,
           classes: "h-full" do %>
-          <p class="text-4xl font-bold mt-2 text-blue-500 dark:text-blue-400"><%= @trialing_users %></p>
+          <p class="text-4xl font-bold mt-2 text-blue-500"><%= @trialing_users %></p>
           <p class="kv-text-secondary text-sm mt-2">Trial period accounts</p>
         <% end %>
       </div>
@@ -44,7 +44,7 @@
           title: "Past Due", 
           border: true,
           classes: "h-full" do %>
-          <p class="text-4xl font-bold mt-2 text-yellow-500 dark:text-yellow-400"><%= @past_due_users %></p>
+          <p class="text-4xl font-bold mt-2 text-yellow-500"><%= @past_due_users %></p>
           <p class="kv-text-secondary text-sm mt-2">Payment issues</p>
         <% end %>
       </div>
@@ -67,7 +67,7 @@
                 </svg>
               </div>
               <div>
-                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Manage Users</h3>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 transition-colors">Manage Users</h3>
                 <p class="kv-text-secondary text-sm">View, edit, and manage user accounts</p>
               </div>
             </div>
@@ -83,7 +83,7 @@
                 </svg>
               </div>
               <div>
-                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Distributed System</h3>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 transition-colors">Distributed System</h3>
                 <p class="kv-text-secondary text-sm">Manage distributed search infrastructure</p>
               </div>
             </div>
@@ -99,7 +99,7 @@
                 </svg>
               </div>
               <div>
-                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">LLM Providers</h3>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 transition-colors">LLM Providers</h3>
                 <p class="kv-text-secondary text-sm">Manage AI language model providers</p>
               </div>
             </div>
@@ -115,7 +115,7 @@
                 </svg>
               </div>
               <div>
-                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Domain Confidence</h3>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 transition-colors">Domain Confidence</h3>
                 <p class="kv-text-secondary text-sm">Configure domain detection thresholds</p>
               </div>
             </div>
@@ -131,7 +131,7 @@
                 </svg>
               </div>
               <div>
-                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Embedding Cache</h3>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 transition-colors">Embedding Cache</h3>
                 <p class="kv-text-secondary text-sm">Monitor and manage vector cache</p>
               </div>
             </div>
@@ -147,7 +147,7 @@
                 </svg>
               </div>
               <div>
-                <h3 class="kv-title-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Search Metrics</h3>
+                <h3 class="kv-title-sm group-hover:text-indigo-600 transition-colors">Search Metrics</h3>
                 <p class="kv-text-secondary text-sm">Analyze search performance</p>
               </div>
             </div>
@@ -236,15 +236,15 @@
 <% content_for :styles do %>
 <style>
   .kv-card-link {
-    @apply p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center transition-all duration-200 hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800;
+    @apply p-4 rounded-lg border border-gray-200 flex items-center transition-all duration-200 hover:shadow-md hover:border-indigo-200;
   }
   
   .kv-icon-container {
-    @apply text-indigo-600 bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-900/50 rounded-full p-2 flex-shrink-0;
+    @apply text-indigo-600 bg-indigo-100/50 rounded-full p-2 flex-shrink-0;
   }
   
   .kv-status-card {
-    @apply p-4 rounded-lg border border-gray-200 dark:border-gray-700 h-full;
+    @apply p-4 rounded-lg border border-gray-200 h-full;
   }
 </style>
 <% end %>

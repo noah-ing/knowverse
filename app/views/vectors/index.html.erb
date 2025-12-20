@@ -49,7 +49,7 @@
       </select>
     </div>
     <div class="hidden sm:block">
-      <nav class="flex space-x-8 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200" aria-label="Tabs">
+      <nav class="flex space-x-8 border-b border-gray-200 transition-colors duration-200" aria-label="Tabs">
         <button type="button" class="border-primary-500 kv-text-accent whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200" aria-current="page">
           Vector Space
         </button>
@@ -138,7 +138,7 @@
           <div class="pt-4 animate-in fade-in duration-300 ease-out" style="animation-delay: 300ms;">
             <div 
               id="info-panel"
-              class="p-4 bg-gray-50 dark:bg-gray-800 rounded-md text-sm kv-text-secondary transition-colors duration-200"
+              class="p-4 bg-gray-50 rounded-md text-sm kv-text-secondary transition-colors duration-200"
               data-visualization-target="info"
             >
               <p>Select a point to view document details</p>
@@ -154,7 +154,7 @@
         <%# Loading State %>
         <div 
           data-visualization-target="loading"
-          class="absolute inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 flex items-center justify-center z-10 hidden transition-colors duration-200"
+          class="absolute inset-0 bg-gray-100 bg-opacity-75 flex items-center justify-center z-10 hidden transition-colors duration-200"
         >
           <div class="flex flex-col items-center">
             <div class="kv-spinner kv-spinner-lg"></div>
@@ -200,7 +200,7 @@
         <h3 class="kv-card-title">Available Projections</h3>
       </div>
       <div class="kv-card-header-actions">
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 transition-colors duration-200">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800 transition-colors duration-200">
           <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
             <circle cx="4" cy="4" r="3" />
           </svg>
@@ -210,8 +210,8 @@
     </div>
     <div class="kv-card-body">
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 transition-colors duration-200">
-          <thead class="bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
+        <table class="min-w-full divide-y divide-gray-200 transition-colors duration-200">
+          <thead class="bg-gray-50 transition-colors duration-200">
             <tr>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">ID</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Algorithm</th>
@@ -220,7 +220,7 @@
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Created</th>
             </tr>
           </thead>
-          <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700 transition-colors duration-200">
+          <tbody class="bg-white divide-y divide-gray-200 transition-colors duration-200">
             <% if projections_count > 0 && @vector_projections&.any? %>
               <% @vector_projections.each_with_index do |projection, index| %>
                 <tr class="animate-in fade-in duration-300 ease-out transition-colors duration-200" style="animation-delay: <%= 100 + (index * 50) %>ms;">
@@ -310,7 +310,7 @@
           const infoPanel = document.querySelector('[data-visualization-target="info"]');
           if (infoPanel) {
             infoPanel.innerHTML = `
-              <div class="p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-800 transition-colors duration-200">
+              <div class="p-3 bg-green-50/20 text-green-700 rounded-md border border-green-200 transition-colors duration-200">
                 <p class="text-sm font-medium">Job started: ${data.job_id}</p>
                 <p class="text-sm mt-1">Processing ${data.embedding_count} embeddings</p>
                 <p class="text-xs mt-2 opacity-75">This may take a few minutes...</p>
@@ -351,7 +351,7 @@
           const infoPanel = document.querySelector('[data-visualization-target="info"]');
           if (infoPanel) {
             infoPanel.innerHTML = `
-              <div class="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md border border-red-200 dark:border-red-800 transition-colors duration-200">
+              <div class="p-3 bg-red-50/20 text-red-700 rounded-md border border-red-200 transition-colors duration-200">
                 <p class="text-sm font-medium">Error starting projection job</p>
                 <p class="text-xs mt-2">${error.message || 'Unknown error'}</p>
               </div>

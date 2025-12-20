@@ -48,7 +48,7 @@
     <div class="relative rounded-md shadow-sm">
       <%= form.text_field field, 
           type: type,
-          class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200 #{'border-red-500 dark:border-red-400 focus:border-red-500 focus:ring-red-500' if has_error} #{classes}",
+          class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200 #{'border-red-500 focus:border-red-500 focus:ring-red-500' if has_error} #{classes}",
           placeholder: placeholder,
           required: required,
           disabled: disabled,
@@ -58,7 +58,7 @@
       %>
       <% if has_error %>
         <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-          <svg class="h-5 w-5 text-red-500 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
           </svg>
         </div>
@@ -70,7 +70,7 @@
     <% end %>
     
     <% if has_error %>
-      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 animate-in fade-in duration-200"><%= error_message %></p>
     <% end %>
   </div>
 <% end %>
@@ -108,7 +108,7 @@
     
     <div class="relative rounded-md shadow-sm">
       <%= form.text_area field, 
-          class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200 #{'border-red-500 dark:border-red-400 focus:border-red-500 focus:ring-red-500' if has_error} #{classes}",
+          class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200 #{'border-red-500 focus:border-red-500 focus:ring-red-500' if has_error} #{classes}",
           placeholder: placeholder,
           required: required,
           rows: rows,
@@ -124,7 +124,7 @@
     <% end %>
     
     <% if has_error %>
-      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 animate-in fade-in duration-200"><%= error_message %></p>
     <% end %>
   </div>
 <% end %>
@@ -168,7 +168,7 @@
           options,
           { include_blank: include_blank, selected: selected },
           { 
-            class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm transition-colors duration-200 #{'border-red-500 dark:border-red-400 focus:border-red-500 focus:ring-red-500' if has_error} #{classes}",
+            class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm transition-colors duration-200 #{'border-red-500 focus:border-red-500 focus:ring-red-500' if has_error} #{classes}",
             required: required,
             disabled: disabled,
             id: field_id,
@@ -188,7 +188,7 @@
     <% end %>
     
     <% if has_error %>
-      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 animate-in fade-in duration-200"><%= error_message %></p>
     <% end %>
   </div>
 <% end %>
@@ -229,7 +229,7 @@
     <div class="flex items-start">
       <div class="flex items-center h-5">
         <%= form.check_box field, 
-            class: "h-4 w-4 rounded border-gray-300 dark:border-gray-600 focus:ring-offset-0 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 dark:bg-gray-700 dark:checked:bg-blue-500 transition-colors duration-200 #{'border-red-500 dark:border-red-400' if has_error} #{classes}",
+            class: "h-4 w-4 rounded border-gray-300 focus:ring-offset-0 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 #{'border-red-500' if has_error} #{classes}",
             checked: checked,
             disabled: disabled,
             id: field_id,
@@ -247,7 +247,7 @@
     </div>
     
     <% if has_error %>
-      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 animate-in fade-in duration-200"><%= error_message %></p>
     <% end %>
   </div>
 <% end %>
@@ -296,7 +296,7 @@
               option_value, 
               id: option_id, 
               checked: checked == option_value,
-              class: "h-4 w-4 border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:focus:ring-blue-600 dark:bg-gray-700 transition-colors duration-200 #{'border-red-500 dark:border-red-400' if has_error}"
+              class: "h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors duration-200 #{'border-red-500' if has_error}"
           %>
           <%= form.label "#{field}_#{option_value}", option_label, class: "ml-2 kv-text-primary text-sm" %>
         </div>
@@ -308,7 +308,7 @@
     <% end %>
     
     <% if has_error %>
-      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 animate-in fade-in duration-200"><%= error_message %></p>
     <% end %>
   </fieldset>
 <% end %>
@@ -395,29 +395,29 @@
       %>
       
       <%# Dropzone %>
-      <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md transition-all duration-300 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer group <%= dropzone_classes %>"
+      <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md transition-all duration-300 hover:border-blue-500 cursor-pointer group <%= dropzone_classes %>"
            data-file-upload-target="dropzone"
            aria-label="<%= multiple ? 'Drop files here or click to select files' : 'Drop file here or click to select file' %>"
            role="button" 
            tabindex="0">
         <div class="space-y-1 text-center">
-          <svg class="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-300" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+          <svg class="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500 transition-colors duration-300" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
             <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
-          <div class="flex flex-col sm:flex-row items-center justify-center text-sm text-gray-600 dark:text-gray-400">
-            <span class="relative font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors duration-200">
+          <div class="flex flex-col sm:flex-row items-center justify-center text-sm text-gray-600">
+            <span class="relative font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
               <%= multiple ? 'Upload files' : 'Upload a file' %>
             </span>
             <span class="px-1">or drag and drop</span>
           </div>
-          <p class="text-xs text-gray-500 dark:text-gray-400">
+          <p class="text-xs text-gray-500">
             <%= accept ? "#{accept.split(',').join(', ')}" : "Any file type" %> up to <%= max_size %>MB <%= multiple ? "(#{max_files} max)" : "" %>
           </p>
         </div>
       </div>
       
       <%# Error message %>
-      <div data-file-upload-target="error" class="hidden mt-1 text-sm text-red-600 dark:text-red-400 animate-in fade-in duration-200"></div>
+      <div data-file-upload-target="error" class="hidden mt-1 text-sm text-red-600 animate-in fade-in duration-200"></div>
       
       <%# Help text %>
       <% if help_text.present? %>
@@ -426,7 +426,7 @@
       
       <%# Server-side error message %>
       <% if has_error %>
-      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 animate-in fade-in duration-200"><%= error_message %></p>
       <% end %>
       
       <%# Image preview area %>
@@ -440,7 +440,7 @@
           <div data-file-upload-target="fileList" class="text-sm"></div>
           
           <template data-file-upload-target="template">
-            <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between py-2 border-b border-gray-200">
               <div class="flex items-center">
                 <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center mr-2 text-gray-500">
                   <svg data-file-icon class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -448,7 +448,7 @@
                   </svg>
                 </div>
                 <div class="truncate">
-                  <div data-file-name class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"></div>
+                  <div data-file-name class="text-sm font-medium text-gray-900 truncate"></div>
                   <div class="text-xs kv-text-secondary">
                     <span data-file-size></span> • <span data-file-type></span>
                   </div>
@@ -472,8 +472,8 @@
         <div class="flex justify-between mb-1">
           <span data-file-upload-target="progressText" class="text-xs kv-text-secondary">Uploading...</span>
         </div>
-        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-          <div data-file-upload-target="progressBar" class="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%"></div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5">
+          <div data-file-upload-target="progressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%"></div>
         </div>
       </div>
     </div>
@@ -533,7 +533,7 @@
         max: max,
         step: step,
         value: value,
-        class: "w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500 mt-2 transition-colors duration-200 #{classes}",
+        class: "w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 mt-2 transition-colors duration-200 #{classes}",
         disabled: disabled,
         id: field_id,
         oninput: show_value ? "document.getElementById('#{field_id}_value').textContent = this.value" : nil,
@@ -553,7 +553,7 @@
     <% end %>
     
     <% if has_error %>
-      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 dark:text-red-400 animate-in fade-in duration-200"><%= error_message %></p>
+      <p id="<%= field_id %>_error" class="mt-1 text-xs text-red-600 animate-in fade-in duration-200"><%= error_message %></p>
     <% end %>
   </div>
 <% end %>

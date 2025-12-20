@@ -36,9 +36,9 @@
           padding: false
         } do %>
           <div class="flex flex-col h-full">
-            <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
               <h3 class="text-lg font-medium kv-text-primary truncate">
-                <%= link_to organization.name, organization_path(organization), class: "hover:text-primary-600 dark:hover:text-primary-400 transition-colors" %>
+                <%= link_to organization.name, organization_path(organization), class: "hover:text-primary-600 transition-colors" %>
               </h3>
               <p class="kv-text-secondary text-sm mt-1 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -73,8 +73,8 @@
                   <dt class="text-xs font-medium kv-text-secondary">Document Usage</dt>
                   <dd class="mt-1">
                     <div class="relative pt-1">
-                      <div class="overflow-hidden h-2 mb-1 text-xs flex rounded-full bg-primary-100 dark:bg-primary-900">
-                        <div style="width:0%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-600 dark:bg-primary-400 rounded-full transition-all duration-500"></div>
+                      <div class="overflow-hidden h-2 mb-1 text-xs flex rounded-full bg-primary-100">
+                        <div style="width:0%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-600 rounded-full transition-all duration-500"></div>
                       </div>
                       <div class="text-xs kv-text-secondary flex justify-between">
                         <span>0 used</span>
@@ -87,7 +87,7 @@
             </div>
             
             <%# Organization actions %>
-            <div class="px-4 py-4 sm:px-6 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
+            <div class="px-4 py-4 sm:px-6 bg-gray-50 border-t border-gray-200 rounded-b-lg">
               <div class="flex space-x-2">
                 <%= render partial: "shared/button", locals: {
                   text: "Dashboard",
@@ -115,8 +115,8 @@
       animate_delay: "100ms"
     } do %>
       <div class="px-4 py-8 sm:px-6 text-center">
-        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-primary-100 dark:bg-primary-900 mb-4">
-          <svg class="h-8 w-8 text-primary-600 dark:text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-primary-100 mb-4">
+          <svg class="h-8 w-8 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
         </div>

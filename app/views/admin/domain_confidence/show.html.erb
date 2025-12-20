@@ -29,19 +29,19 @@
         <ul class="space-y-3">
           <li class="flex justify-between items-center">
             <span class="kv-text-secondary">Primary Threshold:</span>
-            <span class="kv-text-primary font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+            <span class="kv-text-primary font-medium px-2 py-1 bg-gray-100 rounded">
               <%= @organization.domain_confidence_primary_threshold %>
             </span>
           </li>
           <li class="flex justify-between items-center">
             <span class="kv-text-secondary">Secondary Threshold:</span>
-            <span class="kv-text-primary font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+            <span class="kv-text-primary font-medium px-2 py-1 bg-gray-100 rounded">
               <%= @organization.domain_confidence_secondary_threshold %>
             </span>
           </li>
           <li class="flex justify-between items-center">
             <span class="kv-text-secondary">Fallback Enabled:</span>
-            <span class="kv-text-primary font-medium px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+            <span class="kv-text-primary font-medium px-2 py-1 bg-gray-100 rounded">
               <%= @organization.enable_domain_fallback ? 'Yes' : 'No' %>
             </span>
           </li>
@@ -55,7 +55,7 @@
       content: capture do %>
         <div class="flex flex-wrap gap-2">
           <% @domains.each do |domain| %>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               <%= domain %>
             </span>
           <% end %>
@@ -71,8 +71,8 @@
       content: capture do %>
         <% if @confidence_scores.present? %>
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead class="bg-gray-50 dark:bg-gray-800">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
                 <tr>
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Domain</th>
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Avg. Confidence</th>
@@ -81,7 +81,7 @@
                   <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody class="bg-white divide-y divide-gray-200">
                 <% @confidence_scores.each_with_index do |score, index| %>
                   <tr class="kv-animation-slide-up" style="--kv-animation-delay: <%= 300 + ((index + 1) * 50) %>ms;">
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -116,7 +116,7 @@
             </table>
           </div>
         <% else %>
-          <div class="text-center py-10 bg-gray-50 dark:bg-gray-800 rounded-md">
+          <div class="text-center py-10 bg-gray-50 rounded-md">
             <p class="kv-text-secondary">No confidence score data available yet. As users search, the system will track domain confidence metrics.</p>
           </div>
         <% end %>
@@ -134,7 +134,7 @@
             <div class="kv-animation-fade-in" style="--kv-animation-delay: 500ms;">
               <%= render partial: "shared/card", locals: {
                 title: "Factor Distribution",
-                background: "bg-gray-50 dark:bg-gray-800",
+                background: "bg-gray-50",
                 content: capture do %>
                   <div class="h-64" id="factorsChart"></div>
                 <% end 
@@ -144,7 +144,7 @@
             <div class="kv-animation-fade-in" style="--kv-animation-delay: 600ms;">
               <%= render partial: "shared/card", locals: {
                 title: "Confidence Trend",
-                background: "bg-gray-50 dark:bg-gray-800",
+                background: "bg-gray-50",
                 content: capture do %>
                   <div class="h-64" id="trendChart"></div>
                 <% end 
@@ -152,7 +152,7 @@
             </div>
           </div>
         <% else %>
-          <div class="text-center py-10 bg-gray-50 dark:bg-gray-800 rounded-md">
+          <div class="text-center py-10 bg-gray-50 rounded-md">
             <p class="kv-text-secondary">No confidence factor data available yet. As users search, the system will track domain confidence factors.</p>
           </div>
         <% end %>
@@ -286,22 +286,22 @@
   
   // Helper function for confidence level colors
   function confidenceLevelColor(score) {
-    if (score >= 0.8) return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
-    if (score >= 0.6) return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
-    if (score >= 0.4) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
-    return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
+    if (score >= 0.8) return 'bg-green-100 text-green-800';
+    if (score >= 0.6) return 'bg-blue-100 text-blue-800';
+    if (score >= 0.4) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-red-100 text-red-800';
   }
 </script>
 
 <% # Helper method for view %>
 <% def confidence_level_color(score) %>
   <% if score >= 0.8 %>
-    bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+    bg-green-100 text-green-800
   <% elsif score >= 0.6 %>
-    bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100
+    bg-blue-100 text-blue-800
   <% elsif score >= 0.4 %>
-    bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100
+    bg-yellow-100 text-yellow-800
   <% else %>
-    bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100
+    bg-red-100 text-red-800
   <% end %>
 <% end %>

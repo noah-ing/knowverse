@@ -49,7 +49,7 @@
   </div>
 
   <% if organization.persisted? && current_user.organization_users.find_by(organization: organization)&.role == 'owner' %>
-    <div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mt-6">
+    <div class="p-4 rounded-lg bg-gray-50 border border-gray-200 mt-6">
       <h3 class="text-lg font-medium kv-text-primary mb-4">Organization Settings</h3>
       
       <div class="space-y-5">

@@ -2,280 +2,258 @@ import { Controller } from "@hotwired/stimulus"
 
 /**
  * Keyboard Shortcuts Controller
- * 
- * Manages keyboard shortcuts and displays a help dialog
- * - Registers global keyboard shortcuts
- * - Shows a modal with available shortcuts
- * - Supports different shortcut contexts
+ *
+ * Manages keyboard shortcuts and displays a help dialog.
+ * Only activates shortcuts when not typing in input fields.
  */
 export default class extends Controller {
   static targets = ["dialog", "overlay"]
 
+  // Use private properties for dynamically created elements
+  _dialog = null
+  _overlay = null
+
   connect() {
-    // Register global keyboard shortcuts
-    document.addEventListener('keydown', this.handleKeyDown.bind(this))
-    
-    // Initialize dialog if exists
-    if (this.hasDialogTarget) {
-      this.dialogTarget.setAttribute('aria-hidden', 'true')
-      
-      // Close dialog on overlay click
-      if (this.hasOverlayTarget) {
-        this.overlayTarget.addEventListener('click', this.hide.bind(this))
-      }
-      
-      // Close on Escape key
-      this.dialogTarget.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-          this.hide()
-        }
-      })
-    } else {
-      // Create dialog on demand
-      this.createDialog()
-    }
+    // Bind the handler so we can remove it later
+    this.boundKeyHandler = this.handleKeyDown.bind(this)
+    document.addEventListener('keydown', this.boundKeyHandler)
+
+    // Ensure any existing panel is hidden on connect
+    this.ensureHidden()
   }
-  
+
   disconnect() {
-    document.removeEventListener('keydown', this.handleKeyDown.bind(this))
-  }
-  
-  show() {
-    if (!this.dialogTarget) {
-      this.createDialog()
+    document.removeEventListener('keydown', this.boundKeyHandler)
+    // Clean up dynamically created elements
+    if (this._dialog) {
+      this._dialog.remove()
+      this._dialog = null
     }
-    
-    // Show dialog
-    this.dialogTarget.classList.remove('hidden')
-    this.dialogTarget.setAttribute('aria-hidden', 'false')
-    
-    // Show overlay first
-    if (this.hasOverlayTarget) {
-      this.overlayTarget.classList.remove('hidden', 'pointer-events-none')
+    if (this._overlay) {
+      this._overlay.remove()
+      this._overlay = null
+    }
+  }
+
+  // Get dialog element (target or dynamic)
+  get dialog() {
+    return this.hasDialogTarget ? this.dialogTarget : this._dialog
+  }
+
+  // Get overlay element (target or dynamic)
+  get overlay() {
+    return this.hasOverlayTarget ? this.overlayTarget : this._overlay
+  }
+
+  ensureHidden() {
+    // Hide any visible overlays on page load
+    const existingOverlays = document.querySelectorAll('.fixed.inset-0.bg-black, .fixed.inset-0.bg-gray-500')
+    existingOverlays.forEach(overlay => {
+      if (!overlay.classList.contains('hidden')) {
+        overlay.classList.add('hidden')
+        overlay.style.display = 'none'
+        overlay.style.pointerEvents = 'none'
+      }
+    })
+  }
+
+  handleKeyDown(event) {
+    // CRITICAL: Skip ALL shortcuts when user is typing in any input field
+    const target = event.target
+    const tagName = target.tagName.toUpperCase()
+
+    if (tagName === 'INPUT' ||
+        tagName === 'TEXTAREA' ||
+        tagName === 'SELECT' ||
+        target.isContentEditable ||
+        target.closest('[contenteditable="true"]')) {
+      // Allow the keystroke to pass through normally
+      return
     }
 
-    // Add animation classes
-    setTimeout(() => {
-      if (this.hasOverlayTarget) {
-        this.overlayTarget.classList.add('opacity-100')
-        this.overlayTarget.classList.remove('opacity-0')
+    // Show shortcuts dialog with Ctrl/Cmd + ?
+    if (event.key === '?' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault()
+      this.show()
+      return
+    }
+
+    // Alt + key shortcuts for navigation
+    if (event.altKey) {
+      const shortcuts = {
+        'd': '/dashboard',
+        's': '/search',
+        'r': '/rag',
+        'u': '/upload'
       }
-      this.dialogTarget.classList.add('opacity-100', 'translate-y-0')
-      this.dialogTarget.classList.remove('opacity-0', 'translate-y-4')
-      
-      // Focus the first focusable element
-      const focusable = this.dialogTarget.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
-      if (focusable) {
-        focusable.focus()
+
+      if (shortcuts[event.key]) {
+        event.preventDefault()
+        window.location.href = shortcuts[event.key]
+        return
       }
-    }, 50)
-    
-    // Store the element that had focus before opening
+
+      // Toggle dark mode with Alt + T
+      if (event.key === 't') {
+        event.preventDefault()
+        this.toggleDarkMode()
+        return
+      }
+    }
+  }
+
+  show() {
+    // Create dialog if it doesn't exist
+    if (!this.dialog) {
+      this.createDialog()
+    }
+
+    const dialog = this.dialog
+    const overlay = this.overlay
+
+    if (!dialog || !overlay) return
+
+    // Show overlay
+    overlay.classList.remove('hidden')
+    overlay.style.display = 'flex'
+    overlay.style.pointerEvents = 'auto'
+
+    // Show dialog
+    dialog.classList.remove('hidden')
+    dialog.setAttribute('aria-hidden', 'false')
+
+    // Animate in
+    requestAnimationFrame(() => {
+      overlay.classList.remove('opacity-0')
+      overlay.classList.add('opacity-100')
+      dialog.classList.remove('opacity-0', 'scale-95')
+      dialog.classList.add('opacity-100', 'scale-100')
+    })
+
+    // Store focus for restoration
     this.previousFocus = document.activeElement
   }
-  
-  hide() {
-    if (!this.hasDialogTarget) return
-    
-    // Add animation classes
-    if (this.hasOverlayTarget) {
-      this.overlayTarget.classList.add('opacity-0')
-      this.overlayTarget.classList.remove('opacity-100')
-    }
-    this.dialogTarget.classList.add('opacity-0', 'translate-y-4')
-    this.dialogTarget.classList.remove('opacity-100', 'translate-y-0')
-    
-    // Hide dialog after animation
-    setTimeout(() => {
-      this.dialogTarget.classList.add('hidden')
-      this.dialogTarget.setAttribute('aria-hidden', 'true')
 
-      // Hide overlay and disable pointer events
-      if (this.hasOverlayTarget) {
-        this.overlayTarget.classList.add('hidden', 'pointer-events-none')
-      }
+  hide() {
+    const dialog = this.dialog
+    const overlay = this.overlay
+
+    if (!dialog || !overlay) return
+
+    // Animate out
+    overlay.classList.remove('opacity-100')
+    overlay.classList.add('opacity-0')
+    dialog.classList.remove('opacity-100', 'scale-100')
+    dialog.classList.add('opacity-0', 'scale-95')
+
+    // Hide after animation
+    setTimeout(() => {
+      dialog.classList.add('hidden')
+      dialog.setAttribute('aria-hidden', 'true')
+      overlay.classList.add('hidden')
+      overlay.style.display = 'none'
+      overlay.style.pointerEvents = 'none'
 
       // Restore focus
       if (this.previousFocus) {
         this.previousFocus.focus()
       }
-    }, 300)
+    }, 200)
   }
-  
-  handleKeyDown(event) {
-    // Skip all keyboard shortcuts when user is typing in an input field
-    const target = event.target
-    const isTyping = target.tagName === 'INPUT' ||
-                     target.tagName === 'TEXTAREA' ||
-                     target.isContentEditable ||
-                     target.closest('[contenteditable="true"]')
 
-    if (isTyping) {
-      // Don't intercept keystrokes when typing - allow question marks, etc.
-      return
-    }
-
-    // Check for keyboard shortcuts
-    if (event.key === '?' && (event.metaKey || event.ctrlKey)) {
-      // Show keyboard shortcuts dialog
-      event.preventDefault()
-      this.show()
-    }
-
-    // Add other global shortcuts as needed
-    const shortcuts = {
-      // Navigation shortcuts
-      'd': () => this.navigateTo('/dashboard'),
-      's': () => this.navigateTo('/search'),
-      'r': () => this.navigateTo('/rag'),
-      'u': () => this.navigateTo('/upload'),
-
-      // Actions
-      't': () => this.toggleDarkMode(),
-
-      // Jump to sections
-      '1': () => this.jumpToSection('documents'),
-      '2': () => this.jumpToSection('search'),
-      '3': () => this.jumpToSection('analytics')
-    }
-
-    // Check if a key combo is pressed while holding Alt
-    if (event.altKey && shortcuts[event.key]) {
-      event.preventDefault()
-      shortcuts[event.key]()
-    }
-  }
-  
   createDialog() {
-    // Create dialog element if it doesn't exist
-    const dialog = document.createElement('div')
-    dialog.setAttribute('role', 'dialog')
-    dialog.setAttribute('aria-labelledby', 'keyboard-shortcuts-title')
-    dialog.setAttribute('aria-modal', 'true')
-    dialog.setAttribute('data-keyboard-shortcuts-target', 'dialog')
-    dialog.classList.add(
-      'fixed', 'z-50', 'inset-0', 'overflow-y-auto', 'hidden', 
-      'opacity-0', 'translate-y-4', 'transition-all', 'duration-300', 'ease-out'
-    )
-    
     // Create overlay
     const overlay = document.createElement('div')
-    overlay.setAttribute('data-keyboard-shortcuts-target', 'overlay')
-    overlay.classList.add(
-      'fixed', 'inset-0', 'bg-gray-500', 'bg-opacity-75', 'transition-opacity',
-      'duration-300', 'ease-out', 'opacity-0', 'pointer-events-none', 'hidden'
-    )
-    
-    // Create dialog content
+    overlay.className = 'fixed inset-0 bg-black/50 z-40 hidden opacity-0 transition-opacity duration-200'
+    overlay.style.display = 'none'
+    overlay.style.pointerEvents = 'none'
+    overlay.addEventListener('click', () => this.hide())
+
+    // Create dialog
+    const dialog = document.createElement('div')
+    dialog.className = 'fixed inset-0 z-50 flex items-center justify-center hidden opacity-0 scale-95 transition-all duration-200'
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('aria-modal', 'true')
+    dialog.setAttribute('aria-labelledby', 'shortcuts-title')
+    dialog.setAttribute('aria-hidden', 'true')
+
     dialog.innerHTML = `
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full p-6">
-          <div class="absolute top-0 right-0 pt-4 pr-4">
-            <button type="button" data-action="keyboard-shortcuts#hide" class="bg-white dark:bg-gray-800 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-              <span class="sr-only">Close</span>
-              <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 id="shortcuts-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+            Keyboard Shortcuts
+          </h2>
+          <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Close">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Navigation</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-700 dark:text-gray-300">Dashboard</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">Alt + D</kbd>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-700 dark:text-gray-300">Search</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">Alt + S</kbd>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-700 dark:text-gray-300">RAG Chat</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">Alt + R</kbd>
+              </div>
+            </div>
           </div>
-          <div class="sm:flex sm:items-start">
-            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-              <h3 class="text-lg leading-6 font-medium kv-text-primary" id="keyboard-shortcuts-title">
-                Keyboard Shortcuts
-              </h3>
-              <div class="mt-4 space-y-4">
-                <div>
-                  <h4 class="font-medium text-sm kv-text-accent mb-2">Navigation</h4>
-                  <div class="grid grid-cols-2 gap-y-2">
-                    <div class="flex items-center">
-                      <kbd class="px-2 py-1 text-xs font-semibold kv-bg-secondary text-white rounded">Alt + D</kbd>
-                      <span class="ml-2 text-sm kv-text-secondary">Dashboard</span>
-                    </div>
-                    <div class="flex items-center">
-                      <kbd class="px-2 py-1 text-xs font-semibold kv-bg-secondary text-white rounded">Alt + S</kbd>
-                      <span class="ml-2 text-sm kv-text-secondary">Search</span>
-                    </div>
-                    <div class="flex items-center">
-                      <kbd class="px-2 py-1 text-xs font-semibold kv-bg-secondary text-white rounded">Alt + R</kbd>
-                      <span class="ml-2 text-sm kv-text-secondary">RAG</span>
-                    </div>
-                    <div class="flex items-center">
-                      <kbd class="px-2 py-1 text-xs font-semibold kv-bg-secondary text-white rounded">Alt + U</kbd>
-                      <span class="ml-2 text-sm kv-text-secondary">Upload</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 class="font-medium text-sm kv-text-accent mb-2">Actions</h4>
-                  <div class="grid grid-cols-2 gap-y-2">
-                    <div class="flex items-center">
-                      <kbd class="px-2 py-1 text-xs font-semibold kv-bg-secondary text-white rounded">Alt + T</kbd>
-                      <span class="ml-2 text-sm kv-text-secondary">Toggle Dark Mode</span>
-                    </div>
-                    <div class="flex items-center">
-                      <kbd class="px-2 py-1 text-xs font-semibold kv-bg-secondary text-white rounded">Ctrl + ?</kbd>
-                      <span class="ml-2 text-sm kv-text-secondary">Show This Menu</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 class="font-medium text-sm kv-text-accent mb-2">Jump to Sections</h4>
-                  <div class="grid grid-cols-2 gap-y-2">
-                    <div class="flex items-center">
-                      <kbd class="px-2 py-1 text-xs font-semibold kv-bg-secondary text-white rounded">Alt + 1</kbd>
-                      <span class="ml-2 text-sm kv-text-secondary">Documents</span>
-                    </div>
-                    <div class="flex items-center">
-                      <kbd class="px-2 py-1 text-xs font-semibold kv-bg-secondary text-white rounded">Alt + 2</kbd>
-                      <span class="ml-2 text-sm kv-text-secondary">Search</span>
-                    </div>
-                    <div class="flex items-center">
-                      <kbd class="px-2 py-1 text-xs font-semibold kv-bg-secondary text-white rounded">Alt + 3</kbd>
-                      <span class="ml-2 text-sm kv-text-secondary">Analytics</span>
-                    </div>
-                  </div>
-                </div>
+
+          <div>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Actions</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-700 dark:text-gray-300">Toggle Dark Mode</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">Alt + T</kbd>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-700 dark:text-gray-300">Show Shortcuts</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">Ctrl + ?</kbd>
               </div>
             </div>
           </div>
         </div>
+
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+            Press <kbd class="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Esc</kbd> to close
+          </p>
+        </div>
       </div>
     `
-    
-    // Append dialog to the body
+
+    // Add close button handler
+    const closeBtn = dialog.querySelector('button')
+    closeBtn.addEventListener('click', () => this.hide())
+
+    // Close on Escape key
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.hide()
+    })
+
+    // Append to body
     document.body.appendChild(overlay)
     document.body.appendChild(dialog)
-    
-    // Store references
-    this.dialogTarget = dialog
-    this.overlayTarget = overlay
+
+    // Store references (NOT as targets)
+    this._overlay = overlay
+    this._dialog = dialog
   }
-  
-  // Navigation helper
-  navigateTo(path) {
-    if (window.location.pathname !== path) {
-      window.location.href = path
-    }
-  }
-  
-  // Toggle dark mode
+
   toggleDarkMode() {
     const darkModeController = document.querySelector('[data-controller="dark-mode"]')
     if (darkModeController) {
-      const action = darkModeController.getAttribute('data-action')
-      if (action && action.includes('dark-mode#toggle')) {
-        darkModeController.click()
-      }
-    }
-  }
-  
-  // Jump to a section on the page
-  jumpToSection(sectionId) {
-    const section = document.getElementById(sectionId)
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' })
-      section.focus()
+      darkModeController.click()
     }
   }
 }

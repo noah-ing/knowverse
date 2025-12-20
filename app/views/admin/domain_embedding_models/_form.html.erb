@@ -1,17 +1,17 @@
 <%= form_with(model: [:admin, @organization, domain_model], local: true, class: "space-y-6 animate-in fade-in duration-500 w-full") do |form| %>
   <% if domain_model.errors.any? %>
-    <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-6 animate-in fade-in duration-300 rounded-r-lg shadow-sm" style="animation-delay: 0.1s">
+    <div class="bg-red-50/30 border-l-4 border-red-500 p-4 mb-6 animate-in fade-in duration-300 rounded-r-lg shadow-sm" style="animation-delay: 0.1s">
       <div class="flex">
         <div class="flex-shrink-0">
-          <svg class="h-5 w-5 text-red-400 dark:text-red-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
           </svg>
         </div>
         <div class="ml-3">
-          <h3 class="text-sm font-medium text-red-800 dark:text-red-300">
+          <h3 class="text-sm font-medium text-red-800">
             <%= pluralize(domain_model.errors.count, "error") %> prohibited this domain embedding model from being saved:
           </h3>
-          <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+          <div class="mt-2 text-sm text-red-700">
             <ul class="list-disc pl-5 space-y-1">
               <% domain_model.errors.full_messages.each do |message| %>
                 <li><%= message %></li>
@@ -38,7 +38,7 @@
         <%= form.label :name, class: "block text-sm font-medium kv-text-primary mb-1" %>
         <div class="relative rounded-md shadow-sm">
           <%= form.text_field :name, 
-                      class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
+                      class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
                       placeholder: "Medical Terminology Model",
                       aria: { label: "Model Name" } %>
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -54,7 +54,7 @@
         <%= form.label :domain, class: "block text-sm font-medium kv-text-primary mb-1" %>
         <div class="relative rounded-md shadow-sm">
           <%= form.text_field :domain, 
-                      class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
+                      class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
                       placeholder: "medical",
                       aria: { label: "Domain Name" } %>
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -72,7 +72,7 @@
           <%= form.select :base_model, 
                       options_for_select(['mini', 'small', 'base', 'large', 'xl'], domain_model.base_model), 
                       {}, 
-                      { class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200",
+                      { class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200",
                         aria: { label: "Base Model" } } %>
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
@@ -95,7 +95,7 @@
                         ["XL (2048)", 2048]
                       ], domain_model.dimension || 1024), 
                       {}, 
-                      { class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200",
+                      { class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200",
                         aria: { label: "Dimension" } } %>
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
@@ -110,7 +110,7 @@
         <%= form.label :version, class: "block text-sm font-medium kv-text-primary mb-1" %>
         <div class="relative rounded-md shadow-sm">
           <%= form.text_field :version, 
-                      class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
+                      class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
                       placeholder: "1.0",
                       aria: { label: "Version" } %>
           <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -127,7 +127,7 @@
         <div class="relative rounded-md shadow-sm">
           <%= form.text_area :description, 
                       rows: 4, 
-                      class: "mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
+                      class: "mt-1 block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md transition-colors duration-200", 
                       placeholder: "Specialized for medical terminology and healthcare documents...",
                       aria: { label: "Description" } %>
         </div>
@@ -150,18 +150,18 @@
       <%= form.label :
 <%= form_with(model: [:admin, @organization, domain_model], local: true, class: "space-y-6 animate-fade-in") do |form| %>
   <% if domain_model.errors.any? %>
-    <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-6 animate-fade-in" style="animation-delay: 0.1s">
+    <div class="bg-red-50/30 border-l-4 border-red-500 p-4 mb-6 animate-fade-in" style="animation-delay: 0.1s">
       <div class="flex">
         <div class="flex-shrink-0">
-          <svg class="h-5 w-5 text-red-400 dark:text-red-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
           </svg>
         </div>
         <div class="ml-3">
-          <h3 class="text-sm font-medium text-red-800 dark:text-red-300">
+          <h3 class="text-sm font-medium text-red-800">
             <%= pluralize(domain_model.errors.count, "error") %> prohibited this domain embedding model from being saved:
           </h3>
-          <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+          <div class="mt-2 text-sm text-red-700">
             <ul class="list-disc pl-5 space-y-1">
               <% domain_model.errors.full_messages.each do |message| %>
                 <li><%= message %></li>
@@ -194,19 +194,19 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="col-span-1 animate-fade-in" style="animation-delay: 0.35s">
             <%= form.label :name, class: "block text-sm font-medium kv-text-primary" %>
-            <%= form.text_field :name, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md transition", placeholder: "Medical Terminology Model" %>
+            <%= form.text_field :name, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md transition", placeholder: "Medical Terminology Model" %>
             <p class="mt-2 text-sm kv-text-secondary">A descriptive name for the model.</p>
           </div>
 
           <div class="col-span-1 animate-fade-in" style="animation-delay: 0.4s">
             <%= form.label :domain, class: "block text-sm font-medium kv-text-primary" %>
-            <%= form.text_field :domain, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md transition", placeholder: "medical" %>
+            <%= form.text_field :domain, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md transition", placeholder: "medical" %>
             <p class="mt-2 text-sm kv-text-secondary">Domain name (lowercase, no spaces).</p>
           </div>
 
           <div class="col-span-1 animate-fade-in" style="animation-delay: 0.45s">
             <%= form.label :base_model, class: "block text-sm font-medium kv-text-primary" %>
-            <%= form.select :base_model, options_for_select(['mini', 'small', 'base', 'large', 'xl'], domain_model.base_model), {}, { class: "mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition" } %>
+            <%= form.select :base_model, options_for_select(['mini', 'small', 'base', 'large', 'xl'], domain_model.base_model), {}, { class: "mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition" } %>
             <p class="mt-2 text-sm kv-text-secondary">Base embedding model to extend.</p>
           </div>
 
@@ -218,19 +218,19 @@
               ["Base (1024)", 1024],
               ["Large (1536)", 1536],
               ["XL (2048)", 2048]
-            ], domain_model.dimension || 1024), {}, { class: "mt-1 block w-full py-2 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition" } %>
+            ], domain_model.dimension || 1024), {}, { class: "mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition" } %>
             <p class="mt-2 text-sm kv-text-secondary">Embedding dimension (should match the base model).</p>
           </div>
 
           <div class="col-span-1 animate-fade-in" style="animation-delay: 0.55s">
             <%= form.label :version, class: "block text-sm font-medium kv-text-primary" %>
-            <%= form.text_field :version, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md transition", placeholder: "1.0" %>
+            <%= form.text_field :version, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md transition", placeholder: "1.0" %>
             <p class="mt-2 text-sm kv-text-secondary">Version identifier for this model.</p>
           </div>
 
           <div class="col-span-1 md:col-span-2 animate-fade-in" style="animation-delay: 0.6s">
             <%= form.label :description, class: "block text-sm font-medium kv-text-primary" %>
-            <%= form.text_area :description, rows: 4, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md transition", placeholder: "Specialized for medical terminology and healthcare documents..." %>
+            <%= form.text_area :description, rows: 4, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md transition", placeholder: "Specialized for medical terminology and healthcare documents..." %>
             <p class="mt-2 text-sm kv-text-secondary">Detailed description of the model and its use cases.</p>
           </div>
         </div>
@@ -259,7 +259,7 @@
       <div class="animate-fade-in" style="animation-delay: 0.75s">
         <div>
           <%= form.label :configuration, "Model Configuration (JSON)", class: "block text-sm font-medium kv-text-primary" %>
-          <%= form.text_area :configuration, rows: 6, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md font-mono transition", placeholder: '{ "training_params": { "epochs": 5, "learning_rate": 0.001 } }' %>
+          <%= form.text_area :configuration, rows: 6, class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md font-mono transition", placeholder: '{ "training_params": { "epochs": 5, "learning_rate": 0.001 } }' %>
           <p class="mt-2 text-sm kv-text-secondary">Optional: Advanced configuration in JSON format.</p>
           </div>
         </div>
@@ -277,6 +277,6 @@
           
     <%= form.button domain_model.new_record? ? "Create Domain Model" : "Update Domain Model", 
           type: "submit",
-          class: "ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition transform hover:scale-105 duration-200" %>
+          class: "ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition transform hover:scale-105 duration-200" %>
   </div>
 <% end %>

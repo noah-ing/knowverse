@@ -2,7 +2,7 @@
   <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-8 animate-in fade-in duration-300 ease-out">
     <div class="mb-4 md:mb-0">
       <h1 class="text-2xl font-bold kv-text-primary">Search Metrics & Analytics</h1>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Monitor search performance and user feedback across the platform</p>
+      <p class="mt-1 text-sm text-gray-600">Monitor search performance and user feedback across the platform</p>
     </div>
     <div class="flex flex-wrap gap-3">
       <%= render 'shared/button', 
@@ -34,13 +34,13 @@
       classes: "overflow-hidden",
       full_width: true do %>
       <div class="flex items-center">
-        <div class="flex-shrink-0 bg-indigo-500 dark:bg-indigo-600 rounded-md p-3">
+        <div class="flex-shrink-0 bg-indigo-500 rounded-md p-3">
           <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div class="ml-5 w-0 flex-1">
-          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+          <dt class="text-sm font-medium text-gray-500 truncate">
             Total Queries
           </dt>
           <dd class="flex items-baseline">
@@ -48,8 +48,8 @@
               <%= number_with_delimiter(@stats[:total_queries]) %>
             </div>
             <div class="ml-2 text-sm">
-              <span class="font-medium text-green-500 dark:text-green-400">+<%= @stats[:queries_today] %></span>
-              <span class="text-gray-500 dark:text-gray-400">today</span>
+              <span class="font-medium text-green-500">+<%= @stats[:queries_today] %></span>
+              <span class="text-gray-500">today</span>
             </div>
           </dd>
         </div>
@@ -63,20 +63,20 @@
       classes: "overflow-hidden",
       full_width: true do %>
       <div class="flex items-center">
-        <div class="flex-shrink-0 bg-green-500 dark:bg-green-600 rounded-md p-3">
+        <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
           <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div class="ml-5 w-0 flex-1">
-          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+          <dt class="text-sm font-medium text-gray-500 truncate">
             Feedback Rate
           </dt>
           <dd class="flex items-baseline">
             <div class="text-2xl font-semibold kv-text-primary">
               <%= number_to_percentage(@stats[:feedback_percentage], precision: 1) %>
             </div>
-            <div class="ml-2 text-sm text-gray-500 dark:text-gray-400">
+            <div class="ml-2 text-sm text-gray-500">
               <span><%= number_with_delimiter(@stats[:total_feedback]) %> total feedback</span>
             </div>
           </dd>
@@ -91,20 +91,20 @@
       classes: "overflow-hidden",
       full_width: true do %>
       <div class="flex items-center">
-        <div class="flex-shrink-0 bg-yellow-500 dark:bg-yellow-600 rounded-md p-3">
+        <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
           <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
           </svg>
         </div>
         <div class="ml-5 w-0 flex-1">
-          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+          <dt class="text-sm font-medium text-gray-500 truncate">
             Average Relevance Score
           </dt>
           <dd class="flex items-baseline">
             <div class="text-2xl font-semibold kv-text-primary">
               <%= @stats[:average_relevance] %> / 5
             </div>
-            <% score_class = @stats[:average_relevance] >= 4 ? 'text-green-500 dark:text-green-400 bg-green-100 dark:bg-green-900' : (@stats[:average_relevance] >= 3 ? 'text-yellow-500 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900' : 'text-red-500 dark:text-red-400 bg-red-100 dark:bg-red-900') %>
+            <% score_class = @stats[:average_relevance] >= 4 ? 'text-green-500 bg-green-100' : (@stats[:average_relevance] >= 3 ? 'text-yellow-500 bg-yellow-100' : 'text-red-500 bg-red-100') %>
             <div class="ml-2">
               <span class="inline-flex items-baseline px-2.5 py-0.5 rounded-full text-sm font-medium <%= score_class %>">
                 <%= @stats[:average_relevance] >= 4 ? 'Great' : (@stats[:average_relevance] >= 3 ? 'Good' : 'Needs Improvement') %>
@@ -122,13 +122,13 @@
       classes: "overflow-hidden",
       full_width: true do %>
       <div class="flex items-center">
-        <div class="flex-shrink-0 bg-purple-500 dark:bg-purple-600 rounded-md p-3">
+        <div class="flex-shrink-0 bg-purple-500 rounded-md p-3">
           <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
           </svg>
         </div>
         <div class="ml-5 w-0 flex-1">
-          <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+          <dt class="text-sm font-medium text-gray-500 truncate">
             Top Search Provider
           </dt>
           <dd>
@@ -137,11 +137,11 @@
               <div class="text-lg font-semibold kv-text-primary">
                 <%= top_provider.first.humanize %>
               </div>
-              <div class="text-sm text-gray-500 dark:text-gray-400">
+              <div class="text-sm text-gray-500">
                 <%= number_to_percentage(top_provider.last.to_f / @stats[:total_queries] * 100, precision: 1) %> of all queries
               </div>
             <% else %>
-              <div class="text-lg font-semibold text-gray-400 dark:text-gray-500">No data yet</div>
+              <div class="text-lg font-semibold text-gray-400">No data yet</div>
             <% end %>
           </dd>
         </div>

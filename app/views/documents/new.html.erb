@@ -45,7 +45,7 @@
     <% doc_count = @organization.respond_to?(:documents) && @organization.documents.respond_to?(:count) ? @organization.documents.count : 0 %>
     <% usage_percent = @organization.respond_to?(:usage_percent) ? @organization.usage_percent(:documents) : 0 %>
     <% usage_percent = usage_percent.to_i rescue 0 %>
-    <% bar_color = usage_percent > 80 ? "bg-error-500 dark:bg-error-600" : "bg-primary-500 dark:bg-primary-600" %>
+    <% bar_color = usage_percent > 80 ? "bg-error-500" : "bg-primary-500" %>
     
     <%= render "shared/card",
       title: "Document Usage",
@@ -60,7 +60,7 @@
         </div>
         
         <div class="relative pt-1">
-          <div class="overflow-hidden h-2.5 mb-1 text-xs flex rounded-full bg-primary-100 dark:bg-primary-900 transition-colors duration-200">
+          <div class="overflow-hidden h-2.5 mb-1 text-xs flex rounded-full bg-primary-100 transition-colors duration-200">
             <div class="<%= bar_color %> h-2.5 rounded-full transition-all duration-500 relative" 
                  style="width:<%= usage_percent %>%">
             </div>
@@ -146,8 +146,8 @@
       <div class="animate-in fade-in duration-300" style="animation-delay: 200ms;">
         <label class="kv-label">Upload File</label>
         <div class="mt-1">
-          <div class="kv-file-drop-area group relative flex justify-center px-6 py-10 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md transition-colors duration-200
-                     hover:bg-gray-50 dark:hover:bg-gray-800"
+          <div class="kv-file-drop-area group relative flex justify-center px-6 py-10 border-2 border-gray-300 border-dashed rounded-md transition-colors duration-200
+                     hover:bg-gray-50"
                data-file-upload-target="dropzone"
                data-action="dragover->file-upload#highlight dragleave->file-upload#unhighlight drop->file-upload#unhighlight dragenter->file-upload#highlight">
             <div class="flex flex-col items-center justify-center space-y-1 text-center">
@@ -173,7 +173,7 @@
         </div>
 
         <%# File preview area (initially hidden) %>
-        <div class="mt-4 bg-gray-50 dark:bg-gray-800 rounded-md p-4 transition-colors duration-200 border-2 border-dashed border-gray-300 dark:border-gray-600" 
+        <div class="mt-4 bg-gray-50 rounded-md p-4 transition-colors duration-200 border-2 border-dashed border-gray-300" 
              data-file-upload-target="preview">
           <div class="flex items-center justify-between">
             <div class="flex items-center">
@@ -189,7 +189,7 @@
                     class="ml-4 flex-shrink-0 kv-btn kv-btn-ghost kv-btn-xs rounded-full opacity-50 cursor-not-allowed"
                     data-action="click->file-upload#removeFile"
                     disabled>
-              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <svg class="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
               </svg>
             </button>
@@ -213,7 +213,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
           </svg>
-          <div class="absolute inset-0 rounded-md transition-opacity duration-200 bg-white opacity-0 hover:opacity-10 active:opacity-20 dark:bg-black dark:hover:opacity-20 dark:active:opacity-30"></div>
+          <div class="absolute inset-0 rounded-md transition-opacity duration-200 bg-white opacity-0 hover:opacity-10 active:opacity-20"></div>
         </button>
       </div>
     <% end %>
@@ -251,35 +251,35 @@
       </p>
     </div>
     
-    <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 transition-colors duration-200">
+    <div class="mt-6 pt-4 border-t border-gray-200 transition-colors duration-200">
       <h4 class="text-sm font-medium kv-text-primary mb-3">Supported File Types</h4>
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        <div class="flex items-center p-2 rounded-md bg-gray-50 dark:bg-gray-800 text-xs kv-text-primary transition-all hover:bg-primary-50 dark:hover:bg-primary-900">
-          <svg class="h-4 w-4 text-primary-600 dark:text-primary-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <div class="flex items-center p-2 rounded-md bg-gray-50 text-xs kv-text-primary transition-all hover:bg-primary-50">
+          <svg class="h-4 w-4 text-primary-600 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
           </svg>
           PDF (.pdf)
         </div>
-        <div class="flex items-center p-2 rounded-md bg-gray-50 dark:bg-gray-800 text-xs kv-text-primary transition-all hover:bg-primary-50 dark:hover:bg-primary-900">
-          <svg class="h-4 w-4 text-primary-600 dark:text-primary-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <div class="flex items-center p-2 rounded-md bg-gray-50 text-xs kv-text-primary transition-all hover:bg-primary-50">
+          <svg class="h-4 w-4 text-primary-600 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
           </svg>
           Word (.docx)
         </div>
-        <div class="flex items-center p-2 rounded-md bg-gray-50 dark:bg-gray-800 text-xs kv-text-primary transition-all hover:bg-primary-50 dark:hover:bg-primary-900">
-          <svg class="h-4 w-4 text-primary-600 dark:text-primary-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <div class="flex items-center p-2 rounded-md bg-gray-50 text-xs kv-text-primary transition-all hover:bg-primary-50">
+          <svg class="h-4 w-4 text-primary-600 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
           </svg>
           Text (.txt)
         </div>
-        <div class="flex items-center p-2 rounded-md bg-gray-50 dark:bg-gray-800 text-xs kv-text-primary transition-all hover:bg-primary-50 dark:hover:bg-primary-900">
-          <svg class="h-4 w-4 text-primary-600 dark:text-primary-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <div class="flex items-center p-2 rounded-md bg-gray-50 text-xs kv-text-primary transition-all hover:bg-primary-50">
+          <svg class="h-4 w-4 text-primary-600 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
           </svg>
           CSV (.csv)
         </div>
-        <div class="flex items-center p-2 rounded-md bg-gray-50 dark:bg-gray-800 text-xs kv-text-primary transition-all hover:bg-primary-50 dark:hover:bg-primary-900">
-          <svg class="h-4 w-4 text-primary-600 dark:text-primary-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <div class="flex items-center p-2 rounded-md bg-gray-50 text-xs kv-text-primary transition-all hover:bg-primary-50">
+          <svg class="h-4 w-4 text-primary-600 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
           </svg>
           Excel (.xlsx)

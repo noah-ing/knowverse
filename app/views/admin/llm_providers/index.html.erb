@@ -50,7 +50,7 @@
       
           <div class="animate-fade-in" style="animation-delay: 0.25s">
             <% if @providers.present? %>
-              <ul class="mt-4 divide-y divide-gray-200 dark:divide-gray-700">
+              <ul class="mt-4 divide-y divide-gray-200">
                 <% @providers.each_with_index do |provider, index| %>
                   <li class="py-3 transition-all duration-300 animate-fade-in" style="animation-delay: <%= 0.3 + (index * 0.05) %>s">
                     <div class="flex items-center justify-between">
@@ -67,10 +67,10 @@
                            end %>
                         <div class="flex items-center">
                           <%= raw provider_icon %>
-                          <p class="text-blue-600 dark:text-blue-400 font-medium truncate">
+                          <p class="text-blue-600 font-medium truncate">
                             <%= provider[:name] %>
                             <% if provider[:default] %>
-                              <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                              <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 Default
                               </span>
                             <% end %>

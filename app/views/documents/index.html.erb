@@ -10,8 +10,6 @@
     </div>
     <div class="flex items-center space-x-4">
       <!-- Dark mode toggle -->
-      <div class="kv-dark-mode-toggle" data-controller="dark-mode" data-action="click->dark-mode#toggle" 
-          data-dark-mode-target="toggle" title="Toggle dark mode" role="switch" aria-checked="false"></div>
           
       <div class="flex flex-wrap gap-3">
         <%= render "shared/button", 
@@ -103,7 +101,7 @@
         
           <!-- Advanced Filters - Hidden by Default -->
           <div class="mt-6 hidden" data-document-filters-target="advancedFilters">
-            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-md transition-colors duration-200">
+            <div class="p-4 bg-gray-50 rounded-md transition-colors duration-200">
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <!-- File Type Filter -->
                 <div class="sm:col-span-2">
@@ -260,10 +258,10 @@
     classes: "mb-6 transition-all duration-200",
     header_actions: upload_header_actions.presence
   } do %>
-    <div id="upload-form" class="hidden border-t border-gray-200 dark:border-gray-700 transition-colors duration-200">
+    <div id="upload-form" class="hidden border-t border-gray-200 transition-colors duration-200">
       <div class="kv-card-body">
         <%= form_with url: upload_organization_documents_path(@organization), method: :post, multipart: true, class: "space-y-6", id: "file-upload-form" do |form| %>
-          <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-md transition-colors duration-200" id="drop-area">
+          <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md transition-colors duration-200" id="drop-area">
             <div class="space-y-1 text-center">
               <svg class="mx-auto h-12 w-12 kv-text-secondary" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -283,7 +281,7 @@
           
           <div id="file-list" class="hidden space-y-2">
             <h4 class="text-sm font-medium kv-text-primary">Files to upload:</h4>
-            <ul class="mt-1 border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-200 dark:divide-gray-700 transition-colors duration-200"></ul>
+            <ul class="mt-1 border border-gray-200 rounded-md divide-y divide-gray-200 transition-colors duration-200"></ul>
           </div>
           
           <div class="flex flex-wrap justify-end gap-3">
@@ -310,9 +308,9 @@
     <!-- View Toggle -->
     <div class="flex items-center gap-2" data-controller="view-toggle">
       <label class="sr-only" for="view-style">View Style</label>
-      <div class="flex items-center space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-md transition-colors duration-200">
+      <div class="flex items-center space-x-1 bg-gray-100 p-1 rounded-md transition-colors duration-200">
         <button type="button" 
-               class="view-toggle-btn flex items-center justify-center h-8 w-8 rounded text-sm font-medium kv-text-primary bg-white dark:bg-gray-700 shadow-sm transition-all duration-200" 
+               class="view-toggle-btn flex items-center justify-center h-8 w-8 rounded text-sm font-medium kv-text-primary bg-white shadow-sm transition-all duration-200" 
                data-view-toggle-target="gridBtn" 
                data-action="click->view-toggle#switchToGrid" 
                aria-pressed="true"
@@ -350,29 +348,29 @@
           <%= link_to organization_document_path(@organization, document), class: "group animate-in fade-in duration-300 ease-out", style: "animation-delay: #{(300 + index * 50)}ms" do %>
             <div class="document-card kv-card h-full overflow-hidden flex flex-col hover:shadow-md transition-all duration-200 transform hover:-translate-y-1">
               <!-- Document preview thumbnail -->
-              <div class="relative h-36 bg-gray-100 dark:bg-gray-800 transition-colors duration-200 border-b border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div class="relative h-36 bg-gray-100 transition-colors duration-200 border-b border-gray-200 overflow-hidden">
                 <% if document.file_type&.include?('image') %>
                   <div class="absolute inset-0 bg-cover bg-center" style="background-image: url(<%= url_for(document.file) if document.file.attached? %>)"></div>
                   <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                 <% else %>
                   <% icon_color = case document.file_type&.split('/')&.first
-                                when 'image' then 'text-pink-500 dark:text-pink-400'
+                                when 'image' then 'text-pink-500'
                                 when 'application' 
                                   if document.file_type&.include?('pdf')
-                                    'text-red-500 dark:text-red-400'
+                                    'text-red-500'
                                   elsif document.file_type&.include?('word') || document.file_type&.include?('docx')
-                                    'text-blue-500 dark:text-blue-400'
+                                    'text-blue-500'
                                   elsif document.file_type&.include?('excel') || document.file_type&.include?('spreadsheet')
-                                    'text-green-500 dark:text-green-400'
+                                    'text-green-500'
                                   else
-                                    'text-amber-500 dark:text-amber-400'
+                                    'text-amber-500'
                                   end
-                                when 'text' then 'text-blue-500 dark:text-blue-400'
+                                when 'text' then 'text-blue-500'
                                 else 'kv-text-secondary'
                                 end %>
                   
                   <div class="flex flex-col items-center justify-center h-full p-4">
-                    <div class="flex items-center justify-center p-4 mb-2 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors duration-200">
+                    <div class="flex items-center justify-center p-4 mb-2 rounded-full bg-gray-200 transition-colors duration-200">
                       <% if document.file_type&.include?('pdf') %>
                         <svg class="h-10 w-10 <%= icon_color %>" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -440,13 +438,13 @@
               <div class="p-4 flex-grow flex flex-col justify-between">
                 <div>
                   <div class="flex justify-between items-start">
-                    <h3 class="text-sm font-medium kv-text-accent line-clamp-2 mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
+                    <h3 class="text-sm font-medium kv-text-accent line-clamp-2 mb-1 group-hover:text-primary-600 transition-colors duration-200">
                       <%= document.title %>
                     </h3>
                     <%= button_to organization_document_path(@organization, document), 
                       method: :delete,
                       form: { data: { turbo_confirm: "Are you sure you want to delete this document?" }, class: "inline" },
-                      class: "text-gray-400 hover:text-error-500 dark:hover:text-error-400 transition-colors duration-200",
+                      class: "text-gray-400 hover:text-error-500 transition-colors duration-200",
                       title: "Delete document", 
                       onClick: "event.stopPropagation(); event.preventDefault(); if(confirm('Are you sure you want to delete this document?')) { this.closest('form').submit(); }" do %>
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -456,7 +454,7 @@
                   </div>
                   <div class="flex flex-wrap items-center gap-2 mt-2">
                     <% if document.word_count && document.word_count > 0 %>
-                      <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-100 dark:bg-gray-800 kv-text-secondary transition-colors duration-200">
+                      <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-100 kv-text-secondary transition-colors duration-200">
                         <%= document.word_count %> words
                       </span>
                     <% end %>
@@ -469,11 +467,11 @@
                 <!-- Status badges -->
                 <div class="mt-4 flex flex-wrap gap-2">
                   <% doc_status_class = case document.status
-                                       when 'processed' then 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'
-                                       when 'processing' then 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200'
-                                       when 'pending' then 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200'
-                                       when 'error' then 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200'
-                                       else 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                       when 'processed' then 'bg-success-100 text-success-800'
+                                       when 'processing' then 'bg-warning-100 text-warning-800'
+                                       when 'pending' then 'bg-primary-100 text-primary-800'
+                                       when 'error' then 'bg-error-100 text-error-800'
+                                       else 'bg-gray-100 text-gray-800'
                                        end %>
                                        
                   <span class="document-status status-<%= document.status %> inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= doc_status_class %>">
@@ -481,11 +479,11 @@
                   </span>
                   
                   <% embedding_status_class = case document.embedding_status
-                                             when 'processed' then 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'
-                                             when 'processing' then 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200'
-                                             when 'pending' then 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200'
-                                             when 'error' then 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200'
-                                             else 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                             when 'processed' then 'bg-success-100 text-success-800'
+                                             when 'processing' then 'bg-warning-100 text-warning-800'
+                                             when 'pending' then 'bg-primary-100 text-primary-800'
+                                             when 'error' then 'bg-error-100 text-error-800'
+                                             else 'bg-gray-100 text-gray-800'
                                              end %>
                                              
                   <span class="document-status status-<%= document.embedding_status %> inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= embedding_status_class %>">
@@ -496,7 +494,7 @@
                   </span>
                   
                   <% if document.search_ready? %>
-                    <span class="document-status status-processed inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200">
+                    <span class="document-status status-processed inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
@@ -512,8 +510,8 @@
 
       <!-- List view, hidden by default -->
       <div class="hidden" data-view-toggle-target="listView">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 transition-colors duration-200">
-          <thead class="bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
+        <table class="min-w-full divide-y divide-gray-200 transition-colors duration-200">
+          <thead class="bg-gray-50 transition-colors duration-200">
             <tr>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Title</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">File Type</th>
@@ -523,7 +521,7 @@
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody class="bg-white divide-y divide-gray-200">
             <% @documents.each do |document| %>
               <tr>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -536,11 +534,11 @@
                   <div class="flex flex-col gap-1">
                     <!-- Document Status -->
                     <% doc_status_class = case document.status
-                                         when 'processed' then 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'
-                                         when 'processing' then 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200'
-                                         when 'pending' then 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200'
-                                         when 'error' then 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200'
-                                         else 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                         when 'processed' then 'bg-success-100 text-success-800'
+                                         when 'processing' then 'bg-warning-100 text-warning-800'
+                                         when 'pending' then 'bg-primary-100 text-primary-800'
+                                         when 'error' then 'bg-error-100 text-error-800'
+                                         else 'bg-gray-100 text-gray-800'
                                          end %>
                     <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium <%= doc_status_class %>">
                       Doc: <%= document.status.capitalize %>
@@ -548,11 +546,11 @@
                     
                     <!-- Embedding Status -->
                     <% embedding_status_class = case document.embedding_status
-                                               when 'processed' then 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200'
-                                               when 'processing' then 'bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-200'
-                                               when 'pending' then 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200'
-                                               when 'error' then 'bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-200'
-                                               else 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                               when 'processed' then 'bg-success-100 text-success-800'
+                                               when 'processing' then 'bg-warning-100 text-warning-800'
+                                               when 'pending' then 'bg-primary-100 text-primary-800'
+                                               when 'error' then 'bg-error-100 text-error-800'
+                                               else 'bg-gray-100 text-gray-800'
                                                end %>
                     <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium <%= embedding_status_class %>">
                       Emb: <%= document.embedding_status.capitalize %>
@@ -569,7 +567,7 @@
                   <%= button_to organization_document_path(@organization, document), 
                       method: :delete,
                       form: { data: { turbo_confirm: "Are you sure you want to delete this document?" }, class: "inline" },
-                      class: "text-gray-400 hover:text-error-500 dark:hover:text-error-400 transition-colors duration-200",
+                      class: "text-gray-400 hover:text-error-500 transition-colors duration-200",
                       title: "Delete document" do %>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

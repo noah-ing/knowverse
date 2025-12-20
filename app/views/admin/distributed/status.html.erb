@@ -17,19 +17,19 @@
         animate_delay: "100ms" do %>
         <div class="space-y-3">
           <div class="flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Node ID:</span>
+            <span class="text-gray-600">Node ID:</span>
             <span class="font-medium kv-text-primary"><%= @cluster_status[:node_id] %></span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Configuration Version:</span>
+            <span class="text-gray-600">Configuration Version:</span>
             <span class="font-medium kv-text-primary"><%= @cluster_status[:config_version] %></span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Total Nodes:</span>
+            <span class="text-gray-600">Total Nodes:</span>
             <span class="font-medium kv-text-primary"><%= @cluster_status[:active_nodes]&.size || 0 %></span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Current Leader:</span>
+            <span class="text-gray-600">Current Leader:</span>
             <span class="font-medium kv-text-primary"><%= @cluster_status[:raft_leader] || 'None' %></span>
           </div>
         </div>
@@ -44,27 +44,27 @@
         animate_delay: "150ms" do %>
         <div class="space-y-3">
           <div class="flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Current Role:</span>
+            <span class="text-gray-600">Current Role:</span>
             <span class="font-medium">
               <% case @cluster_status[:raft_state] %>
               <% when 0 %>
-                <span class="px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">Follower</span>
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800">Follower</span>
               <% when 1 %>
-                <span class="px-2 py-1 rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100">Candidate</span>
+                <span class="px-2 py-1 rounded bg-yellow-100 text-yellow-800">Candidate</span>
               <% when 2 %>
-                <span class="px-2 py-1 rounded bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">Leader</span>
+                <span class="px-2 py-1 rounded bg-green-100 text-green-800">Leader</span>
               <% else %>
-                <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">Unknown</span>
+                <span class="px-2 py-1 rounded bg-gray-100 text-gray-800">Unknown</span>
               <% end %>
             </span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Is Leader:</span>
+            <span class="text-gray-600">Is Leader:</span>
             <span class="font-medium">
               <% if @cluster_status[:node_id] == @cluster_status[:raft_leader] %>
-                <span class="px-2 py-1 rounded bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">Yes</span>
+                <span class="px-2 py-1 rounded bg-green-100 text-green-800">Yes</span>
               <% else %>
-                <span class="px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">No</span>
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800">No</span>
               <% end %>
             </span>
           </div>
@@ -80,45 +80,45 @@
     animate_delay: "250ms" do %>
     
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <table class="min-w-full divide-y divide-gray-200">
         <thead>
           <tr>
-            <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Shard ID</th>
-            <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vector Count</th>
-            <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Capacity</th>
-            <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Organizations</th>
+            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shard ID</th>
+            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vector Count</th>
+            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
+            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organizations</th>
           </tr>
         </thead>
-        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+        <tbody class="bg-white divide-y divide-gray-200">
           <% if @shard_metadata.present? %>
             <% @shard_metadata.each_with_index do |(shard_id, metadata), index| %>
-              <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 animate-in fade-in duration-300 ease-out" style="animation-delay: <%= 250 + (index * 50) %>ms">
+              <tr class="transition-colors hover:bg-gray-50 animate-in fade-in duration-300 ease-out" style="animation-delay: <%= 250 + (index * 50) %>ms">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium kv-text-primary">
                   <%= shard_id %>
                   <% if shard_id == @cluster_status[:node_id] %>
-                    <span class="ml-2 px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">Current</span>
+                    <span class="ml-2 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">Current</span>
                   <% end %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <% case metadata[:status] %>
                   <% when 'ready' %>
-                    <span class="px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">Ready</span>
+                    <span class="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">Ready</span>
                   <% when 'initializing' %>
-                    <span class="px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100">Initializing</span>
+                    <span class="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">Initializing</span>
                   <% when 'error' %>
-                    <span class="px-2 py-1 rounded-full text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100">Error</span>
+                    <span class="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">Error</span>
                   <% else %>
-                    <span class="px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"><%= metadata[:status]&.capitalize || 'Unknown' %></span>
+                    <span class="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800"><%= metadata[:status]&.capitalize || 'Unknown' %></span>
                   <% end %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <%= number_with_delimiter(metadata[:vector_count] || 0) %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <% if metadata[:vector_count] && metadata[:max_vectors] %>
                     <% usage_percent = (metadata[:vector_count].to_f / metadata[:max_vectors]) * 100 %>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
                       <div class="h-2.5 rounded-full <%= usage_percent > 80 ? 'bg-red-500' : (usage_percent > 50 ? 'bg-yellow-500' : 'bg-green-500') %>" style="width: <%= usage_percent %>%"></div>
                     </div>
                     <div class="mt-1 text-xs">
@@ -129,13 +129,13 @@
                     No data
                   <% end %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <% if metadata[:organizations]&.any? %>
                     <% org_count = metadata[:organizations].size %>
                     <span class="font-medium"><%= org_count %> organization<%= 's' if org_count != 1 %></span>
                     <div class="mt-1 space-y-1">
                       <% metadata[:organizations].take(3).each do |org_id| %>
-                        <div class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                        <div class="text-xs px-2 py-1 bg-gray-100 rounded">
                           ID: <%= org_id %>
                           <% if organization = Organization.find_by(id: org_id) %>
                             - <%= organization.name %>
@@ -143,7 +143,7 @@
                         </div>
                       <% end %>
                       <% if org_count > 3 %>
-                        <div class="text-xs text-gray-500 dark:text-gray-500">
+                        <div class="text-xs text-gray-500">
                           ... and <%= org_count - 3 %> more
                         </div>
                       <% end %>
@@ -156,13 +156,13 @@
             <% end %>
           <% else %>
             <tr>
-              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
                 <div class="py-6">
-                  <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <h3 class="mt-2 text-sm font-medium text-gray-600 dark:text-gray-400">No shard data</h3>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-500">No shard metadata is currently available.</p>
+                  <h3 class="mt-2 text-sm font-medium text-gray-600">No shard data</h3>
+                  <p class="mt-1 text-sm text-gray-500">No shard metadata is currently available.</p>
                 </div>
               </td>
             </tr>
@@ -179,46 +179,46 @@
     animate_delay: "350ms" do %>
     
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <table class="min-w-full divide-y divide-gray-200">
         <thead>
           <tr>
-            <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Organization ID</th>
-            <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Organization Name</th>
-            <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Assigned Shard</th>
-            <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Document Count</th>
+            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organization ID</th>
+            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organization Name</th>
+            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Shard</th>
+            <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document Count</th>
           </tr>
         </thead>
-        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+        <tbody class="bg-white divide-y divide-gray-200">
           <% if @organization_shards.present? %>
             <% @organization_shards.each_with_index do |(org_id, shard_id), index| %>
               <% organization = Organization.find_by(id: org_id) %>
-              <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 animate-in fade-in duration-300 ease-out" style="animation-delay: <%= 350 + (index * 50) %>ms">
+              <tr class="transition-colors hover:bg-gray-50 animate-in fade-in duration-300 ease-out" style="animation-delay: <%= 350 + (index * 50) %>ms">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium kv-text-primary">
                   <%= org_id %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <%= organization&.name || 'Unknown Organization' %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <%= shard_id %>
                   <% if shard_id == @cluster_status[:node_id] %>
-                    <span class="ml-2 px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">Current Node</span>
+                    <span class="ml-2 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">Current Node</span>
                   <% end %>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <%= number_with_delimiter(organization&.documents&.count || 0) %>
                 </td>
               </tr>
             <% end %>
           <% else %>
             <tr>
-              <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+              <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
                 <div class="py-6">
-                  <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                   </svg>
-                  <h3 class="mt-2 text-sm font-medium text-gray-600 dark:text-gray-400">No mappings found</h3>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-500">No organization to shard mappings are available.</p>
+                  <h3 class="mt-2 text-sm font-medium text-gray-600">No mappings found</h3>
+                  <p class="mt-1 text-sm text-gray-500">No organization to shard mappings are available.</p>
                 </div>
               </td>
             </tr>
