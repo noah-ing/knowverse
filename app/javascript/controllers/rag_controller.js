@@ -90,9 +90,12 @@ export default class extends Controller {
     this.queryTarget.value = ""
     this.queryTarget.focus()
     
-    // Show the response container
+    // Show the response container and clear any previous response
     this.responseContainerTarget.classList.remove('hidden')
-    
+    if (this.hasStreamingResponseTarget) {
+      this.streamingResponseTarget.textContent = ''
+    }
+
     // Reset the sources container
     this.sourcesContainerTarget.classList.add('hidden')
     this.sourcesTarget.innerHTML = ""
@@ -109,20 +112,14 @@ export default class extends Controller {
     if (!this.streamingDisplay) {
       this.initStreamingDisplay()
     } else {
-      // Reset the display
-      this.streamingDisplay.reset()
+      // Clear the display for next message
+      this.streamingDisplay.clear()
     }
     
-    // Check if streaming is enabled
-    const isStreamingEnabled = this.hasStreamingToggleTarget && this.streamingToggleTarget.checked
-    
-    if (isStreamingEnabled) {
-      // Start streaming request
-      this.startStreaming(formData)
-    } else {
-      // Standard request
-      this.startStandardRequest(formData)
-    }
+    // Always use streaming for RAG
+    // Note: We always use streaming because RAG responses benefit from immediate feedback
+    console.log('Starting streaming request for query:', this.currentQuery)
+    this.startStreaming(formData)
     
     // Disable submit button during processing
     this.submitTarget.disabled = true
@@ -144,17 +141,24 @@ export default class extends Controller {
   startStreaming(formData) {
     // Close any existing event source
     this.closeEventSource()
-    
+
     // Update status
     this.updateStatus('streaming')
-    
+
     // Convert FormData to URL parameters
     const params = new URLSearchParams(formData)
-    
+
     // Create Event Source for streaming
     const url = `${this.formTarget.action}?${params.toString()}`
+    console.log('Creating EventSource with URL:', url)
     this.eventSource = new EventSource(url)
-    
+    console.log('EventSource created, readyState:', this.eventSource.readyState)
+
+    // Log when connection opens
+    this.eventSource.onopen = (event) => {
+      console.log('EventSource connection opened', event)
+    }
+
     // Reset streaming state
     this.isStreaming = true
     this.currentResponse = ""
@@ -172,8 +176,13 @@ export default class extends Controller {
             this.handleToken({ data: event.data })
             break
           case 'context':
-            // Context event with documents - can show sources
+            // Context event with documents and conversation_id
             console.log('Context received:', data.documents?.length || 0, 'documents')
+            // Save conversation_id for follow-up messages
+            if (data.conversation_id && this.hasConversationIdTarget) {
+              this.conversationIdTarget.value = data.conversation_id
+              console.log('Conversation ID from context:', data.conversation_id)
+            }
             break
           case 'sources':
             this.handleSources({ data: event.data })
@@ -201,12 +210,17 @@ export default class extends Controller {
 
     // Handle EventSource connection errors (not server-sent errors)
     this.eventSource.onerror = (event) => {
-      // Only handle as error if we're not just completing
-      if (this.eventSource.readyState === EventSource.CLOSED) {
-        console.log('EventSource closed')
+      // Guard against null eventSource (can happen if closed during error handling)
+      if (!this.eventSource) {
+        console.log('EventSource already closed, ignoring error')
         return
       }
-      console.error('EventSource error:', event)
+      // Only handle as error if we're not just completing
+      if (this.eventSource.readyState === EventSource.CLOSED) {
+        console.log('EventSource closed normally')
+        return
+      }
+      console.error('EventSource error:', event, 'readyState:', this.eventSource?.readyState)
       this.handleStreamingError(event)
     }
   }
@@ -403,6 +417,12 @@ export default class extends Controller {
     console.log('Metadata:', data)
     // Store metadata for potential use
     this.streamingMetadata = data
+
+    // Update conversation_id for follow-up messages
+    if (data.conversation_id && this.hasConversationIdTarget) {
+      this.conversationIdTarget.value = data.conversation_id
+      console.log('Conversation ID updated:', data.conversation_id)
+    }
   }
   
   // Handle streaming complete
@@ -412,6 +432,21 @@ export default class extends Controller {
 
     // Close the event source
     this.closeEventSource()
+
+    // Parse complete event data if available
+    let completeData = {}
+    if (event.data) {
+      try {
+        completeData = JSON.parse(event.data)
+        // Update conversation_id for follow-up messages
+        if (completeData.conversation_id && this.hasConversationIdTarget) {
+          this.conversationIdTarget.value = completeData.conversation_id
+          console.log('Conversation ID from complete event:', completeData.conversation_id)
+        }
+      } catch (e) {
+        console.warn('Could not parse complete event data:', e)
+      }
+    }
 
     // Hide the cursor
     if (this.hasStreamingCursorTarget) {
@@ -468,29 +503,113 @@ export default class extends Controller {
   
   // Add a user message to the conversation history
   addUserMessage(message) {
-    // Show the user message in the streaming container
-    if (this.hasUserMessageContainerTarget && this.hasUserMessageTextTarget) {
-      this.userMessageTextTarget.textContent = message
-      this.userMessageContainerTarget.classList.remove('hidden')
+    // Hide the welcome message if present
+    const welcomeMessage = this.chatContainerTarget.querySelector('.flex.justify-center.py-8')
+    if (welcomeMessage) {
+      welcomeMessage.remove()
     }
 
-    // Scroll to the bottom of the chat container
+    // Create user message element and add to chat container
+    const userDiv = document.createElement('div')
+    userDiv.className = 'flex justify-end mb-4'
+    userDiv.innerHTML = `
+      <div class="max-w-[80%] bg-indigo-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
+        <p class="text-sm leading-relaxed">${this.escapeHtml(message)}</p>
+      </div>
+    `
+
+    // Insert before the streaming response container
+    if (this.hasResponseContainerTarget) {
+      this.chatContainerTarget.insertBefore(userDiv, this.responseContainerTarget)
+    } else {
+      this.chatContainerTarget.appendChild(userDiv)
+    }
+
+    // Show the streaming response container for the assistant's reply
+    if (this.hasResponseContainerTarget) {
+      this.responseContainerTarget.classList.remove('hidden')
+    }
+
+    // Scroll to bottom
+    this.scrollToBottom()
+  }
+
+  // Add an assistant message to the conversation history
+  addAssistantMessage(message, sources = [], metadata = {}) {
+    // Create assistant message element
+    const assistantDiv = document.createElement('div')
+    assistantDiv.className = 'flex justify-start mb-4'
+
+    // Build sources HTML if present
+    let sourcesHtml = ''
+    if (sources && sources.length > 0) {
+      const sourceSpans = sources.map(s =>
+        `<span class="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">${this.escapeHtml(s.title || 'Document')}</span>`
+      ).join('')
+      sourcesHtml = `
+        <div class="mt-3 pt-2 border-t border-gray-200">
+          <p class="text-xs text-gray-500 mb-1">Sources:</p>
+          <div class="flex flex-wrap gap-1">${sourceSpans}</div>
+        </div>
+      `
+    }
+
+    assistantDiv.innerHTML = `
+      <div class="max-w-[80%] bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-xs font-medium text-indigo-600">KnowVerse</span>
+        </div>
+        <div class="text-sm leading-relaxed prose prose-sm max-w-none">${this.formatMarkdown(message)}</div>
+        ${sourcesHtml}
+      </div>
+    `
+
+    // Insert before the streaming response container
+    if (this.hasResponseContainerTarget) {
+      this.chatContainerTarget.insertBefore(assistantDiv, this.responseContainerTarget)
+    } else {
+      this.chatContainerTarget.appendChild(assistantDiv)
+    }
+
+    // Hide and reset the streaming response container for next message
+    if (this.hasResponseContainerTarget) {
+      this.responseContainerTarget.classList.add('hidden')
+    }
+    if (this.hasStreamingResponseTarget) {
+      this.streamingResponseTarget.textContent = ''
+    }
+    if (this.hasUserMessageContainerTarget) {
+      this.userMessageContainerTarget.classList.add('hidden')
+    }
+
+    // Scroll to bottom
+    this.scrollToBottom()
+  }
+
+  // Scroll chat container to bottom
+  scrollToBottom() {
     if (this.hasChatContainerTarget) {
       setTimeout(() => {
         this.chatContainerTarget.scrollTop = this.chatContainerTarget.scrollHeight
       }, 100)
     }
   }
-  
-  // Add an assistant message to the conversation history
-  addAssistantMessage(message, sources = [], metadata = {}) {
-    // The streaming display already shows the response in the response container
-    // Just scroll to the bottom when complete
-    if (this.hasChatContainerTarget) {
-      setTimeout(() => {
-        this.chatContainerTarget.scrollTop = this.chatContainerTarget.scrollHeight
-      }, 100)
-    }
+
+  // Escape HTML to prevent XSS
+  escapeHtml(text) {
+    const div = document.createElement('div')
+    div.textContent = text
+    return div.innerHTML
+  }
+
+  // Simple markdown formatting (bold, italic, code, links)
+  formatMarkdown(text) {
+    if (!text) return ''
+    return this.escapeHtml(text)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code class="bg-gray-200 px-1 rounded">$1</code>')
+      .replace(/\n/g, '<br>')
   }
   
   // Update the sources list in the UI

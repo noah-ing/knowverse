@@ -17,7 +17,7 @@
         
         <%= render partial: "shared/button", locals: {
           text: "Dashboard",
-          href: organization_dashboard_path(@organization),
+          href: dashboard_organization_path(@organization),
           variant: "secondary",
           icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>',
           animate: "fade",
@@ -29,12 +29,8 @@
   </div>
 
   <!-- Search Form -->
-  <%= render partial: "shared/card", locals: {
-    classes: "mb-6 transition-all duration-200 hover:shadow-lg",
-    animate: "fade-in",
-    animate_delay: "200ms"
-  } do %>
-      <%= form_with url: query_search_path, method: :post, local: true, class: "space-y-4", data: { controller: "search-form" } do |form| %>
+  <%= render "shared/card", classes: "mb-6 transition-all duration-200 hover:shadow-lg", animate: "fade-in", animate_delay: "200ms" do %>
+      <%= form_with url: search_query_path, method: :post, local: true, class: "space-y-4", data: { controller: "search-form" } do |form| %>
         <%= form.hidden_field :organization_id, value: @organization.id %>
         <%= form.hidden_field :search_method, value: @search_method %>
         <%= form.hidden_field :model_name, value: @model_name %>
@@ -104,8 +100,8 @@
                       </svg>
                       <span class="kv-tooltip-text">Choose how to search your documents</span>
                     </span>
-      <% end %>
-    <% end %>
+                  </div>
+                </div>
               </div>
               
               <!-- Embedding Model -->
@@ -137,16 +133,16 @@
               <div>
                 <%= form.label :min_similarity, "Min. Similarity", class: "kv-label" %>
                 <div class="relative">
-                  <%= form.select :min_similarity, 
+                  <%= form.select :min_similarity,
                               [
-                                ['0.9 (Very Similar)', '0.9'],
-                                ['0.8 (Similar)', '0.8'],
-                                ['0.7 (Moderately Similar)', '0.7'],
-                                ['0.6 (Somewhat Similar)', '0.6'],
-                                ['0.5 (Default)', '0.5'],
-                                ['0.4 (Broader Results)', '0.4']
-                              ], 
-                              { selected: '0.5' }, 
+                                ['0.5 (Very Similar)', '0.5'],
+                                ['0.4 (Similar)', '0.4'],
+                                ['0.3 (Moderately Similar)', '0.3'],
+                                ['0.2 (Broader Results)', '0.2'],
+                                ['0.1 (Default)', '0.1'],
+                                ['0.05 (Very Broad)', '0.05']
+                              ],
+                              { selected: '0.1' },
                               { class: "kv-input" } %>
                   <div class="absolute right-2 top-2">
                     <span class="kv-tooltip relative">
@@ -203,15 +199,10 @@
           </div>
         </div>
       <% end %>
-    </div>
-  </div>
+  <% end %>
 
   <!-- Search Metrics -->
-  <%= render partial: "shared/card", locals: {
-    classes: "mb-6 transition-all duration-200 hover:shadow-lg",
-    animate: "fade-in",
-    animate_delay: "400ms"
-  } do %>
+  <%= render "shared/card", classes: "mb-6 transition-all duration-200 hover:shadow-lg", animate: "fade-in", animate_delay: "400ms" do %>
     <div class="flex flex-wrap justify-between items-center gap-3">
       <div>
         <h2 class="kv-card-title flex items-center">
@@ -252,65 +243,26 @@
              when 'pgvector_cosine' then 'Vector Cosine'
              when 'pgvector_l2' then 'Vector Euclidean'
              when 'haystack' then 'Haystack Service'
-             when 'hnsw' then 'SIMD HNSW
-
-  <!-- Search Metrics -->
-  <div class="kv-card mb-6 transition-all duration-200">
-    <div class="kv-card-header flex flex-wrap justify-between items-center gap-3">
-      <div>
-        <h2 class="kv-card-title"><%= pluralize(@search_results.size, 'result') %> found</h2>
-        <p class="kv-card-subtitle">Search completed in <%= session[:last_search_duration].present? ? (session[:last_search_duration] / 1000.0).round(3) : 0.0 %> seconds</p>
-      </div>
-        
-      <!-- Search Method badges -->
-      <div class="flex flex-wrap gap-2">
-        <% if @organization.advanced_search %>
-          <span class="kv-badge kv-badge-success">
-            Advanced Search
-          </span>
-        <% end %>
-      
-        <% search_method_badge_class = case @search_method
-           when 'hybrid' then 'bg-purple-100 text-purple-800'
-           when 'pgvector_cosine' then 'bg-blue-100 text-blue-800'
-           when 'pgvector_l2' then 'bg-cyan-100 text-cyan-800'
-           when 'haystack' then 'bg-indigo-100 text-indigo-800'
-           when 'hnsw' then 'bg-green-100 text-green-800'
-           else 'bg-gray-100 text-gray-800'
-           end
-        %>
-        
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium <%= search_method_badge_class %> transition-colors duration-200">
-          <% search_method_label = case @search_method
-             when 'hybrid' then 'Hybrid Search'
-             when 'pgvector_cosine' then 'Vector Cosine'
-             when 'pgvector_l2' then 'Vector Euclidean'
-             when 'haystack' then 'Haystack Service'
              when 'hnsw' then 'SIMD HNSW'
              else 'Default Search'
              end
           %>
           <%= search_method_label %>
         </span>
-        
+
         <!-- Model and dimension badges -->
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-yellow-100 text-yellow-800 transition-colors duration-200">
           <%= @model_name.capitalize %> (<%= @dimension %>d)
         </span>
+      </div>
     </div>
   <% end %>
-  </div>
   
   <!-- Search Results -->
   <% if @search_results.any? %>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
       <% @search_results.each_with_index do |result, index| %>
-        <%= render partial: "shared/card", locals: {
-          classes: "transition-all duration-200 hover:shadow-lg",
-          animate: "fade-in",
-          animate_delay: "#{(500 + index * 100)}ms",
-          header_classes: "border-b border-gray-200 transition-colors duration-200"
-        } do %>
+        <%= render "shared/card", classes: "transition-all duration-200 hover:shadow-lg", animate: "fade-in", animate_delay: "#{(500 + index * 100)}ms", header_classes: "border-b border-gray-200 transition-colors duration-200" do %>
           <div class="kv-card-header border-b border-gray-200 transition-colors duration-200">
             <% if @documents[result['document_id'].to_i].present? %>
               <% document = @documents[result['document_id'].to_i] %>
@@ -415,19 +367,15 @@
                   animate_delay: "#{(700 + index * 50)}ms"
                 } %>
                 <% end %>
-        <% end %>
             </div>
           </div>
         </div>
+        <% end %>
       <% end %>
     </div>
   <% else %>
     <!-- No Results Found -->
-    <%= render partial: "shared/card", locals: {
-      classes: "mb-6 p-8 text-center",
-      animate: "fade-in",
-      animate_delay: "300ms"
-    } do %>
+    <%= render "shared/card", classes: "mb-6 p-8 text-center", animate: "fade-in", animate_delay: "300ms" do %>
       <svg class="mx-auto h-12 w-12 kv-text-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
@@ -444,17 +392,13 @@
           animate: "fade",
           animate_delay: "400ms"
         } %>
+      </div>
     <% end %>
-    </div>
   <% end %>
   
   <!-- Search Suggestions -->
   <% if @search_results.any? %>
-    <%= render partial: "shared/card", locals: {
-      animate: "fade-in",
-      animate_delay: "600ms",
-      classes: "transition-all duration-200"
-    } do %>
+    <%= render "shared/card", animate: "fade-in", animate_delay: "600ms", classes: "transition-all duration-200" do %>
         <h2 class="kv-card-title">Try refining your search</h2>
         <p class="kv-card-subtitle">Get better results with these suggestions</p>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -466,7 +410,7 @@
                   <svg class="h-5 w-5 kv-text-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                   </svg>
-    <% end %>
+                </div>
                 <div class="ml-2">
                   <span class="text-sm font-medium kv-text-primary">Add time constraints</span>
                 </div>
@@ -513,8 +457,7 @@
             </a>
           </div>
         </div>
-      </div>
-    </div>
+    <% end %>
   <% end %>
 </div>
 

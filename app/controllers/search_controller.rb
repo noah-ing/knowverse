@@ -32,15 +32,17 @@ class SearchController < ApplicationController
     
     # Prepare search options
     limit = params[:limit].to_i.positive? ? params[:limit].to_i : 10
-    min_similarity = params[:min_similarity].to_f.positive? ? params[:min_similarity].to_f : 0.5
+    min_similarity = params[:min_similarity].to_f.positive? ? params[:min_similarity].to_f : 0.1
     search_provider = params[:search_method].presence
     model_name = params[:model_name].presence || 'base'
-    
+    rerank = params[:rerank] == 'true' || params[:rerank] == '1'
+
     search_options = {
       limit: limit,
       min_similarity: min_similarity,
       search_provider: search_provider,
       model_name: model_name,
+      rerank: rerank,
       query: @query
     }
     
@@ -68,16 +70,13 @@ class SearchController < ApplicationController
         user: current_user
       )
       
-      # Store search query ID and results in session for later retrieval
+      # Store search query ID in session
       session[:last_search_query_id] = search_query.id
-      session[:last_search_results] = search_results
-      session[:last_search_query] = @query
-      session[:last_search_method] = search_metadata[:provider]
-      session[:last_search_duration] = search_metadata[:duration_ms]
-      session[:last_search_model] = search_metadata[:model]
-      session[:last_search_dimension] = search_metadata[:dimension]
-      
-      redirect_to results_search_path(id: Time.current.to_i)
+
+      # Store results in Rails cache (to avoid cookie overflow)
+      Rails.cache.write("search_results_#{search_query.id}", search_results, expires_in: 1.hour)
+
+      redirect_to results_search_path(id: search_query.id)
     rescue StandardError => e
       Rails.logger.error("Search error: #{e.message}")
       redirect_to search_path, alert: "Error performing search: #{e.message}"
@@ -86,15 +85,22 @@ class SearchController < ApplicationController
   
   # GET /search/results/:id
   def results
-    @query = session[:last_search_query]
-    @search_results = session[:last_search_results]
-    @search_method = session[:last_search_method] || 'hybrid'
-    @model_name = session[:last_search_model] || 'base'
-    @dimension = session[:last_search_dimension] || 1024
-    @search_query_id = session[:last_search_query_id]
-    
+    # Load search query from database
+    search_query = SearchQuery.find_by(id: params[:id], organization: @organization)
+
+    if search_query.nil?
+      return redirect_to search_path, alert: 'Search not found. Please try a new search.'
+    end
+
+    @query = search_query.query_text
+    @search_results = Rails.cache.read("search_results_#{search_query.id}") || []
+    @search_method = search_query.search_provider || 'hybrid'
+    @model_name = search_query.parameters&.dig('model_name') || 'base'
+    @dimension = search_query.parameters&.dig('dimension') || 768
+    @search_query_id = search_query.id
+
     if @search_results.blank?
-      redirect_to search_path, alert: 'No search results found. Please try a new search.'
+      return redirect_to search_path, alert: 'No search results found. Please try a new search.'
     end
     
     # Fetch document details for the search results

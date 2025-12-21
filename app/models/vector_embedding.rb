@@ -16,13 +16,14 @@ class VectorEmbedding < ApplicationRecord
   DEFAULT_DOMAIN = 'general'
   
   # Embedding model names
+  # NOTE: Dimensions must match Python haystack/config/settings.py EMBEDDING_MODELS
   SUPPORTED_MODELS = {
-    'mini' => 384,
-    'small' => 768,
-    'base' => 1024,
-    'large' => 1536,
-    'xl' => 2048
-  }
+    'mini' => 384,   # all-MiniLM-L6-v2
+    'small' => 768,  # all-mpnet-base-v2
+    'base' => 768,   # all-mpnet-base-v2 (same as small)
+    'large' => 1024, # all-roberta-large-v1
+    'xl' => 768      # gtr-t5-xl (768d, not 2048!)
+  }.freeze
   
   # Map dimensions to models
   DIMENSIONS_TO_MODELS = SUPPORTED_MODELS.invert

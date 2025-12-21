@@ -452,12 +452,16 @@ class QdrantClient:
 
         Supports legacy naming patterns and new config-based names.
         """
-        # Legacy patterns
+        # Organization document collection (primary use case)
+        if collection in ("org_documents", "default", "documents") and org_id:
+            return f"knowverse_org_{org_id}_embeddings"
+
+        # Legacy SEC EDGAR pattern
         if collection == "sec_edgar" and org_id:
             return f"org_{org_id}_v1_ada002"
-        elif collection == "default" and org_id:
-            return f"org_{org_id}_documents"
-        elif "{org_id}" in collection and org_id:
+
+        # Template pattern with org_id placeholder
+        if "{org_id}" in collection and org_id:
             return collection.format(org_id=org_id)
 
         # Direct collection name

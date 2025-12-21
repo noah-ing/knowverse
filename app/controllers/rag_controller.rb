@@ -36,7 +36,7 @@ class RagController < ApplicationController
     # Set default options
     @retrieval_options = {
       max_documents: 5,
-      min_similarity: 0.75,
+      min_similarity: 0.01,  # Very low - cross-encoder reranking handles relevance
       strategy: "auto"
     }
     
@@ -107,7 +107,7 @@ class RagController < ApplicationController
     # Extract retrieval options from params
     retrieval_options = {
       max_documents: params[:max_documents].presence&.to_i || 5,
-      min_similarity: params[:min_similarity].presence&.to_f || 0.75,
+      min_similarity: params[:min_similarity].presence&.to_f || 0.01,  # Very low - cross-encoder handles relevance
       strategy: params[:strategy].presence || "auto"
     }
     
@@ -188,60 +188,68 @@ class RagController < ApplicationController
     begin
       haystack_client.generate_answer_stream(@query, @organization.id, options) do |event|
         # Process each event type
+        # NOTE: We send data-only SSE (no "event:" line) so JavaScript onmessage receives all events
+        # The event type is included in the JSON "type" field
         case event[:type]
         when :metadata
           # Store metadata for later reference
           response_metadata = event[:data]
-          response.stream.write("event: metadata\n")
-          response.stream.write("data: #{JSON.generate(event[:data].merge(conversation_id: conversation.id))}\n\n")
-        
+          data = event[:data].merge("type" => "metadata", "conversation_id" => conversation.id)
+          response.stream.write("data: #{JSON.generate(data)}\n\n")
+
         when :token
+          # Extract token content (Python sends "content", handle both string and symbol keys)
+          token_content = event[:data]["content"] || event[:data][:content] || event[:data]["token"] || event[:data][:token] || ""
+          token_index = event[:data]["index"] || event[:data][:index] || event[:data]["id"] || event[:data][:id]
+
           # Add token to complete response
-          complete_response += event[:data][:token]
-          
+          complete_response += token_content
+
           # Store token in StreamingElement if conversation exists
           if conversation
-            token_index = event[:data][:id] || conversation.streaming_elements.count
+            idx = token_index || conversation.streaming_elements.count
             # Check for source reference in this token
-            has_source = event[:data][:has_source] || false
-            
+            has_source = event[:data]["has_source"] || event[:data][:has_source] || false
+
             # Add to streaming elements
             conversation.add_streaming_token(
-              event[:data][:token],
-              token_index,
+              token_content,
+              idx,
               false, # not complete
               has_source ? sources : nil
             )
           end
-          
-          # Forward token to browser
-          response.stream.write("event: token\n")
-          response.stream.write("data: #{JSON.generate(event[:data])}\n\n")
-          
+
+          # Forward token to browser (ensure type is in JSON)
+          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "token") : {"type" => "token", "content" => token_content}
+          response.stream.write("data: #{JSON.generate(data)}\n\n")
+
         when :sources
-          # Store sources for highlighting and message metadata
-          sources = event[:data][:sources] || []
-          
-          # Forward sources to browser
-          response.stream.write("event: sources\n")
-          response.stream.write("data: #{JSON.generate(event[:data])}\n\n")
-        
+          # Store sources for highlighting and message metadata (handle string/symbol keys)
+          sources = event[:data]["sources"] || event[:data][:sources] || []
+          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "sources") : {"type" => "sources", "sources" => sources}
+          response.stream.write("data: #{JSON.generate(data)}\n\n")
+
         when :complete
-          # Store sources for message metadata
-          sources = event[:data][:sources] || []
-          
+          # Store sources for message metadata (handle string/symbol keys)
+          sources = event[:data]["sources"] || event[:data][:sources] || []
+
           # Mark streaming as complete for the last token
           if conversation && conversation.streaming_elements.any?
             StreamingElement.mark_complete(conversation.id)
           end
-          
+
+          # Get metrics and provider (handle string/symbol keys)
+          metrics = event[:data]["metrics"] || event[:data][:metrics]
+          provider = event[:data]["provider"] || event[:data][:provider]
+
           # Convert streaming tokens to a message or create a new message
           assistant_message = if conversation && conversation.streaming_elements.any?
             # Create message from streaming tokens and their source references
             conversation.finalize_streaming({
               sources: sources,
-              metrics: event[:data][:metrics],
-              provider: event[:data][:provider]
+              metrics: metrics,
+              provider: provider
             })
           else
             # Fallback to direct message creation (for compatibility)
@@ -249,41 +257,41 @@ class RagController < ApplicationController
               complete_response,
               {
                 sources: sources,
-                metrics: event[:data][:metrics],
-                provider: event[:data][:provider]
+                metrics: metrics,
+                provider: provider
               }
             )
           end
-          
-          # Include the message ID in the response
-          event_data = event[:data].merge(
-            conversation_id: conversation.id,
-            message_id: assistant_message.id
+
+          # Include the message ID and type in the response
+          event_data = (event[:data].is_a?(Hash) ? event[:data] : {}).merge(
+            "type" => "complete",
+            "conversation_id" => conversation.id,
+            "message_id" => assistant_message.id
           )
-          
-          # Forward to browser
-          response.stream.write("event: complete\n")
           response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-        
+
         when :error
-          # Forward error to browser
-          response.stream.write("event: error\n")
-          response.stream.write("data: #{JSON.generate(event[:data])}\n\n")
-        
+          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "error") : {"type" => "error", "error" => event[:data].to_s}
+          response.stream.write("data: #{JSON.generate(data)}\n\n")
+
         when :fallback
-          # Forward fallback event to browser
-          response.stream.write("event: fallback\n")
-          response.stream.write("data: #{JSON.generate(event[:data])}\n\n")
-        
+          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "fallback") : {"type" => "fallback"}
+          response.stream.write("data: #{JSON.generate(data)}\n\n")
+
         when :metric
-          # Forward metrics to browser
-          response.stream.write("event: metric\n")
-          response.stream.write("data: #{JSON.generate(event[:data])}\n\n")
-        
+          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "metric") : {"type" => "metric"}
+          response.stream.write("data: #{JSON.generate(data)}\n\n")
+
+        when :context
+          # Forward context event with conversation_id for follow-up messages
+          data = (event[:data].is_a?(Hash) ? event[:data] : {}).merge("type" => "context", "conversation_id" => conversation.id)
+          response.stream.write("data: #{JSON.generate(data)}\n\n")
+
         else
-          # Generic event handler
-          response.stream.write("event: #{event[:type]}\n")
-          response.stream.write("data: #{JSON.generate(event[:data])}\n\n")
+          # Generic event handler - include type in JSON
+          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => event[:type].to_s) : {"type" => event[:type].to_s}
+          response.stream.write("data: #{JSON.generate(data)}\n\n")
         end
       end
     rescue => e

@@ -101,19 +101,12 @@
   <% end %>
 
   <div class="flex justify-end space-x-3 mt-6">
-    <%= render partial: "shared/button", locals: {
-      text: "Cancel",
-      variant: "secondary",
-      href: organization.persisted? ? organization_path(organization) : organizations_path
-    } %>
-    
-    <%= render partial: "shared/button", locals: {
-      text: organization.persisted? ? "Update Organization" : "Create Organization",
-      variant: "primary",
-      type: "submit",
-      icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
-      </svg>'
-    } %>
+    <%= link_to (organization.persisted? ? organization_path(organization) : organizations_path),
+        class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors" do %>
+      Cancel
+    <% end %>
+
+    <%= form.submit (organization.persisted? ? "Update Organization" : "Create Organization"),
+        class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors" %>
   </div>
 <% end %>

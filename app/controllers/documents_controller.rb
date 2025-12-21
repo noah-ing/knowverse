@@ -49,9 +49,51 @@ class DocumentsController < ApplicationController
   # POST /organizations/:organization_id/documents
   def create
     @document = @organization.documents.new(document_params)
+    @document.status = 'pending'
+    @document.embedding_status = 'pending'
 
     if @document.save
-      redirect_to organization_document_path(@organization, @document), notice: 'Document was successfully created.'
+      # Always process synchronously for now to ensure it works
+      begin
+        Rails.logger.info("=" * 50)
+        Rails.logger.info("DOCUMENT CREATE: Processing document #{@document.id} - #{@document.title}")
+        Rails.logger.info("Rails.env = #{Rails.env}, development? = #{Rails.env.development?}")
+
+        # Run text extraction
+        Rails.logger.info("Starting text extraction...")
+        DocumentProcessing::TextExtractionWorker.new.perform(@document.id)
+        @document.reload
+        Rails.logger.info("Text extraction complete. Status: #{@document.status}")
+
+        if @document.status == 'processed'
+          # Run embedding generation
+          Rails.logger.info("Starting embedding generation...")
+          DocumentProcessing::EmbeddingGenerationWorker.new.perform(@document.id)
+          @document.reload
+          Rails.logger.info("Embedding generation complete. Embedding status: #{@document.embedding_status}")
+        else
+          Rails.logger.warn("Skipping embedding - document status is #{@document.status}, not 'processed'")
+        end
+
+        Rails.logger.info("=" * 50)
+
+        notice_msg = if @document.embedding_status == 'processed'
+          'Document uploaded and processed successfully!'
+        elsif @document.status == 'processed'
+          'Document uploaded and text extracted. Embeddings processing...'
+        else
+          'Document uploaded but processing had issues. Check the document status.'
+        end
+
+        redirect_to organization_document_path(@organization, @document), notice: notice_msg
+      rescue => e
+        Rails.logger.error("=" * 50)
+        Rails.logger.error("DOCUMENT PROCESSING FAILED: #{e.message}")
+        Rails.logger.error(e.backtrace.first(10).join("\n"))
+        Rails.logger.error("=" * 50)
+        redirect_to organization_document_path(@organization, @document),
+          alert: "Document saved but processing failed: #{e.message.first(100)}"
+      end
     else
       render :new, status: :unprocessable_entity
     end
@@ -330,7 +372,7 @@ class DocumentsController < ApplicationController
               # Run embedding generation
               DocumentProcessing::EmbeddingGenerationWorker.new.perform(document.id)
               document.reload
-              results[document.id] = document.embedding_status == 'completed' ? :success : :partial
+              results[document.id] = document.embedding_status == 'processed' ? :success : :partial
             else
               results[document.id] = :failed
             end

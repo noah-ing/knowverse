@@ -12,12 +12,12 @@
               <%= link_to 'Go to Dashboard', dashboard_path, class: "inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors" %>
               <%= link_to 'Your Organizations', organizations_path, class: "inline-flex items-center px-6 py-3 border-2 border-white text-base font-medium rounded-md text-white bg-transparent hover:bg-white hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors" %>
             <% else %>
-              <button class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors" data-action="click->modal#open" data-modal-target="magicLinkModal">
+              <%= link_to new_user_registration_path, class: "inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors" do %>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
                 </svg>
                 Get Started
-              </button>
+              <% end %>
               <%= link_to new_user_session_path, class: "inline-flex items-center px-6 py-3 border-2 border-white text-base font-medium rounded-md text-white bg-transparent hover:bg-white hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors" do %>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm12 0H5v10h10V5z" clip-rule="evenodd" />
@@ -41,61 +41,44 @@
               <div class="text-sm kv-text-secondary">KnowVerse RAG UI</div>
             </div>
             <div class="p-6">
-              <!-- Simulated RAG Chat UI -->
+              <!-- Simulated RAG Chat UI (matches real RAG interface) -->
               <div class="flex flex-col space-y-4">
-                <div class="kv-message kv-message-user self-end max-w-md">
-                  <div class="kv-message-header">
-                    <div class="flex items-center">
-                      <div class="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center mr-2">
-                        <span class="text-sm kv-text-secondary font-medium">U</span>
-                      </div>
-                      <div>
-                        <span class="font-medium kv-text-primary">You</span>
+                <!-- User Message - Right aligned, purple -->
+                <div class="flex justify-end">
+                  <div class="max-w-[85%] bg-indigo-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
+                    <p class="text-sm leading-relaxed">What's our Q2 financial forecast?</p>
+                  </div>
+                </div>
+
+                <!-- Assistant Message - Left aligned, gray -->
+                <div class="flex justify-start">
+                  <div class="max-w-[85%] bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                    <div class="flex items-center gap-2 mb-2">
+                      <span class="text-xs font-medium text-indigo-600">KnowVerse</span>
+                    </div>
+                    <p class="text-sm leading-relaxed">
+                      Based on your organization's documents, the Q2 financial forecast projects a <span class="text-indigo-600 font-medium">15% revenue growth</span> with a projected EBITDA of $2.4M. This represents a <span class="text-indigo-600 font-medium">22% increase from Q1</span>.
+                    </p>
+                    <div class="mt-3 pt-2 border-t border-gray-200">
+                      <p class="text-xs text-gray-500 mb-1">Sources:</p>
+                      <div class="flex flex-wrap gap-1">
+                        <span class="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">Q2 Financial Projections.pdf</span>
+                        <span class="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">Executive Summary 2025.docx</span>
                       </div>
                     </div>
                   </div>
-                  <div class="kv-message-content mt-2">
-                    What's our Q2 financial forecast?
-                  </div>
                 </div>
-                
-                <div class="kv-message kv-message-system self-start max-w-md">
-                  <div class="kv-message-header">
-                    <div class="flex items-center">
-                      <div class="h-8 w-8 bg-indigo-600 rounded-full flex items-center justify-center text-white mr-2">
-                        <span class="text-sm font-medium">K</span>
-                      </div>
-                      <div>
-                        <span class="font-medium kv-text-primary">KnowVerse</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="kv-message-content mt-2">
-                    Based on your organization's documents, the Q2 financial forecast projects a <span class="kv-source-citation">15% revenue growth with a projected EBITDA of $2.4M</span>. This represents a <span class="kv-source-citation">22% increase from Q1</span>.
-                  </div>
-                  <div class="kv-message-sources">
-                    <h5 class="font-medium mb-1">Sources:</h5>
-                    <ul class="kv-sources-list">
-                      <li class="kv-sources-item">
-                        <span class="kv-link">Q2 Financial Projections.pdf</span>
-                        <span class="kv-text-secondary text-xs ml-1">
-                          (98% match)
-                        </span>
-                      </li>
-                      <li class="kv-sources-item">
-                        <span class="kv-link">Executive Summary 2025.docx</span>
-                        <span class="kv-text-secondary text-xs ml-1">
-                          (87% match)
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                
+
                 <!-- Typing indicator -->
-                <div class="flex items-center text-xs kv-text-secondary mt-1 ml-10">
-                  <div class="kv-typing-cursor mr-1"></div>
-                  <span>KnowVerse is analyzing your documents...</span>
+                <div class="flex justify-start">
+                  <div class="flex items-center text-xs text-gray-400 ml-2">
+                    <span class="inline-flex gap-1 mr-2">
+                      <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                      <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                      <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                    </span>
+                    <span>analyzing documents...</span>
+                  </div>
                 </div>
               </div>
             </div>

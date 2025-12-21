@@ -3,6 +3,24 @@ class User < ApplicationRecord
 
   # Active Storage association for avatar
   has_one_attached :avatar
+
+  # Avatar validations
+  validate :acceptable_avatar
+
+  def acceptable_avatar
+    return unless avatar.attached?
+
+    # Validate content type
+    acceptable_types = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+    unless acceptable_types.include?(avatar.content_type)
+      errors.add(:avatar, 'must be a PNG, JPEG, GIF, or WebP image')
+    end
+
+    # Validate file size (5MB max)
+    if avatar.byte_size > 5.megabytes
+      errors.add(:avatar, 'is too large (maximum is 5MB)')
+    end
+  end
   
   # Analytics associations
   has_many :visits, class_name: "Ahoy::Visit"

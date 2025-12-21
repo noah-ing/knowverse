@@ -914,6 +914,82 @@ async def hybrid_search(request: HybridSearchRequest):
         )
 
 
+class RerankRequest(BaseModel):
+    """Request for cross-encoder reranking."""
+    query: str = Field(..., description="Query to rerank results against")
+    documents: List[Dict[str, Any]] = Field(..., description="Documents to rerank")
+    top_k: int = Field(default=10, description="Number of results to return after reranking")
+
+
+class RerankResponse(BaseModel):
+    """Response from reranking."""
+    results: List[Dict[str, Any]]
+    processing_time: float
+
+
+@app.post("/search/rerank", response_model=RerankResponse, tags=["search"])
+async def rerank_results(request: RerankRequest):
+    """
+    Rerank search results using cross-encoder model.
+
+    Uses ms-marco-MiniLM-L-6-v2 cross-encoder for pairwise relevance scoring.
+    More accurate than bi-encoder similarity but slower.
+
+    Args:
+        request: Query and documents to rerank
+
+    Returns:
+        RerankResponse with reranked documents and scores
+    """
+    start_time = time.time()
+
+    try:
+        # Initialize cross-encoder reranker
+        reranker = CrossEncoderReranker()
+
+        # Convert documents to RetrievalResult format
+        retrieval_results = []
+        for doc in request.documents:
+            retrieval_results.append(RetrievalResult(
+                id=str(doc.get("document_id", doc.get("id", ""))),
+                content=doc.get("snippet", doc.get("content", doc.get("text", ""))),
+                score=doc.get("score", 0.0),
+                metadata=doc,
+                collection=doc.get("collection", "")
+            ))
+
+        # Rerank using cross-encoder
+        reranked = reranker.rerank(
+            query=request.query,
+            results=retrieval_results,
+            top_k=request.top_k
+        )
+
+        # Convert back to dict format
+        results = []
+        for r in reranked:
+            result = r.metadata.copy() if r.metadata else {}
+            result["rerank_score"] = r.score
+            result["document_id"] = r.id
+            result["content"] = r.content
+            results.append(result)
+
+        processing_time = time.time() - start_time
+        logger.info(f"Reranked {len(request.documents)} docs to top {len(results)} in {processing_time:.3f}s")
+
+        return RerankResponse(
+            results=results,
+            processing_time=processing_time
+        )
+
+    except Exception as e:
+        logger.error(f"Reranking failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Reranking failed: {str(e)}"
+        )
+
+
 # =============================================================================
 # EMBEDDING ENDPOINTS
 # Vector embedding generation
@@ -1289,7 +1365,8 @@ async def rag_stream(request: RAGRequest):
     """
     Stream a RAG response using Server-Sent Events.
 
-    Retrieves context and streams the LLM response token by token.
+    Retrieves context using advanced retrieval (RAG-Fusion + cross-encoder reranking)
+    and streams the LLM response token by token.
 
     Args:
         request: RAG request with query and options
@@ -1301,13 +1378,77 @@ async def rag_stream(request: RAGRequest):
         tracker = TokenRateTracker()
 
         try:
-            # Retrieve context
-            context_docs = await asyncio.to_thread(
-                retrieve_and_rank,
-                query=request.query,
-                org_id=request.org_id,
-                options=request.retrieval_options
+            # Use advanced retrieval with cross-encoder reranking for better relevance
+            retrieval_options = request.retrieval_options or {}
+            max_documents = retrieval_options.get("max_documents", 5)
+            # Use very low default threshold - cross-encoder will handle relevance ranking
+            # Short queries like "What is EMAP?" need low thresholds to find relevant docs
+            min_similarity = retrieval_options.get("min_similarity", 0.01)
+
+            # Configure advanced retrieval
+            config = RetrievalConfig(
+                use_rag_fusion=True,  # Multi-query + Reciprocal Rank Fusion
+                use_reranking=True,   # Cross-encoder attention for precision
+                use_hyde=False,       # HyDE adds latency, skip for streaming
+                final_k=max_documents,
+                min_score=-100.0,     # Cross-encoder uses logit scores (can be negative)
+                initial_k=max_documents * 4  # Get more initially for fusion/reranking
             )
+
+            # Create retriever with base Qdrant search
+            from app.qdrant_client import get_qdrant_client
+            from app.embeddings import get_embedding
+
+            qdrant = get_qdrant_client()
+
+            def base_retriever(query, collection=None, org_id=None, limit=10, **kwargs):
+                """Base retriever that calls Qdrant."""
+                query_embedding = get_embedding(query)
+                # Use low threshold for initial retrieval - cross-encoder will rerank
+                results = qdrant.search(
+                    org_id=org_id,
+                    query_vector=query_embedding,
+                    limit=limit,
+                    score_threshold=0.01,  # Very low for broad recall, reranker filters
+                    collection=collection or "org_documents"
+                )
+                # Convert SearchResult dataclass objects to RetrievalResult format
+                # Note: qdrant.search() returns SearchResult objects with attributes, not dicts
+                return [
+                    RetrievalResult(
+                        id=str(r.id),
+                        content=r.content,
+                        score=r.score,
+                        metadata=r.metadata,
+                        collection=r.collection
+                    )
+                    for r in results
+                ]
+
+            retriever = AdvancedRetriever(base_retriever=base_retriever, config=config)
+
+            # Execute advanced retrieval
+            retrieval_results = await asyncio.to_thread(
+                retriever.retrieve,
+                request.query,
+                collection="org_documents",
+                org_id=request.org_id,
+                config=config
+            )
+
+            # Convert to dict format for downstream processing
+            context_docs = [
+                {
+                    "id": r.id,
+                    "document_id": r.id,
+                    "title": r.metadata.get("title", ""),
+                    "source": r.metadata.get("source", r.collection),
+                    "content": r.content,
+                    "text": r.content,
+                    "score": r.score
+                }
+                for r in retrieval_results
+            ]
 
             # Send context event
             context_data = {

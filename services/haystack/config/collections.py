@@ -324,7 +324,7 @@ COLLECTIONS: Dict[str, CollectionConfig] = {
     # =========================================================================
 
     "org_documents": CollectionConfig(
-        name="org_{org_id}_documents",
+        name="knowverse_org_{org_id}_embeddings",
         display_name="Organization Documents",
         description="User-uploaded documents for an organization",
         domain="custom",

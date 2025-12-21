@@ -4,6 +4,11 @@ Rails.application.routes.draw do
   root 'home#index'
   get 'dashboard', to: 'home#dashboard'
 
+  # Static pages
+  get '/privacy', to: 'pages#privacy', as: :privacy
+  get '/terms', to: 'pages#terms', as: :terms
+  get '/docs', to: 'pages#documentation', as: :documentation
+
   # Convenience routes that redirect to organization-scoped resources
   get '/documents', to: 'documents#index', as: :documents_root
   get '/rag', to: 'rag#index', as: :rag_root
@@ -71,6 +76,7 @@ Rails.application.routes.draw do
   # Main search route
   get '/search', to: 'search#index', as: :search
   post '/search/query', to: 'search#query', as: :search_query
+  get '/search/query', to: 'search#query'  # Support GET for form submission
   get '/search/results/:id', to: 'search#results', as: :results_search
   get '/search/streaming', to: 'search#streaming', as: :basic_search_streaming
 

@@ -125,9 +125,9 @@
                                   [
                                     ['Mini (384d)', 'mini'],
                                     ['Small (768d)', 'small'],
-                                    ['Base (1024d)', 'base'],
-                                    ['Large (1536d)', 'large'],
-                                    ['XL (2048d)', 'xl']
+                                    ['Base (768d)', 'base'],
+                                    ['Large (1024d)', 'large'],
+                                    ['XL (768d)', 'xl']
                                   ], 
                                   { selected: 'base' }, 
                                   { class: "kv-input kv-select",
@@ -151,16 +151,16 @@
                 <div id="similarity-threshold" class="hidden" data-search-form-target="similarityThreshold">
                   <%= form.label :min_similarity, "Min. Similarity", class: "kv-label" %>
                   <div class="mt-1">
-                    <%= form.select :min_similarity, 
+                    <%= form.select :min_similarity,
                                   [
-                                    ['0.9 (Very Similar)', '0.9'],
-                                    ['0.8 (Similar)', '0.8'],
-                                    ['0.7 (Moderately Similar)', '0.7'],
-                                    ['0.6 (Somewhat Similar)', '0.6'],
-                                    ['0.5 (Default)', '0.5'],
-                                    ['0.4 (Broader Results)', '0.4']
-                                  ], 
-                                  { selected: '0.5' }, 
+                                    ['0.5 (Very Similar)', '0.5'],
+                                    ['0.4 (Similar)', '0.4'],
+                                    ['0.3 (Moderately Similar)', '0.3'],
+                                    ['0.2 (Broader Results)', '0.2'],
+                                    ['0.1 (Default)', '0.1'],
+                                    ['0.05 (Very Broad)', '0.05']
+                                  ],
+                                  { selected: '0.1' },
                                   { class: "kv-input kv-select" } %>
                   </div>
                 </div>
