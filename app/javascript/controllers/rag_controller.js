@@ -183,6 +183,16 @@ export default class extends Controller {
               this.conversationIdTarget.value = data.conversation_id
               console.log('Conversation ID from context:', data.conversation_id)
             }
+            // Extract sources from documents in context (for early display)
+            if (data.documents && data.documents.length > 0) {
+              this.sourceReferences = data.documents.map(doc => ({
+                id: doc.id || doc.document_id,
+                title: doc.title || doc.meta?.title || doc.filename || `Document ${doc.id || doc.document_id}`,
+                score: doc.score
+              }))
+              this.updateSources(this.sourceReferences)
+              console.log('Sources extracted from context:', this.sourceReferences.length)
+            }
             break
           case 'sources':
             this.handleSources({ data: event.data })
@@ -295,15 +305,26 @@ export default class extends Controller {
     // Add to current response
     this.currentResponse += token
 
-    // Append token directly to response element
+    // Append token directly to response element with metric highlighting
     if (this.hasStreamingResponseTarget) {
-      this.streamingResponseTarget.textContent = this.currentResponse
+      this.streamingResponseTarget.innerHTML = this.formatStreamingText(this.currentResponse)
     }
 
     // Hide cursor while actively streaming
     if (this.hasStreamingCursorTarget) {
       this.streamingCursorTarget.classList.remove('hidden')
     }
+  }
+
+  // Format streaming text with metric highlighting (simpler than full markdown for perf)
+  formatStreamingText(text) {
+    if (!text) return ''
+    return this.escapeHtml(text)
+      // Highlight key metrics: percentages, dollar amounts, and numbers with units
+      .replace(/(\d+(?:\.\d+)?%)/g, '<span class="text-indigo-600 font-medium">$1</span>')
+      .replace(/(\$\d+(?:,\d{3})*(?:\.\d+)?(?:M|K|B)?)/gi, '<span class="text-indigo-600 font-medium">$1</span>')
+      .replace(/(\d+(?:\.\d+)?x\b)/gi, '<span class="text-indigo-600 font-medium">$1</span>')
+      .replace(/\n/g, '<br>')
   }
   
   // Update the performance metrics display
@@ -443,6 +464,12 @@ export default class extends Controller {
           this.conversationIdTarget.value = completeData.conversation_id
           console.log('Conversation ID from complete event:', completeData.conversation_id)
         }
+        // Extract sources from complete event if present (and we don't already have them)
+        if (completeData.sources && completeData.sources.length > 0 && this.sourceReferences.length === 0) {
+          this.sourceReferences = completeData.sources
+          this.updateSources(this.sourceReferences)
+          console.log('Sources from complete event:', this.sourceReferences.length)
+        }
       } catch (e) {
         console.warn('Could not parse complete event data:', e)
       }
@@ -540,12 +567,14 @@ export default class extends Controller {
     const assistantDiv = document.createElement('div')
     assistantDiv.className = 'flex justify-start mb-4'
 
-    // Build sources HTML if present
+    // Build sources HTML if present (matching homepage preview pill style)
     let sourcesHtml = ''
     if (sources && sources.length > 0) {
-      const sourceSpans = sources.map(s =>
-        `<span class="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">${this.escapeHtml(s.title || 'Document')}</span>`
-      ).join('')
+      const orgId = this.getOrganizationId()
+      const sourceSpans = sources.map(s => {
+        const href = s.id ? `/organizations/${orgId}/documents/${s.id}` : '#'
+        return `<a href="${href}" target="_blank" class="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors border border-gray-100">${this.escapeHtml(s.title || 'Document')}</a>`
+      }).join('')
       sourcesHtml = `
         <div class="mt-3 pt-2 border-t border-gray-200">
           <p class="text-xs text-gray-500 mb-1">Sources:</p>
@@ -602,52 +631,42 @@ export default class extends Controller {
     return div.innerHTML
   }
 
-  // Simple markdown formatting (bold, italic, code, links)
+  // Simple markdown formatting (bold, italic, code, links) + metric highlighting
   formatMarkdown(text) {
     if (!text) return ''
     return this.escapeHtml(text)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/`(.+?)`/g, '<code class="bg-gray-200 px-1 rounded">$1</code>')
+      // Highlight key metrics: percentages, dollar amounts, and numbers with units
+      .replace(/(\d+(?:\.\d+)?%)/g, '<span class="text-indigo-600 font-medium">$1</span>')
+      .replace(/(\$\d+(?:,\d{3})*(?:\.\d+)?(?:M|K|B)?)/gi, '<span class="text-indigo-600 font-medium">$1</span>')
+      .replace(/(\d+(?:\.\d+)?x\b)/gi, '<span class="text-indigo-600 font-medium">$1</span>')
       .replace(/\n/g, '<br>')
   }
   
   // Update the sources list in the UI
   updateSources(sources) {
     if (!sources || !sources.length) return
-    
+
     // Clear current sources
     this.sourcesTarget.innerHTML = ''
-    
-    // Add design system class to source list
-    if (!this.sourcesTarget.classList.contains('kv-sources-list')) {
-      this.sourcesTarget.classList.add('kv-sources-list')
-    }
-    
-    // Add each source to the list
+
+    // Style as flex wrap container for pills
+    this.sourcesTarget.className = 'flex flex-wrap gap-1'
+
+    // Add each source as a pill (matching homepage preview style)
     sources.forEach(source => {
-      const li = document.createElement('li')
-      li.dataset.sourceId = source.id
-      
-      const link = document.createElement('a')
-      link.href = `/organizations/${this.getOrganizationId()}/documents/${source.id}`
-      link.className = 'kv-link'
-      link.textContent = source.title || `Document ${source.id}`
-      link.target = '_blank'
-      
-      li.appendChild(link)
-      
-      // Add score if available
-      if (source.score) {
-        const scoreSpan = document.createElement('span')
-        scoreSpan.className = 'kv-text-secondary ml-1'
-        scoreSpan.textContent = `(${Math.round(source.score * 100)}% match)`
-        li.appendChild(scoreSpan)
-      }
-      
-      this.sourcesTarget.appendChild(li)
+      const pill = document.createElement('a')
+      pill.href = `/organizations/${this.getOrganizationId()}/documents/${source.id}`
+      pill.target = '_blank'
+      pill.dataset.sourceId = source.id
+      pill.className = 'text-xs bg-white px-2 py-0.5 rounded-full text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors cursor-pointer border border-gray-100'
+      pill.textContent = source.title || `Document ${source.id}`
+
+      this.sourcesTarget.appendChild(pill)
     })
-    
+
     // Show the sources container
     this.sourcesContainerTarget.classList.remove('hidden')
   }
