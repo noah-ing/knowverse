@@ -15,19 +15,20 @@ module Users
     def update
       old_name = @user.name
       had_avatar = @user.avatar.attached?
-      
+      old_blob_id = @user.avatar.attached? ? @user.avatar.blob_id : nil
+
       if @user.update(user_params)
         # Track profile update with Ahoy
         changes = {}
-        changes[:name_changed] = old_name != @user.name if old_name != @user.name
-        changes[:avatar_added] = !had_avatar && @user.avatar.attached?
-        changes[:avatar_changed] = had_avatar && @user.avatar.attached? && @user.avatar.blob_id != @user.avatar_before_last_save&.blob_id
-        changes[:avatar_removed] = had_avatar && !@user.avatar.attached?
-        
-        ahoy.track "profile_updated", 
+        changes[:name_changed] = true if old_name != @user.name
+        changes[:avatar_added] = true if !had_avatar && @user.avatar.attached?
+        changes[:avatar_changed] = true if had_avatar && @user.avatar.attached? && @user.avatar.blob_id != old_blob_id
+        changes[:avatar_removed] = true if had_avatar && !@user.avatar.attached?
+
+        ahoy.track "profile_updated",
           user_id: @user.id,
           changes: changes
-        
+
         redirect_to users_profile_path, notice: "Profile was successfully updated."
       else
         render :edit, status: :unprocessable_entity
