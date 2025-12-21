@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_28_093000) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_21_211433) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -489,7 +489,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_04_28_093000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "vector_embedding_id"
+    t.bigint "organization_id"
+    t.jsonb "coordinates"
+    t.integer "dimensions", default: 3
+    t.integer "lod_level", default: 0
+    t.jsonb "parameters", default: {}
+    t.index ["algorithm", "lod_level"], name: "index_vector_projections_on_algorithm_and_lod_level"
     t.index ["document_id"], name: "index_vector_projections_on_document_id"
+    t.index ["organization_id"], name: "index_vector_projections_on_organization_id"
     t.index ["vector_embedding_id"], name: "index_vector_projections_on_vector_embedding_id"
   end
 

@@ -22,6 +22,8 @@ Built with Rails 8, PostgreSQL, Qdrant vector database, and Python/Haystack for 
 | **Hybrid Search** | Combines semantic and keyword search using Reciprocal Rank Fusion |
 | **RAG Chat** | Conversational AI with streaming responses, powered by GPT-4o or Claude |
 | **Document Processing** | PDF, DOCX, and Excel extraction with table support |
+| **Vector Visualization** | Interactive 3D visualization of document embeddings with t-SNE/UMAP projections |
+| **Document Clustering** | Group similar documents using K-Means, Hierarchical, or DBSCAN algorithms |
 | **Multi-Tenancy** | Organization-based data isolation with role-based access |
 | **Cross-Encoder Reranking** | Optional second-stage reranking for improved relevance |
 
