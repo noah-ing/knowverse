@@ -60,7 +60,14 @@
                     <p class="text-xs text-gray-500 mb-1">Sources:</p>
                     <div class="flex flex-wrap gap-1">
                       <% message.metadata['sources'].each do |source| %>
-                        <span class="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600"><%= source['title'] || source[:title] %></span>
+                        <% doc_id = source['id'] || source[:id] %>
+                        <% if doc_id %>
+                          <%= link_to organization_document_path(@organization, doc_id), target: '_blank', class: "text-xs bg-white px-2 py-0.5 rounded-full text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors border border-gray-100" do %>
+                            <%= source['title'] || source[:title] || 'Document' %>
+                          <% end %>
+                        <% else %>
+                          <span class="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600 border border-gray-100"><%= source['title'] || source[:title] || 'Document' %></span>
+                        <% end %>
                       <% end %>
                     </div>
                   </div>
@@ -87,14 +94,26 @@
               <span class="text-xs font-medium text-indigo-600">KnowVerse</span>
               <span data-rag-target="status" class="text-xs text-gray-400">
                 <span data-rag-target="waiting" class="hidden">
-                  <span class="inline-flex gap-1">
-                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
-                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
-                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                  <span class="inline-flex items-center gap-1">
+                    <span class="inline-flex gap-1 mr-1">
+                      <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                      <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                      <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                    </span>
+                    <span>analyzing documents...</span>
                   </span>
                 </span>
-                <span data-rag-target="streaming" class="hidden">typing...</span>
-                <span data-rag-target="complete" class="hidden">✓</span>
+                <span data-rag-target="streaming" class="hidden">
+                  <span class="inline-flex items-center gap-1">
+                    <span class="inline-flex gap-1 mr-1">
+                      <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                      <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                      <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                    </span>
+                    <span>generating response...</span>
+                  </span>
+                </span>
+                <span data-rag-target="complete" class="hidden text-green-500">✓</span>
               </span>
             </div>
             <div data-rag-target="streamingResponse" class="text-sm leading-relaxed"></div>
