@@ -5,6 +5,26 @@ All notable changes to the Knowverse project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-12-21
+
+### Added - UI/UX Improvements
+- **Recent Activity Feed**: Organization dashboard now shows live activity including document uploads, processing completions, searches, RAG conversations, and embedding generations with distinct icons and colors
+- **Vector Visualization**: Complete 3D vector space visualization with Three.js, including t-SNE/UMAP projections, interactive controls, and available projections table
+- **Clusters Tab**: Document clustering analysis with K-Means, Hierarchical, and DBSCAN algorithms
+- **Comparison Tab**: Document similarity comparison and semantic search for finding similar documents
+
+### Fixed - Tab Navigation
+- Fixed Document Filters and Time Range tabs on search page (Stimulus controller methods were missing)
+- Fixed Clusters and Comparison tabs on vectors page (controller scope didn't include panels)
+- Fixed `@hotwire/stimulus` import typo to `@hotwired/stimulus` in document_filters_controller
+
+### Changed - Design System
+- **Berkeley Mono Font**: Applied globally across the application for consistent monospace typography
+- **RAG Chat UI**: Aligned chat interface styling with homepage preview card design
+- **Profile Improvements**: Fixed avatar tracking and display across navigation and profile pages
+
+---
+
 ## [2.1.0] - 2025-12-16
 
 ### Changed - Honest Documentation Overhaul
