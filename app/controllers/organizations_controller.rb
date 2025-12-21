@@ -67,10 +67,106 @@ class OrganizationsController < ApplicationController
       @document_by_status = { "completed" => 0, "processing" => 0, "pending" => 0, "failed" => 0 }
       @recent_uploads = []
     end
-    
+
     # Initialize search and RAG counts if not already set
     @search_count ||= 0
     @rag_count ||= 0
+
+    # Build recent activities feed
+    @recent_activities = build_recent_activities
+  end
+
+  def build_recent_activities
+    activities = []
+
+    # Document uploads (last 30 days)
+    begin
+      @organization.documents.where('created_at > ?', 30.days.ago).order(created_at: :desc).limit(10).each do |doc|
+        activities << OpenStruct.new(
+          title: "Document uploaded",
+          description: doc.title.truncate(50),
+          created_at: doc.created_at,
+          icon: "document",
+          color: "indigo"
+        )
+      end
+    rescue => e
+      Rails.logger.debug "Could not load document activities: #{e.message}"
+    end
+
+    # Document processing completions
+    begin
+      @organization.documents.where(status: 'processed').where('updated_at > ?', 30.days.ago)
+        .where('updated_at != created_at').order(updated_at: :desc).limit(5).each do |doc|
+        activities << OpenStruct.new(
+          title: "Document processed",
+          description: "#{doc.title.truncate(40)} is ready for search",
+          created_at: doc.updated_at,
+          icon: "check",
+          color: "green"
+        )
+      end
+    rescue => e
+      Rails.logger.debug "Could not load processing activities: #{e.message}"
+    end
+
+    # Search queries
+    begin
+      if defined?(SearchQuery) && SearchQuery.table_exists?
+        SearchQuery.where(organization_id: @organization.id).where('created_at > ?', 30.days.ago)
+          .order(created_at: :desc).limit(10).each do |query|
+          activities << OpenStruct.new(
+            title: "Search performed",
+            description: query.query_text.truncate(50),
+            created_at: query.created_at,
+            icon: "search",
+            color: "blue"
+          )
+        end
+      end
+    rescue => e
+      Rails.logger.debug "Could not load search activities: #{e.message}"
+    end
+
+    # Conversation sessions (RAG chats)
+    begin
+      if defined?(ConversationSession) && ConversationSession.table_exists?
+        ConversationSession.where(organization_id: @organization.id).where('created_at > ?', 30.days.ago)
+          .order(created_at: :desc).limit(10).each do |convo|
+          activities << OpenStruct.new(
+            title: "RAG conversation started",
+            description: convo.title.present? ? convo.title.truncate(50) : "New conversation",
+            created_at: convo.created_at,
+            icon: "chat",
+            color: "purple"
+          )
+        end
+      end
+    rescue => e
+      Rails.logger.debug "Could not load conversation activities: #{e.message}"
+    end
+
+    # Embedding completions
+    begin
+      if defined?(VectorEmbedding) && VectorEmbedding.table_exists?
+        VectorEmbedding.joins(:document).where(documents: { organization_id: @organization.id })
+          .where(status: 'processed').where('vector_embeddings.updated_at > ?', 7.days.ago)
+          .order('vector_embeddings.updated_at DESC').limit(5).each do |emb|
+          activities << OpenStruct.new(
+            title: "Embeddings generated",
+            description: "#{emb.document&.title&.truncate(40)} (#{emb.embedding_model})",
+            created_at: emb.updated_at,
+            icon: "sparkles",
+            color: "amber"
+          )
+        end
+      end
+    rescue => e
+      Rails.logger.debug "Could not load embedding activities: #{e.message}"
+    end
+
+    # Sort all activities by created_at and take most recent
+    activities.sort_by { |a| -a.created_at.to_i }.first(10)
   end
 
   # GET /organizations/1/settings
