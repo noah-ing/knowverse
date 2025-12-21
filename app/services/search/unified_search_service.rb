@@ -27,8 +27,8 @@ module Search
     # Default search parameters
     DEFAULT_LIMIT = 10
     # Score threshold for cosine similarity (0-1 scale)
-    # Lower threshold to capture more semantic matches - 0.2 works well for sentence-transformers
-    DEFAULT_SCORE_THRESHOLD = 0.2
+    # Low threshold to capture semantic matches - cross-encoder reranking handles precision
+    DEFAULT_SCORE_THRESHOLD = 0.1
 
     def initialize(qdrant: nil, haystack: nil)
       @qdrant = qdrant || default_qdrant_client
@@ -38,17 +38,29 @@ module Search
 
     # Main search entry point
     # Supports: :semantic, :keyword, :hybrid
-    def search(query, organization_id, mode: :semantic, **options)
-      case mode
+    # @param rerank [Boolean] Whether to apply cross-encoder reranking (improves relevance)
+    def search(query, organization_id, mode: :semantic, rerank: false, **options)
+      # Extract hybrid-specific options
+      vector_weight = options.delete(:vector_weight) || 0.7
+      keyword_weight = options.delete(:keyword_weight) || 0.3
+
+      results = case mode
       when :semantic
         semantic_search(query, organization_id, **options)
       when :keyword
         keyword_search(query, organization_id, **options)
       when :hybrid
-        hybrid_search(query, organization_id, **options)
+        hybrid_search(query, organization_id, vector_weight: vector_weight, keyword_weight: keyword_weight, **options)
       else
         raise ArgumentError, "Unknown search mode: #{mode}. Use :semantic, :keyword, or :hybrid"
       end
+
+      # Apply cross-encoder reranking if requested
+      if rerank && results.any?
+        results = rerank_results(query, results, options[:limit] || DEFAULT_LIMIT)
+      end
+
+      results
     end
 
     # Pure vector similarity search using Qdrant
@@ -156,7 +168,7 @@ module Search
       ensure_collection_exists(collection)
 
       # Generate embedding
-      embedding = @haystack.generate_embedding(document.content)
+      embedding = @haystack.generate_embeddings(document.content)
 
       unless embedding&.is_a?(Array) && embedding.length > 0
         raise EmbeddingError, "Failed to generate embedding for document #{document.id}"
@@ -317,7 +329,7 @@ module Search
 
       @cache.fetch(cache_key, expires_in: 1.hour) do
         # Use generate_embeddings with options hash (supports monkey-patched caching)
-        embedding = @haystack.generate_embeddings(query, { organization_id: organization_id })
+        embedding = @haystack.generate_embeddings(query, organization_id: organization_id)
 
         unless embedding&.is_a?(Array) && embedding.size > 0
           raise EmbeddingError, "Failed to generate embedding for query"
@@ -346,8 +358,8 @@ module Search
       {
         organization_id: document.organization_id,
         title: document.title,
-        file_name: document.file_name,
-        content_type: document.content_type,
+        file_name: document.file_path,
+        file_type: document.file_type,
         status: document.status || 'active',
         created_at: document.created_at&.iso8601,
         updated_at: document.updated_at&.iso8601,
@@ -374,31 +386,94 @@ module Search
     end
 
     def format_results(qdrant_results, latency_ms)
-      qdrant_results.map.with_index do |result, rank|
+      results = qdrant_results.map.with_index do |result, rank|
+        payload = result[:payload] || {}
+        # Document ID is stored in payload (integer), point ID is the chunk UUID
+        doc_id = payload['document_id'] || payload[:document_id] || result[:id]
         {
-          document_id: result[:id],
-          score: result[:score],
-          distance: result[:distance],
-          rank: rank + 1,
-          payload: result[:payload],
-          source: :qdrant
+          'document_id' => doc_id,
+          'chunk_id' => result[:id],
+          'score' => result[:score],
+          'distance' => result[:distance],
+          'rank' => rank + 1,
+          'title' => payload['title'] || payload[:title],
+          'snippet' => payload['content'] || payload[:content] || payload['snippet']&.to_s&.truncate(300),
+          'file_name' => payload['file_name'] || payload[:file_name],
+          'file_type' => payload['file_type'] || payload[:file_type],
+          'chunk_index' => payload['chunk_index'] || payload[:chunk_index],
+          'source' => 'qdrant'
         }
+      end
+
+      # Deduplicate by document - keep only the highest-scoring chunk per document
+      deduplicate_by_document(results)
+    end
+
+    # Keep only the best-scoring chunk per document
+    def deduplicate_by_document(results)
+      best_by_doc = {}
+
+      results.each do |result|
+        doc_id = result['document_id']
+        existing = best_by_doc[doc_id]
+
+        # Keep the result with the highest score for each document
+        if existing.nil? || (result['score'] || 0) > (existing['score'] || 0)
+          best_by_doc[doc_id] = result
+        end
+      end
+
+      # Return deduplicated results, re-ranked by score
+      best_by_doc.values.sort_by { |r| -(r['score'] || 0) }.each_with_index.map do |result, idx|
+        result['rank'] = idx + 1
+        result
       end
     end
 
     def format_document_results(documents)
       documents.map.with_index do |doc, rank|
         {
-          document_id: doc.id,
-          score: 1.0, # Keyword search doesn't have similarity score
-          rank: rank + 1,
-          payload: {
-            title: doc.title,
-            file_name: doc.file_name,
-            snippet: doc.content&.truncate(500)
-          },
-          source: :keyword
+          'document_id' => doc.id,
+          'score' => 1.0, # Keyword search doesn't have similarity score
+          'rank' => rank + 1,
+          'title' => doc.title,
+          'file_name' => doc.file_name,
+          'snippet' => doc.content&.truncate(500),
+          'source' => 'keyword'
         }
+      end
+    end
+
+    # Rerank results using cross-encoder model via Haystack service
+    # Cross-encoder provides more accurate relevance scores than bi-encoder
+    def rerank_results(query, results, limit)
+      return results if results.empty?
+
+      begin
+        response = @haystack.rerank(
+          query: query,
+          documents: results,
+          top_k: limit
+        )
+
+        if response.success? && response.data['results'].present?
+          # Merge rerank scores back into results
+          reranked = response.data['results'].map.with_index do |r, idx|
+            result = r.dup
+            result['rank'] = idx + 1
+            result['original_score'] = result['score']
+            result['score'] = result['rerank_score'] || result['score']
+            result
+          end
+          Rails.logger.info("Reranked #{results.size} results to top #{reranked.size}")
+          reranked
+        else
+          Rails.logger.warn("Reranking failed, returning original results")
+          results
+        end
+      rescue => e
+        Rails.logger.error("Reranking error: #{e.message}")
+        results # Return original results on error
       end
     end
 
@@ -411,7 +486,7 @@ module Search
 
       result_sets.each_with_index do |results, set_idx|
         results.each_with_index do |result, rank|
-          doc_id = result[:document_id]
+          doc_id = result['document_id']
           # RRF formula: 1 / (k + rank)
           rrf_score = weights[set_idx] * (1.0 / (k + rank + 1))
           scores[doc_id] += rrf_score
@@ -422,8 +497,8 @@ module Search
       # Sort by fused score
       scores.sort_by { |_, score| -score }.map do |doc_id, fused_score|
         docs[doc_id].merge(
-          fused_score: fused_score,
-          score: fused_score
+          'fused_score' => fused_score,
+          'score' => fused_score
         )
       end
     end

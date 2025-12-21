@@ -87,7 +87,7 @@
 
   /* Typography */
   --kv-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --kv-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --kv-font-mono: "Berkeley Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   
   /* Font Sizes */
   --kv-text-xs: 0.75rem;
@@ -1073,7 +1073,8 @@
   background-color: var(--message-user-bg);
   border: 1px solid var(--message-user-border);
   box-shadow: var(--kv-shadow-sm);
-  align-self: flex-start;
+  align-self: flex-end;
+  margin-left: auto;
 }
 
 .dark .kv-message-user {
@@ -1084,9 +1085,8 @@
 .kv-message-system {
   background-color: var(--message-system-bg);
   border: 1px solid var(--message-system-border);
-  margin-left: auto;
   box-shadow: var(--kv-shadow-sm);
-  align-self: flex-end;
+  align-self: flex-start;
 }
 
 .dark .kv-message-system {

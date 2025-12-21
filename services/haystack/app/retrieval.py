@@ -53,10 +53,10 @@ class ContextRetriever:
         
         # Extract retrieval options
         max_documents = options.get("max_documents", 5)
-        # Use lower threshold if not specified or if specified value is too high
+        # Use very low threshold - cross-encoder reranking handles relevance filtering
         min_similarity = options.get("min_similarity")
         if min_similarity is None or min_similarity > 0.5:
-            min_similarity = 0.3  # Lower threshold for more results
+            min_similarity = 0.01  # Very low for broad recall, reranker filters for precision
         strategy = options.get("strategy", "auto")
         
         # Parse query to understand intent and complexity
@@ -73,17 +73,19 @@ class ContextRetriever:
             use_hybrid = strategy.lower() in ["hybrid", "both"]
         
         # Determine collection and embedding type
-        collection = options.get("collection", "sec_edgar")  # Default to SEC EDGAR for rich data
-        embedding_type = options.get("embedding_type", "openai")  # openai or local
+        # Default to organization's documents (uses local embeddings)
+        collection = options.get("collection", "org_documents")
+        embedding_type = options.get("embedding_type", "local")
 
-        # Get query embedding based on type
-        if embedding_type == "openai" or collection == "sec_edgar":
-            # SEC EDGAR uses OpenAI ada-002 embeddings
+        # Get query embedding based on collection type
+        if collection == "sec_edgar":
+            # SEC EDGAR uses OpenAI ada-002 embeddings (1536d)
             query_embedding = get_openai_embedding(query, model='ada002')
-            logger.info(f"Using OpenAI ada-002 embeddings (1536d)")
+            logger.info(f"Using OpenAI ada-002 embeddings (1536d) for SEC EDGAR")
         else:
+            # Organization documents use local embeddings (768d)
             query_embedding = get_embedding(query)
-            logger.info(f"Using local embeddings (768d)")
+            logger.info(f"Using local embeddings (768d) for {collection}")
 
         top_k = max_documents * 2  # Get more results initially for filtering
 

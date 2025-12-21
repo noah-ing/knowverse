@@ -1,0 +1,34 @@
+/* Berkeley Mono v2 - U.S. Graphics Company */
+/* License: LT-03 Indie Font License (NWQ3-0553-Z1NZ-705Z) */
+
+@font-face {
+  font-family: 'Berkeley Mono';
+  src: url('/assets/BerkeleyMono-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Berkeley Mono';
+  src: url('/assets/BerkeleyMono-Oblique.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Berkeley Mono';
+  src: url('/assets/BerkeleyMono-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Berkeley Mono';
+  src: url('/assets/BerkeleyMono-Bold-Oblique.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}

@@ -1,207 +1,143 @@
-# Knowverse
+# KnowVerse
 
-Enterprise AI knowledge management platform with vector search and RAG capabilities.
+AI-powered knowledge management platform with semantic search and retrieval-augmented generation (RAG).
+
+![KnowVerse Homepage](docs/screenshot.png)
 
 ## Overview
 
-Knowverse is a multi-tenant document intelligence platform that combines semantic search with retrieval-augmented generation (RAG). Users can upload documents, search across their organization's knowledge base using natural language, and get AI-powered answers grounded in their actual data.
+KnowVerse is a multi-tenant document intelligence platform that enables organizations to:
 
-The platform supports OpenAI GPT-4o and Anthropic Claude for generation, with streaming responses for real-time interaction.
+- **Upload documents** (PDF, Word, Excel) and automatically extract and index content
+- **Search semantically** using natural language instead of exact keywords
+- **Ask questions** and receive AI-generated answers grounded in your actual documents
+- **Track sources** with inline citations linking back to original documents
+
+Built with Rails 8, PostgreSQL, Qdrant vector database, and Python/Haystack for ML operations.
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Semantic Search** | Vector similarity search using sentence embeddings (all-mpnet-base-v2) |
+| **Hybrid Search** | Combines semantic and keyword search using Reciprocal Rank Fusion |
+| **RAG Chat** | Conversational AI with streaming responses, powered by GPT-4o or Claude |
+| **Document Processing** | PDF, DOCX, and Excel extraction with table support |
+| **Multi-Tenancy** | Organization-based data isolation with role-based access |
+| **Cross-Encoder Reranking** | Optional second-stage reranking for improved relevance |
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                Rails 8 (Web UI, Auth, Admin, API)               │
-│                          Port 3000                              │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-       ┌───────────────────────┼───────────────────────┐
-       │                       │                       │
-       ▼                       ▼                       ▼
-┌─────────────┐  ┌───────────────────────┐  ┌─────────────────┐
-│ PostgreSQL  │  │        Qdrant         │  │    Haystack     │
-│ (Metadata)  │  │   (Vector Search)     │  │    (Python)     │
-│ Port 5432   │  │     Port 6333         │  │   Port 8000     │
-└─────────────┘  └───────────────────────┘  └─────────────────┘
-                                                     │
-                          ┌──────────────────────────┤
-                          │                          │
-                          ▼                          ▼
-               ┌─────────────────────┐   ┌─────────────────────┐
-               │   Rust Embedding    │   │   Rust DocProc      │
-               │   (ONNX Runtime)    │   │   (WASM Sandbox)    │
-               │   Port 8001         │   │   Port 8002         │
-               └─────────────────────┘   └─────────────────────┘
+Rails 8 (Web/API)  ─────┬───── PostgreSQL (Metadata + pgvector)
+      │                 │
+      │                 ├───── Qdrant (Vector Search)
+      │                 │
+      └─── Haystack ────┴───── Embeddings, Extraction, RAG
+           (Python)
 ```
 
-### Components
-
-| Component | Purpose |
-|-----------|---------|
-| **Rails 8** | Web application, REST API, authentication (Devise), multi-tenancy, background jobs (SolidQueue) |
-| **PostgreSQL** | Primary database with pgvector extension for hybrid search |
-| **Qdrant** | High-performance vector database with HNSW indexing |
-| **Haystack** | Python/FastAPI service handling embeddings, document extraction, and RAG orchestration |
-| **Rust Services** | Optional high-performance ONNX embedding (10-50x faster) and WASM-sandboxed document parsing |
-| **Redis** | Two-tier caching (memory + Redis) and session storage |
-
-## Current Status
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| Core API | ✅ Complete | Multi-tenant REST API with Devise authentication |
-| Vector Search | ✅ Complete | Qdrant integration with 768-dimensional embeddings |
-| Hybrid Search | ✅ Complete | Combines semantic and keyword search using RRF fusion |
-| **RAG Pipeline** | ✅ **Working** | Full pipeline with OpenAI GPT-4o and Anthropic Claude |
-| Document Processing | ✅ Complete | PDF, DOCX, and Excel extraction with table support |
-| Embeddings | ✅ Complete | SentenceTransformers (all-mpnet-base-v2) with optional Rust acceleration |
-| Test Suite | ✅ Complete | RSpec, pytest, and Rust tests with CI/CD |
-| Frontend | ⚠️ Stale | Needs review and updates |
-| Production Hardening | 🔲 Not Started | Load testing, monitoring, alerting |
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 
-- Ruby 3.2.2+
+- Ruby 3.2+
 - Python 3.11+
 - PostgreSQL 14+ with pgvector
 - Redis 7+
-- Docker (recommended)
+- Docker (optional)
 
-### Quick Start with Docker
+### Development Setup
 
-Start all services with a single command:
+```bash
+# Clone and install
+git clone https://github.com/your-org/knowverse.git
+cd knowverse
+
+# Install dependencies
+bundle install
+pip install -r services/haystack/requirements.txt
+
+# Database setup
+bin/rails db:setup
+
+# Start services
+docker compose up -d qdrant redis
+bin/rails server
+
+# In another terminal
+cd services/haystack && uvicorn app.main:app --reload
+```
+
+### Docker (Full Stack)
 
 ```bash
 docker compose up -d
 ```
 
-For the optional high-performance Rust services:
+## Configuration
 
-```bash
-docker compose --profile rust up -d
+Create a `.env` file:
+
+```env
+DATABASE_URL=postgres://localhost/knowverse_development
+REDIS_URL=redis://localhost:6379
+QDRANT_URL=http://localhost:6333
+HAYSTACK_SERVICE_URL=http://localhost:8000
+
+# AI providers (at least one required for RAG)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### Local Development (macOS)
+## API Endpoints
 
-Install Ruby via rbenv, set up the database, and start the Rails server. The Haystack Python service runs separately via uvicorn, and Qdrant runs in Docker.
+### Documents
 
-See the architecture diagram above for the full service topology.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/documents` | Upload document |
+| GET | `/api/v1/organizations/:id/documents` | List documents |
+| DELETE | `/api/v1/documents/:id` | Delete document |
 
-### Environment Configuration
+### Search
 
-Create a `.env` file with:
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/search` | Semantic/hybrid search |
+| GET | `/search` | Web search interface |
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `REDIS_URL` | Yes | Redis connection string |
-| `QDRANT_URL` | Yes | Qdrant vector database URL |
-| `HAYSTACK_SERVICE_URL` | Yes | Haystack Python service URL |
-| `OPENAI_API_KEY` | For RAG | OpenAI API key for GPT-4o |
-| `ANTHROPIC_API_KEY` | For RAG | Anthropic API key for Claude |
+### RAG
 
-## API Reference
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/rag/query` | Single question/answer |
+| POST | `/rag/stream` | Streaming response (SSE) |
 
-### Rails API (Port 3000)
+## Technology Stack
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/documents` | POST | Upload a document |
-| `/api/v1/search` | POST | Search documents |
-| `/api/v1/organizations/:id/documents` | GET | List organization documents |
-| `/health` | GET | Service health check |
+- **Backend**: Rails 8, Ruby 3.2
+- **Database**: PostgreSQL 14+ with pgvector
+- **Vector Store**: Qdrant (HNSW indexing)
+- **ML Services**: Python 3.11, Haystack, FastAPI
+- **Embeddings**: SentenceTransformers (all-mpnet-base-v2)
+- **LLMs**: OpenAI GPT-4o, Anthropic Claude
+- **Frontend**: Hotwire (Turbo + Stimulus), Tailwind CSS
+- **Background Jobs**: Solid Queue
+- **Caching**: Solid Cache + Redis
 
-### Haystack API (Port 8000)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/search` | POST | Semantic vector search |
-| `/hybrid-search` | POST | Combined vector + keyword search |
-| `/rag/answer` | POST | Get AI-generated answer with sources |
-| `/rag/stream` | POST | Streaming RAG response (SSE) |
-| `/embeddings/generate` | POST | Generate text embeddings |
-| `/extract/pdf` | POST | Extract text from PDF |
-| `/extract/docx` | POST | Extract text from Word documents |
-| `/extract/excel` | POST | Extract text from Excel files |
-
-## Data Ingestion
-
-### Supported Datasets
-
-The platform includes scripts for ingesting public datasets:
-
-| Dataset | Size | Use Case |
-|---------|------|----------|
-| SEC EDGAR 10-K Filings | 35K+ vectors | Financial document analysis |
-| Wikipedia | 6.4M articles | General knowledge |
-| MS MARCO | 8.8M passages | Search quality benchmarks |
-| SQuAD | 87K passages | Question answering |
-| arXiv | 203K papers | Scientific research |
-
-### Completed Ingestions
-
-| Dataset | Vectors | Model | Collection |
-|---------|---------|-------|------------|
-| SEC 10-K (2024) | 35,080 | OpenAI text-embedding-3-small | `sec_10k_v2_openai-3-small` |
-
-## Development
-
-### Running Tests
-
-Tests run automatically via GitHub Actions on every push. For local testing:
+## Testing
 
 ```bash
 # Rails
-docker compose run --rm rails bundle exec rspec
+bundle exec rspec
 
 # Python
-docker compose run --rm haystack pytest tests/ -v
+cd services/haystack && pytest
 
-# Rust
-docker compose run --rm rust-embedding cargo test
+# Linting
+bundle exec rubocop
 ```
-
-### CI/CD Pipeline
-
-The GitHub Actions workflow includes:
-
-- Security scanning (Brakeman)
-- Linting (RuboCop, Clippy)
-- Unit and integration tests for Rails, Python, and Rust
-- Docker build verification
-
-## Database Schema
-
-Key tables for AI functionality:
-
-| Table | Purpose |
-|-------|---------|
-| `documents` | Document metadata and extracted content |
-| `vector_embeddings` | Stored embeddings with model information |
-| `conversation_sessions` | RAG conversation tracking |
-| `conversation_messages` | Message history for context |
-
-## Roadmap
-
-### Completed
-- Full RAG pipeline with OpenAI and Anthropic
-- Semantic, keyword, and hybrid search
-- SEC EDGAR financial document ingestion
-- Multi-language test suite with CI/CD
-- Optional Rust high-performance services
-
-### In Progress
-- Large-scale dataset testing
-- Frontend modernization
-
-### Planned
-- Production monitoring and alerting
-- Kubernetes deployment
-- Multi-node Qdrant cluster
-- Auto-scaling policies
 
 ## License
 

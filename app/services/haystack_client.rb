@@ -23,7 +23,7 @@ class HaystackClient
     base_url: ENV.fetch('HAYSTACK_SERVICE_URL', 'http://localhost:8000'),
     rust_embedding_url: ENV.fetch('RUST_EMBEDDING_URL', 'http://localhost:8001'),
     rust_docproc_url: ENV.fetch('RUST_DOCPROC_URL', 'http://localhost:8002'),
-    timeout: 30,
+    timeout: 300,  # 5 minutes - needed for embedding generation
     max_retries: 3,
     backoff_factor: 0.5,
     use_rust_services: ENV.fetch('USE_RUST_SERVICES', 'true') == 'true'
@@ -84,7 +84,28 @@ class HaystackClient
     response = post_request('/hybrid-search', payload)
     parse_response(response)
   end
-  
+
+  # Rerank search results using cross-encoder model
+  # Uses ms-marco-MiniLM-L-6-v2 for pairwise relevance scoring
+  # @param query [String] The query to rerank against
+  # @param documents [Array<Hash>] Documents to rerank (must have snippet/content)
+  # @param top_k [Integer] Number of results to return after reranking
+  # @return [Response] Reranked documents with new scores
+  def rerank(query:, documents:, top_k: 10)
+    payload = {
+      query: query,
+      documents: documents,
+      top_k: top_k
+    }
+
+    response = post_request('/search/rerank', payload)
+    result = parse_response(response)
+    Response.new(true, result, nil)
+  rescue => e
+    Rails.logger.error("Reranking failed: #{e.message}")
+    Response.new(false, nil, e.message)
+  end
+
   # Parse a query to analyze its components for different search methods
   # @param query [String] The query to parse
   # @return [Hash] Parsed query components
@@ -576,9 +597,17 @@ class HaystackClient
             # Parse JSON data
             begin
               parsed_data = JSON.parse(event_data)
-              
+
+              # Determine event type - prefer explicit SSE event type,
+              # but fall back to JSON "type" field if SSE type is "message" (default)
+              actual_type = if event_type == "message" && parsed_data.is_a?(Hash) && parsed_data["type"]
+                parsed_data["type"]
+              else
+                event_type
+              end
+
               # Map event types to Ruby symbols
-              case event_type
+              case actual_type
               when "metadata"
                 yield({type: :metadata, data: parsed_data})
               when "token"
@@ -591,9 +620,13 @@ class HaystackClient
                 yield({type: :complete, data: parsed_data})
               when "fallback"
                 yield({type: :fallback, data: parsed_data})
+              when "context"
+                yield({type: :context, data: parsed_data})
+              when "sources"
+                yield({type: :sources, data: parsed_data})
               else
                 # Generic event handler
-                yield({type: event_type.to_sym, data: parsed_data})
+                yield({type: actual_type.to_sym, data: parsed_data})
               end
             rescue JSON::ParserError => e
               Rails.logger.error("Failed to parse SSE event: #{e.message}")

@@ -8,14 +8,14 @@ class StreamingElement < ApplicationRecord
   
   # Only define ActiveRecord relations and validations if table exists
   if table_exists?
-    belongs_to :conversation
-    
+    belongs_to :conversation_session
+
     # Validations
     validates :token_index, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
-    
+
     # Scopes
     scope :ordered, -> { order(token_index: :asc) }
-    scope :for_conversation, ->(conversation_id) { where(conversation_id: conversation_id) }
+    scope :for_conversation, ->(conversation_session_id) { where(conversation_session_id: conversation_session_id) }
     scope :completed, -> { where(complete: true) }
   end
   
@@ -40,11 +40,11 @@ class StreamingElement < ApplicationRecord
   end
   
   # Create a new token in the stream
-  def self.add_token(conversation_id, token, index, complete = false, sources = nil)
+  def self.add_token(conversation_session_id, token, index, complete = false, sources = nil)
     return nil unless table_exists?
     begin
       create(
-        conversation_id: conversation_id,
+        conversation_session_id: conversation_session_id,
         token: token,
         token_index: index,
         complete: complete,
@@ -57,10 +57,10 @@ class StreamingElement < ApplicationRecord
   end
   
   # Mark a stream as complete
-  def self.mark_complete(conversation_id)
+  def self.mark_complete(conversation_session_id)
     return false unless table_exists?
     begin
-      last_token = for_conversation(conversation_id).ordered.last
+      last_token = for_conversation(conversation_session_id).ordered.last
       last_token.update(complete: true) if last_token
     rescue => e
       Rails.logger.error("Failed to mark streaming complete: #{e.message}")

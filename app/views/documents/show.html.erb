@@ -55,27 +55,6 @@
     animate_delay: "200ms",
     title: "Document Information",
     subtitle: "Details and metadata for this document." do %>
-    <div class="flex justify-between">
-      <div></div>
-
-      <% status_class = case @document.status
-                     when 'completed' then 'bg-green-100 text-green-800'
-                     when 'processing' then 'bg-yellow-100 text-yellow-800'
-                     when 'pending' then 'bg-blue-100 text-blue-800'
-                     when 'failed' then 'bg-red-100 text-red-800'
-                     else 'bg-gray-100 text-gray-800'
-                     end %>
-      <% dark_status_class = case @document.status
-                     when 'completed' then 'dark:bg-green-900'
-                     when 'processing' then 'dark:bg-yellow-900'
-                     when 'pending' then 'dark:bg-blue-900'
-                     when 'failed' then 'dark:bg-red-900'
-                     else 'dark:bg-gray-900'
-                     end %>
-      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= status_class %> <%= dark_status_class %> transition-colors duration-200">
-        <%= @document.status.capitalize %>
-      </span>
-    </div>
     <div class="border-t border-gray-200 px-4 py-5 sm:px-6 transition-colors duration-200">
       <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
         <div class="sm:col-span-1">
@@ -94,21 +73,14 @@
           <dt class="text-sm font-medium kv-text-secondary">Embedding Status</dt>
           <dd class="mt-1 text-sm kv-text-primary">
             <% embedding_status_class = case @document.embedding_status
-                            when 'completed' then 'bg-green-100 text-green-800'
+                            when 'processed' then 'bg-green-100 text-green-800'
                             when 'processing' then 'bg-yellow-100 text-yellow-800'
-                            when 'pending' then 'bg-blue-100 text-blue-800'
+                            when 'pending' then 'bg-gray-100 text-gray-600'
                             when 'failed' then 'bg-red-100 text-red-800'
-                            else 'bg-gray-100 text-gray-800'
+                            else 'bg-gray-100 text-gray-600'
                             end %>
-            <% dark_embedding_status_class = case @document.embedding_status
-                            when 'completed' then 'dark:bg-green-900'
-                            when 'processing' then 'dark:bg-yellow-900'
-                            when 'pending' then 'dark:bg-blue-900'
-                            when 'failed' then 'dark:bg-red-900'
-                            else 'dark:bg-gray-900'
-                            end %>
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= embedding_status_class %> <%= dark_embedding_status_class %> transition-colors duration-200">
-              <%= @document.embedding_status.capitalize %>
+            <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-medium rounded-full <%= embedding_status_class %>">
+              <%= @document.embedding_status&.capitalize || 'Pending' %>
             </span>
           </dd>
         </div>
@@ -151,7 +123,7 @@
                   <div class="h-5 w-5 rounded-full <%= @document.embedding_status == 'pending' || @document.embedding_status == 'processing' ? 'bg-gray-300' : 'bg-primary-600' %> flex items-center justify-center text-white text-xs font-bold transition-colors duration-200">3</div>
                   <span class="ml-2 text-sm kv-text-primary">Embedding Generation</span>
                 </div>
-                <% if @document.embedding_status == 'completed' %>
+                <% if @document.embedding_status == 'processed' %>
                   <span class="text-xs kv-text-secondary">Complete</span>
                 <% elsif @document.embedding_status == 'processing' %>
                   <span class="text-xs kv-text-secondary">In Progress</span>
@@ -165,10 +137,10 @@
 
               <div class="flex items-center justify-between mb-1 mt-3">
                 <div class="flex items-center">
-                  <div class="h-5 w-5 rounded-full <%= @document.embedding_status != 'completed' ? 'bg-gray-300' : 'bg-green-600' %> flex items-center justify-center text-white text-xs font-bold transition-colors duration-200">✓</div>
+                  <div class="h-5 w-5 rounded-full <%= @document.embedding_status != 'processed' ? 'bg-gray-300' : 'bg-green-600' %> flex items-center justify-center text-white text-xs font-bold transition-colors duration-200">✓</div>
                   <span class="ml-2 text-sm kv-text-primary">Ready for Search</span>
                 </div>
-                <% if @document.embedding_status == 'completed' %>
+                <% if @document.embedding_status == 'processed' %>
                   <span class="text-xs kv-text-secondary">Available Now</span>
                 <% else %>
                   <span class="text-xs kv-text-secondary">Pending</span>
@@ -181,7 +153,7 @@
     </div>
   <% end %>
 
-  <% if @document.status == 'completed' %>
+  <% if @document.status == 'processed' %>
     <%= render "shared/card", 
       classes: "mb-6 transition-all duration-200 hover:shadow-lg",
       animate: "fade-in",
@@ -305,7 +277,7 @@
     <% end %>
   <% end %>
 
-  <% if @document.status == 'completed' && @document.embedding_status == 'completed' %>
+  <% if @document.status == 'processed' && @document.embedding_status == 'processed' %>
     <%= render "shared/card", 
       classes: "transition-all duration-200 hover:shadow-lg",
       animate: "fade-in",

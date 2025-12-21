@@ -49,26 +49,46 @@ class SearchRouter
 
   class << self
     # Main entry point - backwards compatible
+    # Returns { results: [...], metadata: {...} } format expected by SearchController
     def route_query(query_text, organization_id, options = {})
       provider = options[:provider]&.to_sym
       mode = map_provider_to_mode(provider)
+      model_name = options[:model_name] || 'base'
+      rerank = options[:rerank] || false
 
-      service.search(
+      start_time = Time.current
+
+      results = service.search(
         query_text,
         organization_id,
         mode: mode,
+        rerank: rerank,
         limit: options[:limit] || 10,
         filter: options[:filter],
         score_threshold: options[:min_similarity],
         vector_weight: options[:vector_weight] || 0.7,
         keyword_weight: options[:keyword_weight] || 0.3
       )
+
+      duration_ms = ((Time.current - start_time) * 1000).to_i
+
+      # Return format expected by SearchController
+      {
+        results: results,
+        metadata: {
+          provider: mode.to_s,
+          model: model_name,
+          dimension: MODELS[model_name] || 768,
+          duration_ms: duration_ms,
+          result_count: results.size
+        }
+      }
     rescue Search::UnifiedSearchService::CollectionNotFoundError => e
       Rails.logger.warn("Collection not found: #{e.message}. Falling back to empty results.")
-      []
+      { results: [], metadata: { provider: 'none', error: e.message } }
     rescue Search::UnifiedSearchService::SearchError => e
       Rails.logger.error("Search error: #{e.message}")
-      []
+      { results: [], metadata: { provider: 'error', error: e.message } }
     end
 
     # Semantic search (Qdrant)

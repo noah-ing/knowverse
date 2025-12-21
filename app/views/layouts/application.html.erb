@@ -18,6 +18,9 @@
     <%# Main application stylesheet %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
 
+    <%# Berkeley Mono font (U.S. Graphics Company) %>
+    <%= stylesheet_link_tag "fonts", "data-turbo-track": "reload" %>
+
     <%# Additional stylesheets (Propshaft doesn't support @import) %>
     <%= stylesheet_link_tag "knowverse_design_system", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "streaming", "data-turbo-track": "reload" %>
@@ -71,6 +74,12 @@
                 <% if current_organization %>
                   <%= link_to organization_documents_path(current_organization), { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 group relative" } do %>
                     <span class="relative inline-block">Documents
+                      <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
+                    </span>
+                  <% end %>
+
+                  <%= link_to search_path, { class: "nav-link px-2 py-1 kv-text-secondary hover:kv-text-accent transition-all duration-200 rounded-md hover:bg-gray-100 group relative" } do %>
+                    <span class="relative inline-block">Search
                       <span class="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 group-hover:w-full"></span>
                     </span>
                   <% end %>
@@ -313,9 +322,9 @@
           </div>
           
           <div class="flex items-center space-x-4">
-            <a href="#" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200">Privacy</a>
-            <a href="#" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200">Terms</a>
-            <a href="#" class="kv-text-secondary hover:kv-text-accent transition-colors duration-200">Documentation</a>
+            <%= link_to "Privacy", privacy_path, class: "kv-text-secondary hover:kv-text-accent transition-colors duration-200" %>
+            <%= link_to "Terms", terms_path, class: "kv-text-secondary hover:kv-text-accent transition-colors duration-200" %>
+            <%= link_to "Documentation", documentation_path, class: "kv-text-secondary hover:kv-text-accent transition-colors duration-200" %>
           </div>
         </div>
       </div>
