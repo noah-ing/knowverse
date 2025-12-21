@@ -73,7 +73,7 @@
           <!-- Advanced Search Options Tabs -->
           <div class="bg-gray-50 rounded-lg shadow-inner pt-2 transition-colors duration-200" data-controller="document-filters">
             <div class="flex border-b border-gray-200 px-4 transition-colors duration-200">
-              <button type="button" class="px-4 py-2 text-sm font-medium kv-text-accent border-b-2 border-primary-500 transition-colors duration-200" data-document-filters-target="searchOptionsTab" aria-selected="true">
+              <button type="button" class="px-4 py-2 text-sm font-medium kv-text-accent border-b-2 border-primary-500 transition-colors duration-200" data-document-filters-target="searchOptionsTab" data-action="click->document-filters#showSearchOptions" aria-selected="true">
                 Search Options
               </button>
               <button type="button" class="px-4 py-2 text-sm font-medium kv-text-secondary hover:kv-text-accent border-b-2 border-transparent hover:border-gray-300 transition-colors duration-200" data-document-filters-target="filterTab" data-action="click->document-filters#toggleFilterTab" aria-selected="false">
