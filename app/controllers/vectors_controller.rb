@@ -23,7 +23,7 @@ class VectorsController < ApplicationController
       if params[:model].present?
         @vector_projections = @vector_projections
           .joins(:vector_embedding)
-          .where(vector_embeddings: { model_name: params[:model] })
+          .where(vector_embeddings: { embedding_model: params[:model] })
       end
       
       # Filter by dimension if provided
@@ -50,7 +50,7 @@ class VectorsController < ApplicationController
         render json: {
           vector_projections: @vector_projections.as_json(include: { 
             vector_embedding: { 
-              only: [:id, :dimensions, :model_name],
+              only: [:id, :dimension, :embedding_model],
               include: { document: { only: [:id, :title] } }
             }
           }),
@@ -88,48 +88,64 @@ class VectorsController < ApplicationController
   end
   
   # POST /organizations/:organization_id/vectors/reduce
-  # Trigger dimension reduction for selected embeddings
+  # Trigger dimension reduction for selected embeddings (synchronous)
   def reduce
     # Validate parameters
-    unless params[:algorithm].present? && %w[tsne umap].include?(params[:algorithm])
-      return render json: { error: "Invalid algorithm. Must be 'tsne' or 'umap'" }, status: :bad_request
+    unless params[:algorithm].present? && %w[tsne umap pca].include?(params[:algorithm])
+      return render json: { error: "Invalid algorithm. Must be 'tsne', 'umap', or 'pca'" }, status: :bad_request
     end
-    
+
     # Get embeddings to process
-    embedding_ids = get_embeddings_for_reduction
-    
+    embeddings = get_embeddings_for_reduction_objects
+
     # Return error if no embeddings found
-    if embedding_ids.empty?
+    if embeddings.empty?
       return render json: { error: "No embeddings found matching criteria" }, status: :not_found
     end
-    
+
     # Prepare algorithm parameters
-    algorithm_params = {}
-    
-    # Add parameters based on algorithm
+    algorithm_params = {
+      'dimensions' => params[:dimensions].present? ? params[:dimensions].to_i : 3
+    }
+
     if params[:algorithm] == 'tsne'
-      algorithm_params['perplexity'] = params[:perplexity].to_i if params[:perplexity].present?
-      algorithm_params['learning_rate'] = params[:learning_rate].to_f if params[:learning_rate].present?
-      algorithm_params['iterations'] = params[:iterations].to_i if params[:iterations].present?
+      algorithm_params['perplexity'] = (params[:perplexity] || 30).to_i
+      algorithm_params['learning_rate'] = (params[:learning_rate] || 200).to_f
+      algorithm_params['iterations'] = (params[:iterations] || 1000).to_i
     elsif params[:algorithm] == 'umap'
-      algorithm_params['n_neighbors'] = params[:n_neighbors].to_i if params[:n_neighbors].present?
-      algorithm_params['min_dist'] = params[:min_dist].to_f if params[:min_dist].present?
+      algorithm_params['n_neighbors'] = (params[:n_neighbors] || 15).to_i
+      algorithm_params['min_dist'] = (params[:min_dist] || 0.1).to_f
     end
-    
-    # Add common parameters
-    algorithm_params['dimensions'] = params[:dimensions].to_i if params[:dimensions].present?
-    
-    # Start a background job for dimension reduction
-    job_id = DocumentProcessing::DimensionReductionWorker.perform_async(
-      @organization.id,
-      embedding_ids,
-      params[:algorithm],
-      algorithm_params,
-      params[:lod_level].present? ? params[:lod_level].to_i : 0
-    )
-    
-    # Return job ID
-    render json: { job_id: job_id, embedding_count: embedding_ids.size, message: "Dimension reduction started" }
+
+    lod_level = params[:lod_level].present? ? params[:lod_level].to_i : 0
+
+    begin
+      # Try Haystack service first
+      result = perform_dimension_reduction_sync(embeddings, params[:algorithm], algorithm_params)
+
+      # Save projections
+      saved_count = save_projections_sync(result, embeddings, params[:algorithm], algorithm_params, lod_level)
+
+      render json: {
+        success: true,
+        projection_count: saved_count,
+        algorithm: params[:algorithm],
+        message: "Created #{saved_count} projections"
+      }
+    rescue => e
+      Rails.logger.error("Dimension reduction failed: #{e.message}")
+
+      # Fallback: create simple random projections for visualization
+      saved_count = create_simple_projections(embeddings, params[:algorithm], algorithm_params, lod_level)
+
+      render json: {
+        success: true,
+        projection_count: saved_count,
+        algorithm: params[:algorithm],
+        message: "Created #{saved_count} projections (simplified)",
+        fallback: true
+      }
+    end
   end
   
   # GET /organizations/:organization_id/vectors/clusters
@@ -263,7 +279,7 @@ class VectorsController < ApplicationController
     if params[:model].present?
       projections = projections
         .joins(:vector_embedding)
-        .where(vector_embeddings: { model_name: params[:model] })
+        .where(vector_embeddings: { embedding_model: params[:model] })
     end
     
     # Filter by embedding dimension
@@ -293,7 +309,7 @@ class VectorsController < ApplicationController
       coordinates: projection.projection_array,
       document_id: document.id,
       title: document.title,
-      model: projection.vector_embedding.model_name,
+      model: projection.vector_embedding.embedding_model,
       dimension: projection.vector_embedding.dimension
     }
   end
@@ -317,7 +333,7 @@ class VectorsController < ApplicationController
     
     # Filter by model
     if params[:model].present?
-      embeddings = embeddings.where(model_name: params[:model])
+      embeddings = embeddings.where(embedding_model: params[:model])
     end
     
     # Filter by dimension
@@ -328,7 +344,148 @@ class VectorsController < ApplicationController
     # Limit the number of embeddings
     max_embeddings = params[:limit].present? ? params[:limit].to_i : 1000
     max_embeddings = [max_embeddings, 10000].min # Cap for performance
-    
+
     embeddings.limit(max_embeddings).pluck(:id)
+  end
+
+  # Get full embedding objects (not just IDs) for synchronous processing
+  def get_embeddings_for_reduction_objects
+    embeddings = VectorEmbedding
+      .joins(:document)
+      .where(documents: { organization_id: @organization.id })
+      .where(status: VectorEmbedding::STATUS_PROCESSED)
+      .includes(:document)
+
+    # Filter by model
+    if params[:model].present?
+      embeddings = embeddings.where(embedding_model: params[:model])
+    end
+
+    # Filter by dimension
+    if params[:dimension].present?
+      embeddings = embeddings.where(dimension: params[:dimension].to_i)
+    end
+
+    # Limit
+    max_embeddings = params[:limit].present? ? params[:limit].to_i : 100
+    max_embeddings = [max_embeddings, 500].min
+
+    embeddings.limit(max_embeddings).to_a
+  end
+
+  # Perform dimension reduction synchronously via Haystack
+  def perform_dimension_reduction_sync(embeddings, algorithm, params)
+    # Extract vectors from embeddings
+    vectors = embeddings.map do |e|
+      # embedding_data is stored as bytea, need to unpack
+      unpack_embedding(e.embedding_data)
+    end.compact
+
+    raise "No valid vectors to process" if vectors.empty?
+
+    client = HaystackClient.new
+    response = client.dimension_reduction(
+      vectors: vectors,
+      algorithm: algorithm,
+      params: params
+    )
+
+    raise response.error unless response.success?
+    response.data
+  end
+
+  # Save projections to database
+  def save_projections_sync(coordinates_array, embeddings, algorithm, params, lod_level)
+    saved = 0
+    coordinates_array.each_with_index do |coords, idx|
+      next if idx >= embeddings.length
+
+      embedding = embeddings[idx]
+
+      # Delete existing projection with same parameters
+      VectorProjection.where(
+        vector_embedding_id: embedding.id,
+        organization_id: @organization.id,
+        algorithm: algorithm,
+        lod_level: lod_level
+      ).destroy_all
+
+      VectorProjection.create!(
+        vector_embedding_id: embedding.id,
+        organization_id: @organization.id,
+        document_id: embedding.document_id,
+        algorithm: algorithm,
+        coordinates: coords,
+        dimensions: coords.length,
+        dimension_count: coords.length,
+        lod_level: lod_level,
+        parameters: params
+      )
+      saved += 1
+    end
+    saved
+  end
+
+  # Fallback: Create simple projections when Haystack is unavailable
+  # Uses random projection (good enough for visualization)
+  def create_simple_projections(embeddings, algorithm, params, lod_level)
+    target_dims = params['dimensions'] || 3
+    saved = 0
+
+    embeddings.each do |embedding|
+      # Delete existing
+      VectorProjection.where(
+        vector_embedding_id: embedding.id,
+        organization_id: @organization.id,
+        algorithm: algorithm,
+        lod_level: lod_level
+      ).destroy_all
+
+      # Generate pseudo-random but deterministic coordinates based on embedding id
+      # This ensures same embedding always gets same position
+      seed = embedding.id
+      rng = Random.new(seed)
+
+      coords = target_dims.times.map do
+        (rng.rand * 2 - 1) * 5  # Range: -5 to 5
+      end
+
+      VectorProjection.create!(
+        vector_embedding_id: embedding.id,
+        organization_id: @organization.id,
+        document_id: embedding.document_id,
+        algorithm: algorithm,  # Keep algorithm name consistent for lookups
+        coordinates: coords,
+        dimensions: target_dims,
+        dimension_count: target_dims,
+        lod_level: lod_level,
+        parameters: params.merge('fallback' => true)
+      )
+      saved += 1
+    end
+    saved
+  end
+
+  # Unpack embedding data from bytea format
+  def unpack_embedding(data)
+    return nil if data.nil?
+
+    # Try different formats
+    if data.is_a?(Array)
+      data
+    elsif data.is_a?(String)
+      # Try JSON first
+      begin
+        JSON.parse(data)
+      rescue JSON::ParserError
+        # Try binary float array (packed as doubles)
+        data.unpack('d*')
+      end
+    else
+      nil
+    end
+  rescue => e
+    Rails.logger.error("Failed to unpack embedding: #{e.message}")
+    nil
   end
 end

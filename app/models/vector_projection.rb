@@ -22,7 +22,7 @@ class VectorProjection < ApplicationRecord
     super(options.merge(
       except: [:created_at, :updated_at],
       include: {
-        vector_embedding: { only: [:id, :dimensions, :model] }
+        vector_embedding: { only: [:id, :dimension, :embedding_model] }
       }
     ))
   end
