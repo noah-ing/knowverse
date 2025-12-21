@@ -2,7 +2,6 @@
 
 AI-powered knowledge management platform with semantic search and retrieval-augmented generation (RAG).
 
-![KnowVerse Homepage](docs/screenshot.png)
 
 ## Overview
 
