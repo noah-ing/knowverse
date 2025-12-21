@@ -3,7 +3,7 @@
 
 @font-face {
   font-family: 'Berkeley Mono';
-  src: url('/assets/BerkeleyMono-Regular.otf') format('opentype');
+  src: url('BerkeleyMono-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -11,7 +11,7 @@
 
 @font-face {
   font-family: 'Berkeley Mono';
-  src: url('/assets/BerkeleyMono-Oblique.otf') format('opentype');
+  src: url('BerkeleyMono-Oblique.otf') format('opentype');
   font-weight: 400;
   font-style: italic;
   font-display: swap;
@@ -19,7 +19,7 @@
 
 @font-face {
   font-family: 'Berkeley Mono';
-  src: url('/assets/BerkeleyMono-Bold.otf') format('opentype');
+  src: url('BerkeleyMono-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -27,8 +27,22 @@
 
 @font-face {
   font-family: 'Berkeley Mono';
-  src: url('/assets/BerkeleyMono-Bold-Oblique.otf') format('opentype');
+  src: url('BerkeleyMono-Bold-Oblique.otf') format('opentype');
   font-weight: 700;
   font-style: italic;
   font-display: swap;
+}
+
+/* Apply Berkeley Mono globally */
+body, html {
+  font-family: 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Ensure all elements inherit */
+*, *::before, *::after {
+  font-family: inherit;
+}
+
+input, button, textarea, select {
+  font-family: 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
