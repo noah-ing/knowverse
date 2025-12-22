@@ -140,32 +140,30 @@
 
       <%# File Upload Field %>
       <div class="animate-in fade-in duration-300" style="animation-delay: 200ms;">
-        <label class="kv-label">Upload File</label>
-        <div class="mt-1">
-          <div class="kv-file-drop-area group relative flex justify-center px-6 py-10 border-2 border-gray-300 border-dashed rounded-md transition-colors duration-200
-                     hover:bg-gray-50"
-               data-file-upload-target="dropzone"
-               data-action="dragover->file-upload#highlight dragleave->file-upload#unhighlight drop->file-upload#unhighlight dragenter->file-upload#highlight">
-            <div class="flex flex-col items-center justify-center space-y-1 text-center">
-              <svg class="mx-auto h-12 w-12 kv-text-secondary group-hover:kv-text-accent transition-colors duration-200" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4h-4m-12 0H8m24-12V12a4 4 0 00-4-4h-8m-4 0h4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <div class="text-sm kv-text-secondary">
-                <span class="font-medium kv-text-accent">Click to upload</span> or drag and drop
-              </div>
-              <p class="text-xs kv-text-secondary">
-                PDF, DOCX, TXT, CSV, XLSX up to 10MB
-              </p>
-            </div>
-            <%= form.file_field :file, 
-                            class: "absolute inset-0 w-full h-full opacity-0 cursor-pointer",
-                            required: true,
-                            accept: ".pdf,.docx,.txt,.csv,.xlsx",
-                            data: { 
-                              file_upload_target: "fileInput",
-                              action: "change->file-upload#handleFileSelect"
-                            } %>
+        <label class="kv-label block mb-2">Upload File</label>
+        <div class="relative group cursor-pointer rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-primary-400 transition-all duration-200"
+             data-file-upload-target="dropzone"
+             data-action="dragover->file-upload#highlight dragleave->file-upload#unhighlight drop->file-upload#unhighlight dragenter->file-upload#highlight">
+          <div class="flex flex-col items-center justify-center py-10 px-6">
+            <svg class="h-12 w-12 text-gray-400 group-hover:text-primary-500 transition-colors duration-200 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+            </svg>
+            <p class="text-sm text-gray-600">
+              <span class="font-semibold text-primary-600 hover:text-primary-700">Click to upload</span>
+              <span class="text-gray-500"> or drag and drop</span>
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+              PDF, DOCX, TXT, CSV, XLSX up to 10MB
+            </p>
           </div>
+          <%= form.file_field :file,
+                          class: "absolute inset-0 w-full h-full opacity-0 cursor-pointer",
+                          required: true,
+                          accept: ".pdf,.docx,.txt,.csv,.xlsx",
+                          data: {
+                            file_upload_target: "fileInput",
+                            action: "change->file-upload#handleFileSelect"
+                          } %>
         </div>
 
         <%# File preview area (hidden by default, shown when file selected) %>
