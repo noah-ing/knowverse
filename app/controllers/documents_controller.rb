@@ -161,9 +161,12 @@ class DocumentsController < ApplicationController
 
       # First, save all documents (quick DB operation)
       files.each do |file|
+        # Extract file extension for file_type (validation requires extension, not mime type)
+        extension = File.extname(file.original_filename).delete('.').downcase
+
         document = @organization.documents.new(
-          title: file.original_filename,
-          file_type: file.content_type,
+          title: file.original_filename.sub(/\.[^.]+$/, '').gsub(/[_-]/, ' '),
+          file_type: extension.presence || 'txt',
           status: 'pending',
           embedding_status: 'pending'
         )
