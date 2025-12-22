@@ -233,13 +233,13 @@ export default class extends Controller {
   showError(message) {
     if (this.hasErrorTarget && this.hasErrorMessageTarget) {
       this.errorMessageTarget.textContent = message
-      this.errorTarget.classList.remove("hidden")
+      this.errorTarget.style.display = "flex"
     }
   }
 
   clearError() {
     if (this.hasErrorTarget) {
-      this.errorTarget.classList.add("hidden")
+      this.errorTarget.style.display = "none"
     }
   }
 
