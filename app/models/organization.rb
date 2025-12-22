@@ -20,6 +20,17 @@ class Organization < ApplicationRecord
   # Callbacks
   before_validation :generate_slug, if: -> { slug.blank? && name.present? }
   before_create :set_default_settings
+  before_create :generate_mcp_api_key, if: -> { mcp_api_key.blank? }
+
+  # MCP API key methods
+  def regenerate_mcp_api_key!
+    update!(mcp_api_key: generate_mcp_api_key_value)
+  end
+
+  def self.find_by_mcp_api_key(key)
+    return nil if key.blank?
+    find_by(mcp_api_key: key)
+  end
   
   # Associations
   has_many :organization_users, dependent: :destroy
@@ -134,12 +145,20 @@ class Organization < ApplicationRecord
   def set_default_settings
     self.settings = DEFAULTS.merge(settings || {})
     self.active = true if active.nil?
-    
+
     # Only set domain confidence thresholds if the fields exist
     if respond_to?(:domain_confidence_primary_threshold)
       self.domain_confidence_primary_threshold ||= 0.7
       self.domain_confidence_secondary_threshold ||= 0.4
       self.enable_domain_fallback = true if enable_domain_fallback.nil?
     end
+  end
+
+  def generate_mcp_api_key
+    self.mcp_api_key = generate_mcp_api_key_value
+  end
+
+  def generate_mcp_api_key_value
+    "kv_#{SecureRandom.hex(24)}"
   end
 end

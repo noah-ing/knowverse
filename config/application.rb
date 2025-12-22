@@ -30,8 +30,5 @@ module GoldSaasBp
     # Enterprise Docker development environment - full SolidQueue support
     config.active_job.queue_adapter = :solid_queue
     puts "[KNOWVERSE] Docker environment - using SolidQueue background processing"
-
-    # Prometheus metrics middleware for request tracking
-    config.middleware.use Infrastructure::MetricsMiddleware
   end
 end

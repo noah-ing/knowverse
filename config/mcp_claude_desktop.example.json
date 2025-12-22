@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "knowverse": {
+      "url": "http://localhost:3000/mcp",
+      "headers": {
+        "X-MCP-Key": "YOUR_API_KEY_HERE"
+      },
+      "description": "KnowVerse knowledge base - search documents, get content, ask questions"
+    }
+  }
+}

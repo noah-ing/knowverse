@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_21_211433) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_22_174844) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -227,6 +227,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_21_211433) do
     t.boolean "active"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "mcp_api_key"
+    t.index ["mcp_api_key"], name: "index_organizations_on_mcp_api_key"
     t.index ["slug"], name: "index_organizations_on_slug", unique: true
   end
 

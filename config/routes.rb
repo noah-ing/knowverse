@@ -4,6 +4,15 @@ Rails.application.routes.draw do
 
   # Prometheus metrics endpoint (protected by IP in production)
   get '/metrics', to: 'metrics#index'
+
+  # MCP (Model Context Protocol) endpoints for Claude Desktop integration
+  scope '/mcp', defaults: { format: :json } do
+    get 'tools', to: 'mcp#tools'
+    post 'execute', to: 'mcp#execute'
+    get 'resources', to: 'mcp#resources'
+    get 'resource', to: 'mcp#resource'
+  end
+
   root 'home#index'
   get 'dashboard', to: 'home#dashboard'
 
