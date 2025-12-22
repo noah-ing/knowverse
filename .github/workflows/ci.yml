@@ -19,8 +19,27 @@ jobs:
         with:
           ruby-version: .ruby-version
           bundler-cache: true
-      - name: Run Brakeman security scan
-        run: bundle exec brakeman --no-pager --no-exit-on-warn --no-exit-on-error || true
+
+      - name: Install security tools
+        run: gem install bundler-audit brakeman
+
+      - name: Run bundle-audit (dependency vulnerabilities)
+        run: bundle-audit check --update
+        continue-on-error: true  # Report but don't block (yet)
+
+      - name: Run Brakeman (static analysis)
+        run: |
+          brakeman -q --no-pager -f json -o brakeman-output.json || true
+          brakeman -q --no-pager
+        continue-on-error: true  # Report but don't block (yet)
+
+      - name: Upload Brakeman report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: brakeman-report
+          path: brakeman-output.json
+          retention-days: 30
 
   # Ruby linting
   lint:
