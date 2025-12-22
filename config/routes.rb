@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   # Health check endpoint for container orchestration
   get '/health', to: 'health#show'
+
+  # Prometheus metrics endpoint (protected by IP in production)
+  get '/metrics', to: 'metrics#index'
   root 'home#index'
   get 'dashboard', to: 'home#dashboard'
 
