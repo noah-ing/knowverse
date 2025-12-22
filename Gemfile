@@ -44,7 +44,7 @@ group :development, :test do
   gem "ruby-progressbar", "~> 1.13" # Progress reporting for long tests
   gem "rspec-benchmark", "~> 0.6" # Performance expectations in tests
   gem "timecop", "~> 0.9" # Time manipulation for tests
-  gem "connection_pool", "~> 2.4" # Connection pooling for tests
+  gem "connection_pool", "~> 3.0" # Connection pooling for tests
 end
 
 group :development do
