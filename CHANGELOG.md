@@ -5,6 +5,35 @@ All notable changes to the Knowverse project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2025-12-22
+
+### Added - MCP Server Integration (Phase 1.1)
+- **MCP Controller**: Model Context Protocol endpoints for Claude Desktop integration
+- **Tools**: `search_documents`, `get_document`, `ask_question`
+- **Resources**: List and fetch organization documents via MCP
+- **Auth**: API key authentication via `X-MCP-Key` header
+
+### Added - Batch Upload UI (Phase 1.2)
+- **Drag & Drop**: Multi-file upload with drag-and-drop support
+- **File Management**: Add/remove files before upload, file type icons, size display
+- **Async Processing**: Background job processing via SolidQueue (prevents server blocking)
+- **Processing Status Bar**: Real-time progress indicator with indigo-purple gradient
+- **Bulk Delete**: Select multiple documents with checkboxes, bulk delete with confirmation
+
+### Added - Document Management
+- **Select All**: Checkbox to select all visible documents
+- **Bulk Actions Bar**: Appears when documents selected, shows count
+- **Auto-Refresh**: Status bar auto-refreshes while documents are processing
+
+### Technical
+- `app/controllers/mcp_controller.rb` - MCP protocol endpoints
+- `app/services/mcp/tool_executor.rb` - Tool execution logic
+- `app/javascript/controllers/batch_upload_controller.js` - Drag-drop UI
+- `app/javascript/controllers/bulk_select_controller.js` - Multi-select functionality
+- `app/javascript/controllers/auto_refresh_controller.js` - Status polling
+
+---
+
 ## [2.2.0] - 2025-12-21
 
 ### Added - UI/UX Improvements
