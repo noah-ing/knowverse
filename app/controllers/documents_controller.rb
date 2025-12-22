@@ -179,25 +179,13 @@ class DocumentsController < ApplicationController
         end
       end
 
-      # Process documents - sync in development, async in production
-      if Rails.env.development?
-        # Synchronous processing - wait for completion
-        results = process_documents_parallel(saved_documents)
-
-        if results[:failed] > 0
-          redirect_to organization_documents_path(@organization),
-            alert: "Uploaded #{saved_documents.size} doc(s): #{results[:success]} succeeded, #{results[:failed]} failed. Check logs for errors."
-        else
-          redirect_to organization_documents_path(@organization),
-            notice: "#{saved_documents.size} document(s) uploaded and processed successfully!"
-        end
-      else
-        # Async processing for production (requires SolidQueue running)
-        saved_documents.each do |document|
-          DocumentProcessing::TextExtractionWorker.perform_later(document.id)
-        end
-        redirect_to organization_documents_path(@organization), notice: "#{saved_documents.size} document(s) uploaded and queued for processing."
+      # Always use async processing for batch uploads to prevent server blocking
+      # SolidQueue handles the background jobs
+      saved_documents.each do |document|
+        DocumentProcessing::TextExtractionWorker.perform_later(document.id)
       end
+      redirect_to organization_documents_path(@organization),
+        notice: "#{saved_documents.size} document(s) uploaded and queued for processing. Check back shortly for status updates."
     else
       redirect_to organization_documents_path(@organization), alert: 'No files were selected for upload.'
     end
