@@ -1,11 +1,6 @@
- <%# 
+ <%#
   Document Upload Page
-  A fully refactored page according to KnowVerse design patterns with:
-  - Card-based structure with consistent styling
-  - Proper animations and transitions
-  - Dark mode compatibility
-  - Responsive design
-  - Enhanced file upload experience
+  Supports batch upload with drag-and-drop, progress tracking, and parallel processing
 %>
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-200">
@@ -15,10 +10,10 @@
   <%# Page Header with Actions %>
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
     <div>
-      <h1 class="text-2xl font-bold kv-text-primary">Upload Document</h1>
-      <p class="text-sm kv-text-secondary mt-1">Add a new document to <%= @organization&.name || "your organization" %></p>
+      <h1 class="text-2xl font-bold kv-text-primary">Upload Documents</h1>
+      <p class="text-sm kv-text-secondary mt-1">Add documents to <%= @organization&.name || "your organization" %> - select multiple files at once</p>
     </div>
-    
+
     <div class="flex items-center space-x-4">
       <%= render "shared/button",
         text: "Back to Documents",
@@ -80,133 +75,110 @@
     <% end %>
   <% end %>
 
-  <%# Upload Form Card %>
+  <%# Batch Upload Form Card %>
   <%= render "shared/card",
-    title: "Upload Document",
+    title: "Upload Documents",
+    subtitle: "Select multiple files to upload at once",
     animate: "slide-up",
     animate_delay: "200ms",
     classes: "mb-6 transition-all duration-200 hover:shadow-lg" do %>
-    <%= form_with model: @organization.present? ? [@organization, @document] : [@document], 
-                  url: @organization.present? ? organization_documents_path(@organization) : "/documents",
-                  class: "space-y-6", 
-                  local: true, 
-                  html: { multipart: true, data: { controller: "file-upload" } } do |form| %>
-      <% if @document.errors.any? %>
-        <div class="kv-alert kv-alert-error">
-          <div class="kv-alert-icon">
-            <svg class="h-5 w-5 text-error-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div class="kv-alert-content">
-            <h3 class="kv-alert-title">
-              <%= pluralize(@document.errors.count, "error") %> prohibited this document from being saved:
-            </h3>
-            <div class="kv-alert-message">
-              <ul class="list-disc pl-5 space-y-1">
-                <% @document.errors.full_messages.each do |message| %>
-                  <li><%= message %></li>
-                <% end %>
-              </ul>
-            </div>
-          </div>
-        </div>
-      <% end %>
+    <%= form_with url: upload_organization_documents_path(@organization),
+                  method: :post,
+                  class: "space-y-6",
+                  local: true,
+                  id: "batch-upload-form",
+                  html: { multipart: true },
+                  data: { controller: "batch-upload", batch_upload_max_files_value: 20, batch_upload_max_size_value: 10 } do |form| %>
 
-      <%# Document Title Field %>
+      <%# Error display area %>
+      <div class="hidden kv-alert kv-alert-error" data-batch-upload-target="error">
+        <div class="kv-alert-icon">
+          <svg class="h-5 w-5 text-error-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="kv-alert-content">
+          <p class="kv-alert-message" data-batch-upload-target="errorMessage"></p>
+        </div>
+      </div>
+
+      <%# Drag and Drop Zone %>
       <div class="animate-in fade-in duration-300" style="animation-delay: 100ms;">
-        <%= form.label :title, "Document Title", class: "kv-label", required: true %>
-        <div class="mt-1">
-          <%= form.text_field :title, 
-                            class: "kv-input", 
-                            placeholder: "Enter a descriptive title",
-                            required: true,
-                            data: { file_upload_target: "titleField" } %>
-        </div>
-        <p class="mt-1 text-xs kv-text-secondary">A descriptive title makes the document easier to find</p>
-      </div>
-
-      <%# Document Description Field %>
-      <div class="animate-in fade-in duration-300" style="animation-delay: 150ms;">
-        <%= form.label :description, "Description", class: "kv-label" %>
-        <div class="mt-1">
-          <%= form.text_area :description, 
-                          class: "kv-input kv-textarea", 
-                          placeholder: "Optional description about the document",
-                          rows: 3 %>
-        </div>
-        <p class="mt-1 text-xs kv-text-secondary">Optional. Add more context about the document for better searchability</p>
-      </div>
-
-      <%# File Upload Field %>
-      <div class="animate-in fade-in duration-300" style="animation-delay: 200ms;">
-        <label class="kv-label block mb-2">Upload File</label>
-        <div class="relative group cursor-pointer rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-primary-400 transition-all duration-200"
-             data-file-upload-target="dropzone"
-             data-action="dragover->file-upload#highlight dragleave->file-upload#unhighlight drop->file-upload#unhighlight dragenter->file-upload#highlight">
-          <div class="flex flex-col items-center justify-center py-10 px-6">
-            <svg class="h-12 w-12 text-gray-400 group-hover:text-primary-500 transition-colors duration-200 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <label class="kv-label block mb-2">Select Files</label>
+        <div class="relative group cursor-pointer rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-primary-400 transition-all duration-200"
+             data-batch-upload-target="dropzone"
+             id="batch-dropzone">
+          <div class="flex flex-col items-center justify-center py-12 px-6">
+            <svg class="h-16 w-16 text-gray-400 group-hover:text-primary-500 transition-colors duration-200 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
             </svg>
-            <p class="text-sm text-gray-600">
-              <span class="font-semibold text-primary-600 hover:text-primary-700">Click to upload</span>
-              <span class="text-gray-500"> or drag and drop</span>
+            <p class="text-base text-gray-600 dark:text-gray-300 mb-1">
+              <span class="font-semibold text-primary-600 hover:text-primary-700">Click to select files</span>
+              <span class="text-gray-500 dark:text-gray-400"> or drag and drop</span>
             </p>
-            <p class="text-xs text-gray-400 mt-1">
-              PDF, DOCX, TXT, CSV, XLSX up to 10MB
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Select multiple files (up to 20 at once)
+            </p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+              PDF, DOCX, TXT, CSV, XLSX - Max 10MB each
             </p>
           </div>
-          <%= form.file_field :file,
-                          class: "absolute inset-0 w-full h-full opacity-0 cursor-pointer",
-                          required: true,
-                          accept: ".pdf,.docx,.txt,.csv,.xlsx",
-                          data: {
-                            file_upload_target: "fileInput",
-                            action: "change->file-upload#handleFileSelect"
-                          } %>
+          <input type="file"
+                 name="files[]"
+                 multiple
+                 class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                 accept=".pdf,.docx,.txt,.csv,.xlsx,.doc,.md,.json"
+                 data-batch-upload-target="fileInput"
+                 id="batch-file-input" />
         </div>
-
-        <%# File preview area (hidden by default, shown when file selected) %>
-        <div class="mt-4 bg-green-50 rounded-md p-4 transition-all duration-200 border border-green-200 hidden"
-             data-file-upload-target="preview"
-             id="file-preview-area">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <svg class="h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-green-800" data-file-upload-target="fileName">File selected</p>
-                <p class="text-xs text-green-600" data-file-upload-target="fileSize">Ready to upload</p>
-              </div>
-            </div>
-            <button type="button"
-                    class="ml-4 flex-shrink-0 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors"
-                    data-action="click->file-upload#removeFile"
-                    id="remove-file-btn">
-              Remove
-            </button>
-          </div>
-        </div>
-
-        <p class="mt-1 text-xs kv-text-secondary">
-          Maximum file size: 10MB
-        </p>
       </div>
-      
+
+      <%# Selected Files List %>
+      <div class="animate-in fade-in duration-300 hidden" style="animation-delay: 150ms;" data-batch-upload-target="fileListContainer" id="file-list-container">
+        <div class="flex items-center justify-between mb-3">
+          <label class="kv-label">Selected Files</label>
+          <button type="button"
+                  class="text-sm text-red-600 hover:text-red-700 font-medium transition-colors"
+                  data-action="click->batch-upload#clearAll">
+            Clear All
+          </button>
+        </div>
+        <div class="space-y-2 max-h-64 overflow-y-auto" data-batch-upload-target="fileList" id="file-list">
+          <%# Files will be added here dynamically %>
+        </div>
+        <div class="mt-3 flex items-center justify-between text-sm">
+          <span class="kv-text-secondary">
+            <span data-batch-upload-target="fileCount">0</span> file(s) selected
+          </span>
+          <span class="kv-text-secondary">
+            Total: <span data-batch-upload-target="totalSize">0 KB</span>
+          </span>
+        </div>
+      </div>
+
+      <%# Upload Progress (hidden by default) %>
+      <div class="hidden animate-in fade-in duration-300" data-batch-upload-target="progressContainer" id="upload-progress">
+        <label class="kv-label block mb-3">Upload Progress</label>
+        <div class="space-y-3" data-batch-upload-target="progressList">
+          <%# Progress items will be added here dynamically %>
+        </div>
+      </div>
+
       <%# Form Actions %>
-      <div class="flex justify-end space-x-3 pt-4 animate-in fade-in duration-300" style="animation-delay: 250ms;">
+      <div class="flex justify-end space-x-3 pt-4 animate-in fade-in duration-300" style="animation-delay: 200ms;">
         <%= render "shared/button",
           text: "Cancel",
           variant: "secondary",
-          href: @organization.present? ? organization_documents_path(@organization) : "/" %>
-        
-        <button type="submit" class="kv-btn kv-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md transition-all duration-200 transform hover:scale-105 active:scale-95 hover:shadow-md active:shadow-inner">
-          <span>Upload Document</span>
+          href: organization_documents_path(@organization) %>
+
+        <button type="submit"
+                class="kv-btn kv-btn-primary inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md transition-all duration-200 transform hover:scale-105 active:scale-95 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                data-batch-upload-target="submitButton"
+                disabled>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
           </svg>
-          <div class="absolute inset-0 rounded-md transition-opacity duration-200 bg-white opacity-0 hover:opacity-10 active:opacity-20"></div>
+          <span>Upload <span data-batch-upload-target="buttonCount">0</span> Document(s)</span>
         </button>
       </div>
     <% end %>
@@ -282,56 +254,3 @@
   <% end %>
 </div>
 
-<script>
-  document.addEventListener('turbo:load', initFileUpload);
-  document.addEventListener('DOMContentLoaded', initFileUpload);
-
-  function initFileUpload() {
-    const fileInput = document.querySelector('input[type="file"]');
-    const previewArea = document.getElementById('file-preview-area');
-    const fileNameEl = previewArea?.querySelector('[data-file-upload-target="fileName"]');
-    const fileSizeEl = previewArea?.querySelector('[data-file-upload-target="fileSize"]');
-    const removeBtn = document.getElementById('remove-file-btn');
-
-    if (!fileInput || !previewArea) return;
-
-    fileInput.addEventListener('change', function() {
-      if (this.files && this.files[0]) {
-        const file = this.files[0];
-
-        // Show preview area
-        previewArea.classList.remove('hidden');
-
-        // Update file info
-        if (fileNameEl) fileNameEl.textContent = file.name;
-        if (fileSizeEl) {
-          const sizeKB = (file.size / 1024).toFixed(1);
-          const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-          fileSizeEl.textContent = file.size > 1024 * 1024
-            ? sizeMB + ' MB'
-            : sizeKB + ' KB';
-        }
-
-        // Auto-set title if empty
-        const titleInput = document.querySelector('input[name="document[title]"]');
-        if (titleInput && !titleInput.value) {
-          const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
-          const formattedName = nameWithoutExt.replace(/\b\w/g, l => l.toUpperCase());
-          titleInput.value = formattedName;
-        }
-      } else {
-        // Hide preview if no file
-        previewArea.classList.add('hidden');
-      }
-    });
-
-    // Handle remove button
-    if (removeBtn) {
-      removeBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        fileInput.value = '';
-        previewArea.classList.add('hidden');
-      });
-    }
-  }
-</script>
