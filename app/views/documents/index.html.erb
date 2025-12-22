@@ -1,8 +1,87 @@
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-200">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-colors duration-200" data-controller="bulk-select" data-bulk-select-delete-url-value="<%= bulk_destroy_organization_documents_path(@organization) %>">
   <% if @table_missing %>
     <%= render "shared/missing_table_alert", missing_table: @missing_table %>
   <% end %>
-  
+
+  <%# Processing Status Summary Bar %>
+  <% if @documents.present? %>
+    <%
+      all_docs = @organization.documents
+      total = all_docs.count
+      processed = all_docs.where(status: 'processed', embedding_status: 'processed').count
+      processing = all_docs.where("status = 'processing' OR embedding_status = 'processing'").count
+      pending = all_docs.where("(status = 'pending' OR embedding_status = 'pending') AND status != 'processing' AND embedding_status != 'processing'").count
+      errors = all_docs.where("status = 'error' OR embedding_status = 'error'").count
+      progress_percent = total > 0 ? ((processed.to_f / total) * 100).round : 0
+    %>
+    <% if processing > 0 || pending > 0 %>
+      <div class="mb-6 animate-in fade-in duration-300" data-controller="auto-refresh" data-auto-refresh-interval-value="5000">
+        <div class="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 rounded-lg p-4 border border-primary-200 dark:border-primary-800">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="relative">
+                <div class="w-8 h-8 rounded-full border-2 border-primary-500 border-t-transparent animate-spin"></div>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold kv-text-primary">Processing Documents</h3>
+                <p class="text-xs kv-text-secondary"><%= processing %> processing, <%= pending %> pending</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-2xl font-bold text-primary-600"><%= progress_percent %>%</span>
+              <p class="text-xs kv-text-secondary"><%= processed %>/<%= total %> complete</p>
+            </div>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+            <div class="h-2.5 rounded-full bg-gradient-to-r from-primary-500 to-success-500 transition-all duration-500" style="width: <%= progress_percent %>%"></div>
+          </div>
+          <div class="flex justify-between mt-2 text-xs">
+            <span class="flex items-center gap-1 text-success-600">
+              <span class="w-2 h-2 rounded-full bg-success-500"></span>
+              <%= processed %> ready
+            </span>
+            <span class="flex items-center gap-1 text-warning-600">
+              <span class="w-2 h-2 rounded-full bg-warning-500 animate-pulse"></span>
+              <%= processing %> processing
+            </span>
+            <span class="flex items-center gap-1 text-primary-600">
+              <span class="w-2 h-2 rounded-full bg-primary-500"></span>
+              <%= pending %> pending
+            </span>
+            <% if errors > 0 %>
+              <span class="flex items-center gap-1 text-error-600">
+                <span class="w-2 h-2 rounded-full bg-error-500"></span>
+                <%= errors %> errors
+              </span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+
+  <%# Bulk Actions Bar (hidden until items selected) %>
+  <div class="hidden mb-4 bg-primary-50 dark:bg-primary-900/30 rounded-lg p-3 border border-primary-200 dark:border-primary-700 animate-in slide-in-from-top duration-200" data-bulk-select-target="bulkActions">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-medium kv-text-primary">
+          <span data-bulk-select-target="selectedCount">0</span> document(s) selected
+        </span>
+        <button type="button" class="text-xs text-primary-600 hover:underline" data-action="click->bulk-select#selectNone">
+          Clear selection
+        </button>
+      </div>
+      <%= form_with url: bulk_destroy_organization_documents_path(@organization), method: :delete, data: { bulk_select_target: "form" }, class: "inline" do %>
+        <button type="submit" class="kv-btn kv-btn-error kv-btn-sm inline-flex items-center gap-2" data-action="click->bulk-select#deleteSelected">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Delete Selected
+        </button>
+      <% end %>
+    </div>
+  </div>
+
   <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 animate-in fade-in duration-300 ease-out">
     <div>
       <h1 class="text-2xl font-bold kv-text-primary"><%= @organization&.name || "Organization" %> - Documents</h1>
@@ -305,6 +384,13 @@
 
   <!-- Documents Grid/List Toggle -->
   <% doc_header_actions = capture do %>
+    <!-- Select All Checkbox -->
+    <div class="flex items-center gap-4">
+      <label class="flex items-center gap-2 cursor-pointer text-sm kv-text-secondary hover:kv-text-primary">
+        <input type="checkbox" class="kv-checkbox" data-bulk-select-target="selectAll" data-action="change->bulk-select#toggleAll">
+        <span>Select All</span>
+      </label>
+    </div>
     <!-- View Toggle -->
     <div class="flex items-center gap-2" data-controller="view-toggle">
       <label class="sr-only" for="view-style">View Style</label>
@@ -345,7 +431,17 @@
       <!-- Grid View (Default) -->
       <div class="documents-container p-4" data-view-toggle-target="gridView">
         <% @documents.each_with_index do |document, index| %>
-          <%= link_to organization_document_path(@organization, document), class: "group animate-in fade-in duration-300 ease-out", style: "animation-delay: #{(300 + index * 50)}ms" do %>
+          <div class="group animate-in fade-in duration-300 ease-out relative" style="animation-delay: #{(300 + index * 50)}ms">
+            <%# Selection Checkbox - positioned outside the link with proper z-index %>
+            <label class="absolute top-3 left-3 z-30 p-1.5 bg-white dark:bg-gray-800 rounded-md cursor-pointer shadow-sm border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-colors"
+                   onclick="event.stopPropagation();">
+              <input type="checkbox"
+                     value="<%= document.id %>"
+                     class="kv-checkbox w-4 h-4 cursor-pointer"
+                     data-bulk-select-target="checkbox"
+                     data-action="change->bulk-select#toggle">
+            </label>
+            <%= link_to organization_document_path(@organization, document), class: "block" do %>
             <div class="document-card kv-card h-full overflow-hidden flex flex-col hover:shadow-md transition-all duration-200 transform hover:-translate-y-1">
               <!-- Document preview thumbnail -->
               <div class="relative h-36 bg-gray-100 transition-colors duration-200 border-b border-gray-200 overflow-hidden">
@@ -505,6 +601,7 @@
               </div>
             </div>
           <% end %>
+          </div>
         <% end %>
       </div>
 
@@ -513,6 +610,9 @@
         <table class="min-w-full divide-y divide-gray-200 transition-colors duration-200">
           <thead class="bg-gray-50 transition-colors duration-200">
             <tr>
+              <th scope="col" class="px-3 py-3 w-10">
+                <span class="sr-only">Select</span>
+              </th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Title</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">File Type</th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium kv-text-secondary uppercase tracking-wider">Status</th>
@@ -523,7 +623,14 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <% @documents.each do |document| %>
-              <tr>
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-3 py-4">
+                  <input type="checkbox"
+                         value="<%= document.id %>"
+                         class="kv-checkbox"
+                         data-bulk-select-target="checkbox"
+                         data-action="change->bulk-select#toggle">
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <%= link_to document.title, organization_document_path(@organization, document), class: "kv-text-accent hover:underline" %>
                 </td>

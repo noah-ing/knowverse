@@ -108,6 +108,44 @@ class DocumentsController < ApplicationController
     end
   end
 
+  # DELETE /organizations/:organization_id/documents/bulk_destroy
+  def bulk_destroy
+    ids = params[:ids]
+    if ids.blank?
+      redirect_to organization_documents_path(@organization), alert: 'No documents selected.'
+      return
+    end
+
+    documents = @organization.documents.where(id: ids)
+    count = documents.count
+
+    begin
+      ActiveRecord::Base.transaction do
+        documents.each do |document|
+          # Delete vector projections and embeddings
+          embeddings = VectorEmbedding.where(document_id: document.id)
+          embeddings.each do |embedding|
+            begin
+              ActiveRecord::Base.connection.execute(
+                "DELETE FROM vector_projections WHERE vector_embedding_id = #{embedding.id}"
+              )
+            rescue => e
+              Rails.logger.error "Error deleting vector projections: #{e.message}"
+            end
+          end
+          VectorEmbedding.where(document_id: document.id).delete_all
+          ClusterMembership.where(document_id: document.id).delete_all if defined?(ClusterMembership)
+          SearchFeedback.where(document_id: document.id).delete_all if defined?(SearchFeedback)
+          document.destroy!
+        end
+      end
+      redirect_to organization_documents_path(@organization), notice: "#{count} document(s) deleted successfully."
+    rescue => e
+      Rails.logger.error "Bulk delete error: #{e.message}\n#{e.backtrace.join("\n")}"
+      redirect_to organization_documents_path(@organization), alert: "Error deleting documents: #{e.message.split("\n").first}"
+    end
+  end
+
   # DELETE /organizations/:organization_id/documents/:id
   def destroy
     begin
