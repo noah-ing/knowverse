@@ -5,7 +5,7 @@ class UserMailer < ApplicationMailer
 
     mail(
       to: @user.email,
-      from: "no-reply@alpinedigital.io", # use your verified domain
+      from: ENV.fetch('MAILER_FROM', 'no-reply@knowverse.app'),
       subject: "Your Magic Login Link"
     )
   end

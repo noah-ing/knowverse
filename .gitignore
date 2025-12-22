@@ -103,3 +103,6 @@ npm-debug.log*
 # 🌐 ENVIRONMENT SPECIFIC
 /config/database.yml.backup
 *.pyc
+
+# 📁 TEST DATA (Large files for local testing)
+test_uploads/

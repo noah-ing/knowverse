@@ -145,7 +145,7 @@ begin
     port: 5432,
     dbname: 'knowverse_development',
     user: 'postgres',
-    password: ENV['PGPASSWORD'] || 'No$$ah10304632',
+    password: ENV.fetch('PGPASSWORD', ''),
     connect_timeout: 5
   )
   elapsed = Time.now - start_time
@@ -181,7 +181,7 @@ begin
     port: 5432,
     dbname: 'knowverse_development',
     user: 'postgres',
-    password: ENV['PGPASSWORD'] || 'No$$ah10304632',
+    password: ENV.fetch('PGPASSWORD', ''),
     connect_timeout: 5
   )
   elapsed = Time.now - start_time
