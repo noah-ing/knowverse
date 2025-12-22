@@ -9,12 +9,12 @@
 <%= paginator.render do -%>
   <nav class="flex items-center justify-between py-3">
     <div class="flex-1 flex justify-between">
-      <% unless current_page.first? %>
-        <%= link_to_prev_page(collection, 'Previous', class: 'relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50') %>
-      <% else %>
+      <% if current_page.first? %>
         <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-300 bg-white cursor-not-allowed">Previous</span>
+      <% else %>
+        <%= link_to 'Previous', url_for(page: current_page.number - 1), class: 'relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50' %>
       <% end %>
-      
+
       <div class="hidden md:flex">
         <% each_page do |page| -%>
           <% if page.display_tag? -%>
@@ -24,11 +24,11 @@
           <% end -%>
         <% end -%>
       </div>
-      
-      <% unless current_page.last? %>
-        <%= link_to_next_page(collection, 'Next', class: 'relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50') %>
-      <% else %>
+
+      <% if current_page.last? %>
         <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-300 bg-white cursor-not-allowed">Next</span>
+      <% else %>
+        <%= link_to 'Next', url_for(page: current_page.number + 1), class: 'relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50' %>
       <% end %>
     </div>
   </nav>
