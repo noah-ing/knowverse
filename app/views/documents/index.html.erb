@@ -16,7 +16,7 @@
     %>
     <% if processing > 0 || pending > 0 %>
       <div class="mb-6 animate-in fade-in duration-300" data-controller="auto-refresh" data-auto-refresh-interval-value="5000">
-        <div class="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 rounded-lg p-4 border border-primary-200 dark:border-primary-800">
+        <div class="bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg p-4 border border-primary-200">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-3">
               <div class="relative">
@@ -59,7 +59,7 @@
   <% end %>
 
   <%# Bulk Actions Bar (hidden until items selected) %>
-  <div class="hidden mb-4 bg-primary-50 dark:bg-primary-900/30 rounded-lg p-3 border border-primary-200 dark:border-primary-700 animate-in slide-in-from-top duration-200" data-bulk-select-target="bulkActions">
+  <div class="hidden mb-4 bg-primary-50 rounded-lg p-3 border border-primary-200 animate-in slide-in-from-top duration-200" data-bulk-select-target="bulkActions">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
         <span class="text-sm font-medium kv-text-primary">
@@ -431,7 +431,7 @@
         <% @documents.each_with_index do |document, index| %>
           <div class="group animate-in fade-in duration-300 ease-out relative" style="animation-delay: #{(300 + index * 50)}ms">
             <%# Selection Checkbox - positioned outside the link with proper z-index %>
-            <label class="absolute top-3 left-3 z-30 p-1.5 bg-white dark:bg-gray-800 rounded-md cursor-pointer shadow-sm border border-gray-200 dark:border-gray-700 hover:border-primary-400 transition-colors"
+            <label class="absolute top-3 left-3 z-30 p-1.5 bg-white rounded-md cursor-pointer shadow-sm border border-gray-200 hover:border-primary-400 transition-colors"
                    onclick="event.stopPropagation();">
               <input type="checkbox"
                      value="<%= document.id %>"
