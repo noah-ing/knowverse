@@ -1,0 +1,190 @@
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="mb-6">
+    <%= link_to "← Back to #{@organization.name}", organization_path(@organization), class: "text-indigo-600 hover:text-indigo-800" %>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-semibold text-gray-900">SSO Configuration</h1>
+        <p class="text-sm text-gray-500 mt-1"><%= @organization.name %></p>
+      </div>
+      <div class="flex gap-2">
+        <% if @sso_config.persisted? %>
+          <%= link_to "Edit", edit_organization_sso_config_path(@organization), class: "px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700" %>
+        <% else %>
+          <%= link_to "Configure SSO", new_organization_sso_config_path(@organization), class: "px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700" %>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @sso_config.persisted? %>
+      <div class="p-6">
+        <!-- Status Badge -->
+        <div class="mb-6">
+          <% case @sso_config.status %>
+          <% when :ready %>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+              <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              Ready
+            </span>
+          <% when :disabled %>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+              <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              </svg>
+              Disabled
+            </span>
+          <% when :incomplete %>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+              <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              Incomplete
+            </span>
+          <% end %>
+        </div>
+
+        <!-- Provider Type -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+          <div>
+            <h3 class="text-sm font-medium text-gray-500">Provider Type</h3>
+            <p class="mt-1 text-lg font-medium text-gray-900">
+              <%= @sso_config.saml? ? 'SAML 2.0' : 'OpenID Connect' %>
+            </p>
+          </div>
+          <div>
+            <h3 class="text-sm font-medium text-gray-500">Default Role</h3>
+            <p class="mt-1 text-lg font-medium text-gray-900 capitalize"><%= @sso_config.default_role %></p>
+          </div>
+        </div>
+
+        <!-- Configuration Details -->
+        <% if @sso_config.saml? %>
+          <div class="border-t border-gray-200 pt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">SAML Configuration</h3>
+            <dl class="grid grid-cols-1 gap-4">
+              <div>
+                <dt class="text-sm font-medium text-gray-500">IdP SSO URL</dt>
+                <dd class="mt-1 text-sm text-gray-900 font-mono break-all"><%= @sso_config.idp_sso_target_url || 'Not configured' %></dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">IdP Certificate</dt>
+                <dd class="mt-1 text-sm text-gray-900"><%= @sso_config.idp_cert.present? ? 'Configured' : 'Not configured' %></dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Name ID Format</dt>
+                <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @sso_config.name_identifier_format %></dd>
+              </div>
+            </dl>
+          </div>
+
+          <!-- Service Provider Details -->
+          <div class="border-t border-gray-200 pt-6 mt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Service Provider Details</h3>
+            <p class="text-sm text-gray-500 mb-4">Configure your IdP with these values:</p>
+            <dl class="grid grid-cols-1 gap-4 bg-gray-50 p-4 rounded-lg">
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Entity ID / Issuer</dt>
+                <dd class="mt-1 text-sm text-gray-900 font-mono break-all"><%= request.base_url %>/auth/saml/<%= @organization.slug %></dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">ACS URL (Callback)</dt>
+                <dd class="mt-1 text-sm text-gray-900 font-mono break-all"><%= request.base_url %>/auth/saml/<%= @organization.slug %>/callback</dd>
+              </div>
+            </dl>
+          </div>
+        <% else %>
+          <div class="border-t border-gray-200 pt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">OIDC Configuration</h3>
+            <dl class="grid grid-cols-1 gap-4">
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Issuer</dt>
+                <dd class="mt-1 text-sm text-gray-900 font-mono break-all"><%= @sso_config.issuer || 'Not configured' %></dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Client ID</dt>
+                <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @sso_config.client_id.present? ? '••••••••' : 'Not configured' %></dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Scope</dt>
+                <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @sso_config.scope %></dd>
+              </div>
+            </dl>
+          </div>
+
+          <!-- Redirect URI -->
+          <div class="border-t border-gray-200 pt-6 mt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">OAuth Redirect URI</h3>
+            <p class="text-sm text-gray-500 mb-4">Add this redirect URI to your OIDC provider:</p>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <code class="text-sm text-gray-900 break-all"><%= request.base_url %>/auth/openid_connect/<%= @organization.slug %>/callback</code>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Domain Allowlist -->
+        <% if @sso_config.domain_allowlist.present? %>
+          <div class="border-t border-gray-200 pt-6 mt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Allowed Domains</h3>
+            <div class="flex flex-wrap gap-2">
+              <% @sso_config.domain_allowlist.each do |domain| %>
+                <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm"><%= domain %></span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Usage Stats -->
+        <div class="border-t border-gray-200 pt-6 mt-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Usage Statistics</h3>
+          <dl class="grid grid-cols-2 gap-4">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Total Logins</dt>
+              <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @sso_config.login_count %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Last Used</dt>
+              <dd class="mt-1 text-lg text-gray-900">
+                <%= @sso_config.last_used_at ? time_ago_in_words(@sso_config.last_used_at) + ' ago' : 'Never' %>
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- SSO Login URL -->
+        <% if @sso_config.ready? %>
+          <div class="border-t border-gray-200 pt-6 mt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">SSO Login URL</h3>
+            <p class="text-sm text-gray-500 mb-4">Share this URL with your team members:</p>
+            <div class="flex items-center gap-2 bg-gray-50 p-4 rounded-lg">
+              <code class="text-sm text-gray-900 flex-1 break-all"><%= request.base_url %>/sso/<%= @organization.slug %></code>
+              <button onclick="navigator.clipboard.writeText('<%= request.base_url %>/sso/<%= @organization.slug %>')" class="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                Copy
+              </button>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Actions -->
+        <div class="border-t border-gray-200 pt-6 mt-6 flex justify-between">
+          <% if @sso_config.ready? %>
+            <%= link_to "Test SSO Login", test_organization_sso_config_path(@organization), method: :post, class: "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700" %>
+          <% end %>
+          <%= button_to "Delete SSO Configuration", organization_sso_config_path(@organization), method: :delete, data: { confirm: "Are you sure? This will disable SSO for all users." }, class: "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700" %>
+        </div>
+      </div>
+    <% else %>
+      <div class="p-6 text-center">
+        <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No SSO Configuration</h3>
+        <p class="text-gray-500 mb-4">Configure Single Sign-On to allow team members to log in with your identity provider.</p>
+        <%= link_to "Configure SSO", new_organization_sso_config_path(@organization), class: "inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700" %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_24_031330) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_24_200146) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -432,6 +432,32 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_24_031330) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "sso_configs", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "provider_type", null: false
+    t.boolean "enabled", default: false
+    t.text "idp_metadata_url"
+    t.text "idp_sso_target_url"
+    t.text "idp_cert"
+    t.string "idp_cert_fingerprint"
+    t.string "name_identifier_format", default: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+    t.text "issuer"
+    t.text "client_id"
+    t.text "client_secret"
+    t.text "discovery_url"
+    t.string "scope", default: "openid email profile"
+    t.string "domain_allowlist", default: [], array: true
+    t.boolean "auto_provision", default: true
+    t.string "default_role", default: "viewer"
+    t.datetime "last_used_at"
+    t.integer "login_count", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["enabled"], name: "index_sso_configs_on_enabled"
+    t.index ["organization_id"], name: "index_sso_configs_on_organization_id", unique: true
+    t.index ["provider_type"], name: "index_sso_configs_on_provider_type"
+  end
+
   create_table "streaming_elements", force: :cascade do |t|
     t.bigint "conversation_session_id", null: false
     t.string "token"
@@ -481,7 +507,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_24_031330) do
     t.boolean "admin", default: false, null: false
     t.string "name"
     t.jsonb "notification_preferences", default: {"billing_alerts"=>true, "weekly_summary"=>false, "product_updates"=>true, "marketing_emails"=>false}
+    t.string "provider"
+    t.string "uid"
+    t.bigint "sso_organization_id"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true, where: "(provider IS NOT NULL)"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
@@ -544,8 +574,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_24_031330) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "sso_configs", "organizations"
   add_foreign_key "streaming_elements", "conversation_sessions"
   add_foreign_key "template_usages", "organization_templates"
   add_foreign_key "template_usages", "users"
+  add_foreign_key "users", "organizations", column: "sso_organization_id"
   add_foreign_key "vector_projections", "vector_embeddings", on_delete: :cascade
 end

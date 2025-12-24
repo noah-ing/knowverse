@@ -41,6 +41,7 @@ class Organization < ApplicationRecord
   has_many :domain_embedding_models, dependent: :destroy
   has_many :domain_confidence_scores, dependent: :destroy
   has_many :organization_templates, dependent: :destroy
+  has_one :sso_config, dependent: :destroy
   
   # Scopes
   scope :active, -> { where(active: true) }
@@ -52,6 +53,15 @@ class Organization < ApplicationRecord
 
   def self.roles
     %w[owner admin editor viewer]
+  end
+
+  # SSO helpers
+  def sso_enabled?
+    sso_config&.ready?
+  end
+
+  def sso_provider_type
+    sso_config&.provider_type
   end
   
   def usage_percent(type = :documents)
