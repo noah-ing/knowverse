@@ -1,0 +1,110 @@
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-6">
+    <%= link_to organization_documents_path(@organization), class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+      </svg>
+      Back to Documents
+    <% end %>
+  </div>
+
+  <%= render "shared/card", title: "Connect Notion", classes: "mb-6" do %>
+    <div class="text-center py-8">
+      <div class="mx-auto w-20 h-20 mb-6 flex items-center justify-center">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-16 h-16">
+          <path d="M6.017 4.313l55.333 -4.087c6.797 -0.583 8.543 -0.19 12.817 2.917l17.663 12.443c2.913 2.14 3.883 2.723 3.883 5.053v68.243c0 4.277 -1.553 6.807 -6.99 7.193L24.467 99.967c-4.08 0.193 -6.023 -0.39 -8.16 -3.113L3.3 79.94c-2.333 -3.113 -3.3 -5.443 -3.3 -8.167V11.113c0 -3.497 1.553 -6.413 6.017 -6.8z" fill="#fff"/>
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M61.35 0.227l-55.333 4.087C1.553 4.7 0 7.617 0 11.113v60.66c0 2.723 0.967 5.053 3.3 8.167l13.007 16.913c2.137 2.723 4.08 3.307 8.16 3.113l64.257 -3.89c5.433 -0.387 6.99 -2.917 6.99 -7.193V20.64c0 -2.21 -0.873 -2.847 -3.443 -4.733L74.167 3.143c-4.273 -3.107 -6.02 -3.5 -12.817 -2.917zM25.92 19.523c-5.247 0.353 -6.437 0.433 -9.417 -1.99L8.927 11.507c-0.77 -0.78 -0.383 -1.753 1.557 -1.947l53.193 -3.887c4.467 -0.39 6.793 1.167 8.54 2.527l9.123 6.61c0.39 0.197 1.36 1.36 0.193 1.36l-54.933 3.307 -0.68 0.047zM19.803 88.3V30.367c0 -2.53 0.777 -3.697 3.103 -3.893L86 22.78c2.14 -0.193 3.107 1.167 3.107 3.693v57.547c0 2.53 -0.39 4.67 -3.883 4.863l-60.377 3.5c-3.493 0.193 -5.043 -0.97 -5.043 -4.083zm59.6 -54.827c0.387 1.75 0 3.5 -1.75 3.7l-2.917 0.577v42.773c-2.527 1.36 -4.853 2.137 -6.797 2.137 -3.107 0 -3.883 -0.973 -6.21 -3.887l-19.03 -29.94v28.967l6.02 1.363s0 3.5 -4.857 3.5l-13.39 0.777c-0.39 -0.78 0 -2.723 1.357 -3.11l3.497 -0.97v-38.3L30.48 40.667c-0.39 -1.75 0.58 -4.277 3.3 -4.473l14.367 -0.967 19.8 30.327v-26.83l-5.047 -0.58c-0.39 -2.143 1.163 -3.7 3.103 -3.89l13.4 -0.78z" fill="#000"/>
+        </svg>
+      </div>
+
+      <h2 class="text-xl font-semibold text-gray-900 mb-2">Connect Your Notion Workspace</h2>
+      <p class="text-gray-600 mb-6 max-w-md mx-auto">
+        Import pages and documents directly from Notion. We'll sync your pages and extract content for search.
+      </p>
+
+      <div class="bg-gray-50 rounded-lg p-4 mb-6 text-left max-w-md mx-auto">
+        <h3 class="text-sm font-medium text-gray-900 mb-2">What we'll access:</h3>
+        <ul class="text-sm text-gray-600 space-y-1">
+          <li class="flex items-center">
+            <svg class="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            Read-only access to pages you share
+          </li>
+          <li class="flex items-center">
+            <svg class="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            View page content and metadata
+          </li>
+        </ul>
+        <p class="text-xs text-gray-500 mt-3">
+          We never modify or delete your pages. You can disconnect at any time.
+        </p>
+      </div>
+
+      <%= button_to "Connect Notion", organization_connectors_notion_path(@organization),
+        method: :post,
+        class: "kv-btn kv-btn-primary inline-flex items-center px-6 py-3" do %>
+        <svg class="h-5 w-5 mr-2" viewBox="0 0 100 100" fill="currentColor">
+          <path d="M6.017 4.313l55.333 -4.087c6.797 -0.583 8.543 -0.19 12.817 2.917l17.663 12.443c2.913 2.14 3.883 2.723 3.883 5.053v68.243c0 4.277 -1.553 6.807 -6.99 7.193L24.467 99.967c-4.08 0.193 -6.023 -0.39 -8.16 -3.113L3.3 79.94c-2.333 -3.113 -3.3 -5.443 -3.3 -8.167V11.113c0 -3.497 1.553 -6.413 6.017 -6.8z"/>
+        </svg>
+        Continue with Notion
+      <% end %>
+    </div>
+  <% end %>
+
+  <%= render "shared/card", title: "What Gets Synced", border: true do %>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+          <svg class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <span class="text-sm text-gray-700">Pages</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+          <svg class="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <span class="text-sm text-gray-700">Databases</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+          <svg class="h-5 w-5 text-purple-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <span class="text-sm text-gray-700">Code Blocks</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+          <svg class="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <span class="text-sm text-gray-700">To-Do Lists</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+          <svg class="h-5 w-5 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v7h-2l-1 2H8l-1-2H5V5z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <span class="text-sm text-gray-700">Callouts</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+          <svg class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <span class="text-sm text-gray-700">Text Blocks</span>
+      </div>
+    </div>
+  <% end %>
+</div>

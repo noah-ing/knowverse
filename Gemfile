@@ -30,6 +30,9 @@ gem "stripe_event"
 gem "google-apis-drive_v3", "~> 0.51"
 gem "googleauth", "~> 1.9"
 
+# Notion integration
+gem "notion-ruby-client", "~> 1.2"
+
 gem "bootsnap", require: false
 gem "kamal", require: false
 gem "thruster", require: false
