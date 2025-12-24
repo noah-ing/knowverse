@@ -40,6 +40,11 @@ Rails.application.routes.draw do
         get :callback
         post :sync
       end
+
+      resource :notion, only: [:new, :create, :show, :destroy], controller: 'notion' do
+        get :callback
+        post :sync
+      end
     end
 
     # Document routes nested under organizations
@@ -76,6 +81,10 @@ Rails.application.routes.draw do
         get :stream  # Streaming endpoint for SSE
         post :stream # Support POST for streaming endpoint
         get :conversation # Get conversation history
+        # Agentic RAG endpoints
+        get :agent_stream  # Agentic RAG streaming endpoint
+        post :agent_stream # Support POST for agent streaming
+        get :agent_info    # Get available agent modes and tools
       end
     end
     

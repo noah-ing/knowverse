@@ -299,10 +299,10 @@ class RagController < ApplicationController
       error_message = "Streaming error: #{e.message}"
       Rails.logger.error(error_message)
       Rails.logger.error(e.backtrace.join("\n"))
-      
+
       # Add error message to conversation
       conversation.add_system_message("Error: #{error_message}", { error: true })
-      
+
       # Send error to browser
       response.stream.write("event: error\n")
       response.stream.write("data: #{JSON.generate({error: error_message})}\n\n")
@@ -311,7 +311,188 @@ class RagController < ApplicationController
       response.stream.close
     end
   end
-  
+
+  # Stream Agentic RAG response using Server-Sent Events (SSE)
+  # Supports multiple agent modes: basic, react, deep_research, plan_execute
+  def agent_stream
+    # Set headers for SSE
+    response.headers["Content-Type"] = "text/event-stream"
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Connection"] = "keep-alive"
+
+    # Get query from params
+    @query = params[:query]
+
+    if @query.blank?
+      response.stream.write("data: #{JSON.generate({type: "error", error: "Question cannot be blank"})}\n\n")
+      response.stream.close
+      return
+    end
+
+    # Extract agent options from params
+    agent_mode = params[:mode].presence || "auto"
+    max_iterations = params[:max_iterations].presence&.to_i || 10
+    provider = params[:provider].presence
+    include_trace = params[:include_trace].present? ? params[:include_trace] == "true" : true
+
+    # Extract generation options
+    temperature = params[:temperature].presence&.to_f || 0.7
+    max_tokens = params[:max_tokens].presence&.to_i || 1000
+
+    # Extract or create conversation
+    conversation = find_or_create_conversation(params[:conversation_id])
+
+    # Add user message to conversation
+    user_message = conversation.add_user_message(@query)
+
+    # Prepare complete response buffer for agent
+    complete_response = ""
+    sources = []
+    agent_trace = []
+
+    # Set options for agent streaming
+    options = {
+      mode: agent_mode,
+      max_iterations: max_iterations,
+      provider: provider,
+      temperature: temperature,
+      max_tokens: max_tokens,
+      include_trace: include_trace,
+      conversation_id: conversation.id
+    }
+
+    # Start streaming agent response
+    begin
+      haystack_client.generate_agent_stream(@query, @organization.id, options) do |event|
+        # Forward event type in JSON data
+        event_type = event[:type].to_s
+        event_data = event[:data].is_a?(Hash) ? event[:data].dup : {}
+        event_data["type"] = event_type
+        event_data["conversation_id"] = conversation.id
+
+        case event[:type]
+        when :mode_selected
+          # Agent mode was selected (auto-detected or user-specified)
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :thought
+          # Agent reasoning step
+          agent_trace << { type: "thought", content: event_data["thought"] }
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :action
+          # Agent is calling a tool
+          agent_trace << { type: "action", tool: event_data["tool"], input: event_data["input"] }
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :observation
+          # Tool result received
+          agent_trace << { type: "observation", result: event_data["result"] }
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :plan
+          # Execution plan created (plan-execute mode)
+          agent_trace << { type: "plan", steps: event_data["steps"] }
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :step_complete
+          # Plan step completed
+          agent_trace << { type: "step_complete", step: event_data["step"] }
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :researching
+          # Sub-question being researched (deep research mode)
+          agent_trace << { type: "researching", question: event_data["question"] }
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :phase
+          # Agent entering a new phase
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :context
+          # Retrieved context documents
+          sources = event_data["documents"] || event_data["sources"] || []
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :token
+          # Streaming text token
+          token_content = event_data["content"] || event_data["token"] || ""
+          complete_response += token_content
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :final_answer
+          # Complete answer with sources
+          complete_response = event_data["answer"] || complete_response
+          sources = event_data["sources"] || sources
+
+          # Create assistant message with agent metadata
+          assistant_message = conversation.add_assistant_message(
+            complete_response,
+            {
+              sources: sources,
+              agent_mode: agent_mode,
+              agent_trace: include_trace ? agent_trace : nil,
+              confidence: event_data["confidence"]
+            }
+          )
+
+          event_data["message_id"] = assistant_message.id
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :quality_check
+          # Quality/hallucination check results
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :clarify
+          # Agent needs clarification from user
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :warning
+          # Non-fatal warning
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :error
+          # Error occurred
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        when :complete
+          # Agent execution complete
+          event_data["message_id"] ||= conversation.conversation_messages.last&.id
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+
+        else
+          # Forward any other events
+          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
+        end
+      end
+    rescue => e
+      # Handle exceptions during agent streaming
+      error_message = "Agent streaming error: #{e.message}"
+      Rails.logger.error(error_message)
+      Rails.logger.error(e.backtrace.join("\n"))
+
+      # Add error message to conversation
+      conversation.add_system_message("Error: #{error_message}", { error: true, agent_mode: agent_mode })
+
+      # Send error to browser
+      response.stream.write("data: #{JSON.generate({type: "error", error: error_message})}\n\n")
+    ensure
+      # Always close the stream
+      response.stream.close
+    end
+  end
+
+  # Get available agent modes and tools
+  def agent_info
+    modes_response = haystack_client.list_agent_modes
+    tools_response = haystack_client.list_agent_tools
+
+    render json: {
+      modes: modes_response.success? ? modes_response.data : [],
+      tools: tools_response.success? ? tools_response.data : []
+    }
+  end
+
   # Get conversation messages for multi-turn context
   def conversation
     conversation_id = params[:conversation_id]
