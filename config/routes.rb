@@ -33,6 +33,7 @@ Rails.application.routes.draw do
       get :dashboard, as: :dashboard
       get :settings
       post :invite_user
+      post :regenerate_api_key
     end
 
     # SSO Configuration (for org admins)

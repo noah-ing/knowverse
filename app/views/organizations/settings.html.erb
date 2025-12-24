@@ -53,6 +53,13 @@
             </svg>
             <span class="truncate">Limits & Usage</span>
           </a>
+
+          <a href="#api-keys" class="kv-text-primary hover:bg-gray-50 group flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 transition-all duration-200">
+            <svg class="text-gray-400 group-hover:text-primary-500 flex-shrink-0 -ml-1 mr-3 h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+            <span class="truncate">API Keys</span>
+          </a>
         </nav>
       </div>
     </div>
@@ -353,6 +360,100 @@
                   <span class="ml-2 text-sm kv-text-primary">API Access</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# API Keys %>
+      <%= render partial: "shared/card", locals: {
+        title: "API Keys",
+        subtitle: "Manage API keys for MCP and external integrations",
+        id: "api-keys",
+        animate: "slide-up",
+        animate_delay: "400ms"
+      } do %>
+        <div class="space-y-6" data-controller="api-key">
+          <h3 class="text-base font-medium kv-text-primary">MCP API Key</h3>
+          <p class="text-sm kv-text-secondary">Use this key to connect Claude Desktop or other MCP-compatible tools to your knowledge base.</p>
+
+          <%# API Key Display %>
+          <div class="p-4 bg-gray-50 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div class="flex-1 mr-4">
+                <label class="text-xs font-medium kv-text-secondary uppercase tracking-wider">API Key</label>
+                <div class="mt-1 flex items-center">
+                  <code class="text-sm font-mono kv-text-primary bg-white px-3 py-2 rounded border border-gray-200 flex-1" data-api-key-target="display">
+                    <span data-api-key-target="masked"><%= @organization.mcp_api_key&.gsub(/(?<=.{6}).(?=.{4})/, '*') || 'Not generated' %></span>
+                    <span data-api-key-target="revealed" class="hidden"><%= @organization.mcp_api_key || 'Not generated' %></span>
+                  </code>
+                  <button type="button"
+                          class="ml-2 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                          data-action="click->api-key#toggleReveal"
+                          data-api-key-target="toggleBtn"
+                          title="Show/hide key">
+                    <svg data-api-key-target="eyeIcon" class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <svg data-api-key-target="eyeOffIcon" class="h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  </button>
+                  <button type="button"
+                          class="ml-1 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                          data-action="click->api-key#copy"
+                          data-api-key-value="<%= @organization.mcp_api_key %>"
+                          title="Copy to clipboard">
+                    <svg data-api-key-target="copyIcon" class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <svg data-api-key-target="checkIcon" class="h-5 w-5 hidden text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <%# Regenerate Button %>
+            <div class="mt-4 pt-4 border-t border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium kv-text-primary">Regenerate API Key</p>
+                  <p class="text-xs kv-text-secondary mt-1">This will invalidate the current key. Any integrations using it will stop working.</p>
+                </div>
+                <%= button_to regenerate_api_key_organization_path(@organization),
+                    method: :post,
+                    class: "kv-btn kv-btn-secondary text-sm",
+                    data: {
+                      turbo_confirm: "Are you sure? This will invalidate your current API key and any integrations using it will stop working.",
+                      api_key_target: "regenerateBtn"
+                    } do %>
+                  <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Regenerate
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <%# Usage Instructions %>
+          <div class="mt-4">
+            <h4 class="text-sm font-medium kv-text-primary mb-2">Quick Start</h4>
+            <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+              <pre class="text-sm text-gray-100 font-mono"><code># Add to Claude Desktop config (claude_desktop_config.json)
+{
+  "mcpServers": {
+    "knowverse": {
+      "url": "<%= request.base_url %>/mcp",
+      "headers": {
+        "X-MCP-Key": "<%= @organization.mcp_api_key %>"
+      }
+    }
+  }
+}</code></pre>
             </div>
           </div>
         </div>

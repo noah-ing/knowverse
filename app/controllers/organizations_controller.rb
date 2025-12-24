@@ -2,7 +2,7 @@ class OrganizationsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_organization, except: [:index, :new, :create]
   before_action :ensure_organization_member, except: [:index, :new, :create]
-  before_action :ensure_can_manage, only: [:edit, :update, :destroy, :settings, :invite_user]
+  before_action :ensure_can_manage, only: [:edit, :update, :destroy, :settings, :invite_user, :regenerate_api_key]
 
   # GET /organizations
   def index
@@ -172,6 +172,12 @@ class OrganizationsController < ApplicationController
   # GET /organizations/1/settings
   def settings
     @members = @organization.organization_users.includes(:user)
+  end
+
+  # POST /organizations/1/regenerate_api_key
+  def regenerate_api_key
+    @organization.regenerate_mcp_api_key!
+    redirect_to settings_organization_path(@organization, anchor: 'api-keys'), notice: 'API key regenerated successfully.'
   end
 
   # POST /organizations/1/invite_user
