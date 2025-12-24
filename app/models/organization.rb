@@ -41,6 +41,7 @@ class Organization < ApplicationRecord
   has_many :domain_embedding_models, dependent: :destroy
   has_many :domain_confidence_scores, dependent: :destroy
   has_many :organization_templates, dependent: :destroy
+  has_many :document_sources, dependent: :destroy
   has_one :sso_config, dependent: :destroy
   
   # Scopes
