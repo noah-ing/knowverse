@@ -1,5 +1,8 @@
 class User < ApplicationRecord
-  devise :magic_link_authenticatable, :database_authenticatable, :registerable, :recoverable, :rememberable, :validatable
+  devise :magic_link_authenticatable, :database_authenticatable, :registerable, :recoverable, :rememberable, :validatable, :omniauthable, omniauth_providers: [:saml, :openid_connect]
+
+  # SSO association
+  belongs_to :sso_organization, class_name: 'Organization', optional: true
 
   # Active Storage association for avatar
   has_one_attached :avatar
@@ -149,6 +152,39 @@ class User < ApplicationRecord
   # Helper for displaying user's name or email
   def display_name
     name.presence || email.split('@').first
+  end
+
+  # SSO helpers
+  def sso_user?
+    provider.present? && uid.present?
+  end
+
+  def self.from_omniauth(auth, organization)
+    user = find_by(provider: auth.provider, uid: auth.uid)
+    return user if user
+
+    # Try to find existing user by email and link SSO
+    email = auth.info.email
+    existing_user = find_by(email: email)
+
+    if existing_user
+      existing_user.update!(
+        provider: auth.provider,
+        uid: auth.uid,
+        sso_organization: organization
+      )
+      return existing_user
+    end
+
+    # Create new user via JIT provisioning
+    create!(
+      email: email,
+      name: auth.info.name,
+      provider: auth.provider,
+      uid: auth.uid,
+      sso_organization: organization,
+      password: Devise.friendly_token[0, 20]
+    )
   end
 
   # Notification preferences helpers

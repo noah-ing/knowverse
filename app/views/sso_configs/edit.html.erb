@@ -1,0 +1,12 @@
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="mb-6">
+    <%= link_to "← Back to SSO Settings", organization_sso_config_path(@organization), class: "text-indigo-600 hover:text-indigo-800" %>
+  </div>
+
+  <div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">Edit SSO Configuration</h1>
+    <p class="text-gray-500 mt-1">Update Single Sign-On settings for <%= @organization.name %></p>
+  </div>
+
+  <%= render 'form' %>
+</div>

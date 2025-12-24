@@ -1,0 +1,164 @@
+<%= form_with model: [@organization, @sso_config], class: "space-y-6" do |form| %>
+  <% if @sso_config.errors.any? %>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+      <h3 class="text-red-800 font-medium mb-2">Please fix the following errors:</h3>
+      <ul class="list-disc list-inside text-red-700 text-sm">
+        <% @sso_config.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <!-- Provider Type Selection -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <h3 class="text-lg font-medium text-gray-900 mb-4">Provider Type</h3>
+    <div class="grid grid-cols-2 gap-4">
+      <label class="relative flex items-center p-4 border rounded-lg cursor-pointer hover:border-indigo-500" data-controller="radio-card">
+        <%= form.radio_button :provider_type, 'saml', class: "sr-only", data: { radio_card_target: "input", action: "change->radio-card#toggle" } %>
+        <div class="flex-1">
+          <span class="block text-lg font-medium text-gray-900">SAML 2.0</span>
+          <span class="block text-sm text-gray-500">Okta, Azure AD, OneLogin, PingFederate</span>
+        </div>
+        <div class="h-5 w-5 rounded-full border-2 border-gray-300" data-radio-card-target="indicator"></div>
+      </label>
+
+      <label class="relative flex items-center p-4 border rounded-lg cursor-pointer hover:border-indigo-500" data-controller="radio-card">
+        <%= form.radio_button :provider_type, 'oidc', class: "sr-only", data: { radio_card_target: "input", action: "change->radio-card#toggle" } %>
+        <div class="flex-1">
+          <span class="block text-lg font-medium text-gray-900">OpenID Connect</span>
+          <span class="block text-sm text-gray-500">Google Workspace, Auth0, Okta OIDC</span>
+        </div>
+        <div class="h-5 w-5 rounded-full border-2 border-gray-300" data-radio-card-target="indicator"></div>
+      </label>
+    </div>
+  </div>
+
+  <!-- SAML Configuration -->
+  <div id="saml-config" class="bg-white rounded-lg border border-gray-200 p-6" data-provider="saml">
+    <h3 class="text-lg font-medium text-gray-900 mb-4">SAML Configuration</h3>
+    <div class="space-y-4">
+      <div>
+        <%= form.label :idp_metadata_url, "IdP Metadata URL (optional)", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :idp_metadata_url, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500", placeholder: "https://idp.example.com/metadata.xml" %>
+        <p class="mt-1 text-sm text-gray-500">If provided, we'll automatically fetch IdP settings</p>
+      </div>
+
+      <div>
+        <%= form.label :idp_sso_target_url, "IdP SSO URL", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :idp_sso_target_url, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500", placeholder: "https://idp.example.com/sso" %>
+        <p class="mt-1 text-sm text-gray-500">The URL where SAML requests are sent</p>
+      </div>
+
+      <div>
+        <%= form.label :idp_cert, "IdP Certificate", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_area :idp_cert, rows: 6, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm", placeholder: "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----" %>
+        <p class="mt-1 text-sm text-gray-500">The X.509 certificate from your IdP</p>
+      </div>
+
+      <div>
+        <%= form.label :idp_cert_fingerprint, "IdP Certificate Fingerprint (alternative)", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :idp_cert_fingerprint, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-mono", placeholder: "AB:CD:EF:..." %>
+        <p class="mt-1 text-sm text-gray-500">SHA-256 fingerprint (if not providing full certificate)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OIDC Configuration -->
+  <div id="oidc-config" class="bg-white rounded-lg border border-gray-200 p-6" data-provider="oidc">
+    <h3 class="text-lg font-medium text-gray-900 mb-4">OpenID Connect Configuration</h3>
+    <div class="space-y-4">
+      <div>
+        <%= form.label :issuer, "Issuer URL", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :issuer, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500", placeholder: "https://accounts.google.com" %>
+        <p class="mt-1 text-sm text-gray-500">The OIDC issuer URL</p>
+      </div>
+
+      <div>
+        <%= form.label :client_id, "Client ID", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :client_id, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" %>
+      </div>
+
+      <div>
+        <%= form.label :client_secret, "Client Secret", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.password_field :client_secret, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500", value: @sso_config.client_secret.present? ? '••••••••' : '' %>
+        <p class="mt-1 text-sm text-gray-500">Leave blank to keep existing secret</p>
+      </div>
+
+      <div>
+        <%= form.label :discovery_url, "Discovery URL (optional)", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :discovery_url, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500", placeholder: "https://accounts.google.com/.well-known/openid-configuration" %>
+        <p class="mt-1 text-sm text-gray-500">Auto-discover endpoints from this URL</p>
+      </div>
+
+      <div>
+        <%= form.label :scope, "Scope", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :scope, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500", placeholder: "openid email profile" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Common Settings -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <h3 class="text-lg font-medium text-gray-900 mb-4">Provisioning Settings</h3>
+    <div class="space-y-4">
+      <div class="flex items-center">
+        <%= form.check_box :auto_provision, class: "h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" %>
+        <%= form.label :auto_provision, "Auto-provision users", class: "ml-2 text-sm text-gray-700" %>
+        <p class="ml-6 text-sm text-gray-500">Create new users automatically on first SSO login</p>
+      </div>
+
+      <div>
+        <%= form.label :default_role, "Default Role for New Users", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.select :default_role, SsoConfig::ROLES.map { |r| [r.titleize, r] }, {}, class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" %>
+      </div>
+
+      <div>
+        <%= form.label :domain_allowlist, "Allowed Email Domains", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :domain_allowlist, value: @sso_config.domain_allowlist&.join(', '), class: "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500", placeholder: "example.com, company.org" %>
+        <p class="mt-1 text-sm text-gray-500">Comma-separated list. Leave empty to allow all domains.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enable Toggle -->
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-medium text-gray-900">Enable SSO</h3>
+        <p class="text-sm text-gray-500">Allow team members to log in using this SSO configuration</p>
+      </div>
+      <%= form.check_box :enabled, class: "h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" %>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div class="flex justify-end gap-3">
+    <%= link_to "Cancel", organization_sso_config_path(@organization), class: "px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50" %>
+    <%= form.submit @sso_config.persisted? ? "Update Configuration" : "Create Configuration", class: "px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer" %>
+  </div>
+<% end %>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const samlRadio = document.querySelector('input[value="saml"]');
+    const oidcRadio = document.querySelector('input[value="oidc"]');
+    const samlConfig = document.getElementById('saml-config');
+    const oidcConfig = document.getElementById('oidc-config');
+
+    function toggleConfigSections() {
+      if (samlRadio && samlRadio.checked) {
+        samlConfig.style.display = 'block';
+        oidcConfig.style.display = 'none';
+      } else if (oidcRadio && oidcRadio.checked) {
+        samlConfig.style.display = 'none';
+        oidcConfig.style.display = 'block';
+      }
+    }
+
+    if (samlRadio) samlRadio.addEventListener('change', toggleConfigSections);
+    if (oidcRadio) oidcRadio.addEventListener('change', toggleConfigSections);
+
+    toggleConfigSections();
+  });
+</script>

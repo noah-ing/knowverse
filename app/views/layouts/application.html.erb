@@ -324,12 +324,16 @@
           <div class="flex items-center space-x-4">
             <%= link_to "Privacy", privacy_path, class: "kv-text-secondary hover:kv-text-accent transition-colors duration-200" %>
             <%= link_to "Terms", terms_path, class: "kv-text-secondary hover:kv-text-accent transition-colors duration-200" %>
+            <%= link_to "Cookies", cookies_path, class: "kv-text-secondary hover:kv-text-accent transition-colors duration-200" %>
             <%= link_to "Documentation", documentation_path, class: "kv-text-secondary hover:kv-text-accent transition-colors duration-200" %>
           </div>
         </div>
       </div>
     </footer>
     
+    <!-- Cookie Consent Banner -->
+    <%= render 'shared/cookie_consent' %>
+
     <!-- Keyboard shortcuts controller - dialog created dynamically -->
     <div data-controller="keyboard-shortcuts" class="hidden"></div>
   </body>

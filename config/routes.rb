@@ -19,6 +19,7 @@ Rails.application.routes.draw do
   # Static pages
   get '/privacy', to: 'pages#privacy', as: :privacy
   get '/terms', to: 'pages#terms', as: :terms
+  get '/cookies', to: 'pages#cookies', as: :cookies
   get '/docs', to: 'pages#documentation', as: :documentation
 
   # Convenience routes that redirect to organization-scoped resources
@@ -33,7 +34,12 @@ Rails.application.routes.draw do
       get :settings
       post :invite_user
     end
-    
+
+    # SSO Configuration (for org admins)
+    resource :sso_config, only: [:show, :new, :create, :edit, :update, :destroy] do
+      post :test
+    end
+
     # Connectors for external document sources
     namespace :connectors do
       resource :google_drive, only: [:new, :create, :show, :destroy], controller: 'google_drive' do
@@ -125,14 +131,27 @@ Rails.application.routes.draw do
     post '/thumbs_down/:search_query_id/:document_id', to: 'search_feedbacks#thumbs_down', as: :thumbs_down
   end
 
-  # Devise authentication routes
-  devise_for :users
+  # Devise authentication routes with OmniAuth callbacks
+  devise_for :users, controllers: {
+    omniauth_callbacks: 'users/omniauth_callbacks'
+  }
 
   devise_scope :user do
     post '/users/magic_link', to: 'users/magic_links#create', as: :create_user_magic_link
     get '/users/magic_link/:login_token', to: 'users/magic_links#show', as: :custom_user_magic_link
     get '/users/sign_out', to: 'devise/sessions#destroy'
   end
+
+  # SSO (Single Sign-On) routes
+  get '/sso', to: 'sso#index', as: :sso
+  post '/sso/lookup', to: 'sso#lookup', as: :sso_lookup
+  get '/sso/:org_slug', to: 'sso#login', as: :sso_login
+  post '/sso/:org_slug/initiate', to: 'sso#initiate', as: :sso_initiate
+
+  # OmniAuth callback routes (org-specific paths)
+  get '/auth/saml/:org_slug/callback', to: 'users/omniauth_callbacks#saml'
+  post '/auth/saml/:org_slug/callback', to: 'users/omniauth_callbacks#saml'
+  get '/auth/openid_connect/:org_slug/callback', to: 'users/omniauth_callbacks#openid_connect'
   
   # User profile customization routes
   namespace :users do

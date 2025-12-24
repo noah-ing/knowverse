@@ -5,6 +5,41 @@ All notable changes to the Knowverse project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2025-12-24
+
+### Added - SSO/SAML + OIDC (Week 11-12)
+- **SAML 2.0 Support**: Enterprise SSO with Okta, Azure AD, OneLogin, PingFederate
+- **OpenID Connect Support**: Google Workspace, Auth0, Okta OIDC, Azure AD OIDC
+- **Per-Organization SSO Config**: Each org has independent SSO settings with encrypted credentials
+- **JIT User Provisioning**: Auto-create users on first SSO login with configurable default role
+- **Domain Allowlist**: Restrict SSO to specific email domains per organization
+- **SSO Admin UI**: Wizard for SAML/OIDC setup, metadata display, test connection
+
+### Added - Comprehensive Documentation
+- **API Documentation**: Full endpoint reference with authentication, examples, rate limits
+- **User Guide**: Getting started, uploading, searching, RAG chat, connectors, SSO login
+- **Admin Guide**: Installation, environment config, SSO setup, Haystack service, troubleshooting
+
+### Added - Legal & Compliance
+- **Privacy Policy**: Comprehensive GDPR/CCPA-compliant privacy policy at `/privacy`
+- **Terms of Service**: Full terms and conditions with 20 sections at `/terms`
+- **Cookie Policy**: Detailed cookie categories and usage at `/cookies`
+- **Cookie Consent Banner**: GDPR-compliant consent with essential/functional/analytics categories
+- **Cookie Preferences Modal**: Granular control over cookie types with save preferences
+
+### Technical
+- `app/models/sso_config.rb` - SSO configuration with Active Record Encryption
+- `app/services/sso/user_provisioner.rb` - JIT user provisioning with domain validation
+- `app/controllers/users/omniauth_callbacks_controller.rb` - SAML/OIDC callback handling
+- `app/controllers/sso_configs_controller.rb` - Organization SSO management
+- `app/controllers/sso_controller.rb` - SSO login flow
+- `config/initializers/omniauth.rb` - Dynamic per-org provider configuration
+- `app/javascript/controllers/cookie_consent_controller.js` - Cookie consent Stimulus controller
+- `app/views/shared/_cookie_consent.html.erb` - Cookie banner and settings modal
+- `docs/api/README.md`, `docs/user/README.md`, `docs/admin/README.md` - Documentation
+
+---
+
 ## [2.7.0] - 2025-12-24
 
 ### Added - Chunk-Level Citations UI (Week 9-10)
