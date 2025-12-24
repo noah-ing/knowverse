@@ -1,5 +1,6 @@
 class Document < ApplicationRecord
   belongs_to :organization
+  belongs_to :document_source, optional: true
   has_many :vector_embeddings, dependent: :destroy
   has_many :vector_projections, through: :vector_embeddings
   has_many :cluster_memberships, dependent: :destroy
@@ -33,6 +34,8 @@ class Document < ApplicationRecord
   scope :embedding_processed, -> { where(embedding_status: 'processed') }
   scope :embedding_errored, -> { where(embedding_status: 'error') }
   scope :search_ready, -> { processed.embedding_processed }
+  scope :from_source, ->(source) { where(document_source: source) }
+  scope :synced_from_external, -> { where.not(document_source_id: nil) }
   
   # Callbacks
   before_create :set_initial_statuses
@@ -76,7 +79,15 @@ class Document < ApplicationRecord
   def search_ready?
     processed? && embedding_processed?
   end
-  
+
+  def from_external_source?
+    document_source_id.present?
+  end
+
+  def source_name
+    document_source&.display_name
+  end
+
   # File handling
   def file_extension
     return nil unless file.attached?

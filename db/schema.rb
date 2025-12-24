@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_22_174844) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_24_031330) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -134,6 +134,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_22_174844) do
     t.index ["organization_id"], name: "index_document_clusters_on_organization_id"
   end
 
+  create_table "document_sources", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.integer "source_type", default: 0, null: false
+    t.string "name"
+    t.text "credentials"
+    t.datetime "last_sync_at"
+    t.string "sync_status", default: "disconnected"
+    t.text "sync_error"
+    t.jsonb "settings", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_document_sources_on_organization_id"
+  end
+
   create_table "documents", force: :cascade do |t|
     t.string "title"
     t.text "content"
@@ -149,6 +163,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_22_174844) do
     t.integer "word_count", default: 0
     t.string "primary_embedding_type"
     t.string "status", default: "pending", null: false
+    t.bigint "document_source_id"
+    t.string "external_id"
+    t.string "external_url"
+    t.index ["document_source_id", "external_id"], name: "index_documents_on_document_source_id_and_external_id", unique: true, where: "(document_source_id IS NOT NULL)"
+    t.index ["document_source_id"], name: "index_documents_on_document_source_id"
     t.index ["organization_id"], name: "index_documents_on_organization_id"
     t.index ["user_id"], name: "index_documents_on_user_id"
   end
@@ -507,6 +526,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_22_174844) do
   add_foreign_key "conversation_messages", "conversation_sessions"
   add_foreign_key "conversation_sessions", "organizations"
   add_foreign_key "conversation_sessions", "users"
+  add_foreign_key "document_sources", "organizations"
+  add_foreign_key "documents", "document_sources"
   add_foreign_key "domain_confidence_scores", "organizations"
   add_foreign_key "domain_embedding_models", "organizations"
   add_foreign_key "organization_templates", "organizations"

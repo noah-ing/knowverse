@@ -1,0 +1,101 @@
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-6">
+    <%= link_to organization_documents_path(@organization), class: "inline-flex items-center text-sm text-gray-500 hover:text-gray-700" do %>
+      <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+      </svg>
+      Back to Documents
+    <% end %>
+  </div>
+
+  <%= render "shared/card", title: "Connect Google Drive", classes: "mb-6" do %>
+    <div class="text-center py-8">
+      <div class="mx-auto w-20 h-20 mb-6">
+        <svg viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+          <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+          <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+        </svg>
+      </div>
+
+      <h2 class="text-xl font-semibold text-gray-900 mb-2">Connect Your Google Drive</h2>
+      <p class="text-gray-600 mb-6 max-w-md mx-auto">
+        Import documents directly from Google Drive. We'll sync your PDFs, Google Docs, Sheets, and other supported files.
+      </p>
+
+      <div class="bg-gray-50 rounded-lg p-4 mb-6 text-left max-w-md mx-auto">
+        <h3 class="text-sm font-medium text-gray-900 mb-2">What we'll access:</h3>
+        <ul class="text-sm text-gray-600 space-y-1">
+          <li class="flex items-center">
+            <svg class="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            Read-only access to your files
+          </li>
+          <li class="flex items-center">
+            <svg class="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            View file metadata
+          </li>
+        </ul>
+        <p class="text-xs text-gray-500 mt-3">
+          We never modify or delete your files. You can disconnect at any time.
+        </p>
+      </div>
+
+      <%= button_to "Connect Google Drive", organization_connectors_google_drive_path(@organization),
+        method: :post,
+        class: "kv-btn kv-btn-primary inline-flex items-center px-6 py-3" do %>
+        <svg class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032 s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2 C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
+        </svg>
+        Continue with Google
+      <% end %>
+    </div>
+  <% end %>
+
+  <%= render "shared/card", title: "Supported File Types", border: true do %>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+          <span class="text-red-600 font-bold text-xs">PDF</span>
+        </div>
+        <span class="text-sm text-gray-700">PDF Files</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+          <span class="text-blue-600 font-bold text-xs">DOC</span>
+        </div>
+        <span class="text-sm text-gray-700">Google Docs</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+          <span class="text-green-600 font-bold text-xs">XLS</span>
+        </div>
+        <span class="text-sm text-gray-700">Google Sheets</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+          <span class="text-blue-600 font-bold text-xs">DOCX</span>
+        </div>
+        <span class="text-sm text-gray-700">Word Docs</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+          <span class="text-gray-600 font-bold text-xs">TXT</span>
+        </div>
+        <span class="text-sm text-gray-700">Text Files</span>
+      </div>
+      <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+          <span class="text-gray-600 font-bold text-xs">MD</span>
+        </div>
+        <span class="text-sm text-gray-700">Markdown</span>
+      </div>
+    </div>
+  <% end %>
+</div>

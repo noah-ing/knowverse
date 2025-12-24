@@ -34,6 +34,14 @@ Rails.application.routes.draw do
       post :invite_user
     end
     
+    # Connectors for external document sources
+    namespace :connectors do
+      resource :google_drive, only: [:new, :create, :show, :destroy], controller: 'google_drive' do
+        get :callback
+        post :sync
+      end
+    end
+
     # Document routes nested under organizations
     resources :documents do
       collection do

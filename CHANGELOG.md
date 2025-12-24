@@ -5,6 +5,33 @@ All notable changes to the Knowverse project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2025-12-24
+
+### Added - Google Drive Connector (Priority 3)
+- **OAuth 2.0 Integration**: Secure Google Drive connection with token refresh
+- **Document Sync**: Import PDFs, Google Docs, Sheets, Word files, and more
+- **Background Processing**: Sidekiq worker for async file sync
+- **Export Support**: Auto-exports Google Docs to PDF, Sheets to XLSX
+- **Status Tracking**: Connected/syncing/error states with last sync time
+- **UI**: Connect button in Documents page, dedicated Drive management page
+
+### Added - Document Sources Infrastructure
+- **DocumentSource Model**: Encrypted credential storage, multi-connector support
+- **External Document Tracking**: external_id and external_url on documents
+- **Connector Architecture**: Extensible for Notion, Slack, Confluence, GitHub
+
+### Fixed
+- **Dark Mode Removal**: Removed dark mode classes from upload UI (white-only design)
+
+### Technical
+- `app/models/document_source.rb` - Encrypted credentials, OAuth helpers
+- `app/services/connectors/google_drive_service.rb` - Drive API client
+- `app/controllers/connectors/google_drive_controller.rb` - OAuth flow
+- `app/sidekiq/connectors/google_drive_sync_worker.rb` - Background sync
+- `db/migrate/20251224031330_create_document_sources.rb` - Connector tables
+
+---
+
 ## [2.3.0] - 2025-12-22
 
 ### Added - MCP Server Integration (Phase 1.1)
