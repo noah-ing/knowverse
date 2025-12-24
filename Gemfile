@@ -90,7 +90,7 @@ gem "websocket-client-simple", "~> 0.6" # WebSocket client for node communicatio
 gem "websocket-driver", "~> 0.7" # WebSocket protocol implementation
 gem "pgvector", "~> 0.2" # PostgreSQL vector extension support
 gem "pundit", "~> 2.3" # Authorization policies for multi-tenancy
-gem "view_component", "~> 3.9" # Component-based UI
+gem "view_component", "~> 4.1" # Component-based UI
 gem "pagy", "~> 7.0" # Pagination
 
 gem "colorize", "~> 1.1"
