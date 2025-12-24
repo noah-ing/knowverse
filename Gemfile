@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-gem "rails", "~> 8.0.2"
+gem "rails", "~> 8.1.1"
 gem "propshaft"
 gem "image_processing", "~> 1.12" # Required for Active Storage variants
 gem "importmap-rails"
