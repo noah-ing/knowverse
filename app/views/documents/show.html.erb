@@ -160,13 +160,45 @@
       animate_delay: "300ms",
       title: "Document Content",
       subtitle: "Extracted text content from the document." do %>
-      <div class="border-t border-gray-200 transition-colors duration-200">
+      <div class="border-t border-gray-200 transition-colors duration-200" data-controller="chunk-highlight">
         <div class="px-4 py-5 sm:px-6">
-          <div class="bg-gray-50 rounded-md p-4 overflow-auto max-h-96 transition-colors duration-200">
+          <div class="bg-gray-50 rounded-md p-4 overflow-auto max-h-96 transition-colors duration-200" data-chunk-highlight-target="container">
             <% if @document.content.present? %>
-              <div class="prose prose-sm max-w-none kv-text-primary whitespace-pre-line">
-                <%= @document.content %>
-              </div>
+              <%# Render content with chunk anchors if embedding data available %>
+              <% if @document.vector_embeddings.any? %>
+                <div class="prose prose-sm max-w-none kv-text-primary">
+                  <% chunk_positions = @document.metadata&.dig('chunk_positions') || [] %>
+                  <% if chunk_positions.any? %>
+                    <% # Render with chunk markers %>
+                    <% last_end = 0 %>
+                    <% chunk_positions.each_with_index do |pos, idx| %>
+                      <% start_char = pos['start_char'] || 0 %>
+                      <% end_char = pos['end_char'] || @document.content.length %>
+                      <% chunk_content = @document.content[start_char...end_char] %>
+                      <div id="chunk-<%= idx %>" class="chunk-section py-2 px-3 -mx-3 rounded transition-all duration-300" data-chunk-index="<%= idx %>">
+                        <div class="whitespace-pre-line"><%= chunk_content %></div>
+                      </div>
+                    <% end %>
+                  <% else %>
+                    <%# Fallback: estimate chunks based on embedding count %>
+                    <% chunk_count = @document.vector_embeddings.count %>
+                    <% if chunk_count > 0 %>
+                      <% chars_per_chunk = (@document.content.length.to_f / chunk_count).ceil %>
+                      <% @document.content.chars.each_slice(chars_per_chunk).with_index do |chunk_chars, idx| %>
+                        <div id="chunk-<%= idx %>" class="chunk-section py-2 px-3 -mx-3 rounded transition-all duration-300" data-chunk-index="<%= idx %>">
+                          <div class="whitespace-pre-line"><%= chunk_chars.join %></div>
+                        </div>
+                      <% end %>
+                    <% else %>
+                      <div class="whitespace-pre-line"><%= @document.content %></div>
+                    <% end %>
+                  <% end %>
+                </div>
+              <% else %>
+                <div class="prose prose-sm max-w-none kv-text-primary whitespace-pre-line">
+                  <%= @document.content %>
+                </div>
+              <% end %>
             <% else %>
               <p class="text-sm kv-text-secondary italic">No content was extracted from this document.</p>
             <% end %>

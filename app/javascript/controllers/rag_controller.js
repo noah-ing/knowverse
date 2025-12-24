@@ -394,42 +394,139 @@ export default class extends Controller {
   // Handle sources event
   handleSources(event) {
     const data = JSON.parse(event.data)
-    
-    // Store references for highlighting
+
+    // Store references for highlighting (now with chunk-level data)
     this.sourceReferences = data.sources || []
-    
-    // Update UI with source list
+    this.citationMappings = data.citations || []
+
+    // Insert citation markers into the response text
+    if (this.citationMappings.length > 0 && this.hasStreamingResponseTarget) {
+      this.insertCitationMarkers()
+    }
+
+    // Update UI with source list (chunk-level)
     this.updateSources(this.sourceReferences)
-    
-    // Register hover events for source highlighting
+
+    // Register hover events for citation highlighting
     setTimeout(() => {
       // Add source references to text display for highlighting
       if (this.streamingDisplay) {
         this.streamingDisplay.addSourceReferences(this.sourceReferences)
       }
-      
-      // Add hover effects for source list items
-      const sourceItems = this.sourcesTarget.querySelectorAll('li')
-      sourceItems.forEach(item => {
-        const sourceId = item.dataset.sourceId
-        
-        // Mouse enter - highlight in text
-        item.addEventListener('mouseenter', () => {
-          if (this.streamingDisplay) {
-            this.streamingDisplay.highlightSource(sourceId)
-          }
-          item.classList.add('bg-indigo-50')
-        })
-        
-        // Mouse leave - remove highlight 
-        item.addEventListener('mouseleave', () => {
-          if (this.streamingDisplay) {
-            this.streamingDisplay.clearSourceHighlight()
-          }
-          item.classList.remove('bg-indigo-50')
-        })
-      })
+
+      // Add hover effects for citation markers
+      this.setupCitationHovers()
     }, 100)
+  }
+
+  // Insert [1] [2] citation markers into the response text
+  insertCitationMarkers() {
+    if (!this.citationMappings || !this.citationMappings.length) return
+
+    let html = this.streamingResponseTarget.innerHTML
+
+    // Sort citations by position (reverse order to insert from end)
+    const sortedCitations = [...this.citationMappings].sort(
+      (a, b) => (b.sentence_end || 0) - (a.sentence_end || 0)
+    )
+
+    // Insert markers at each citation point
+    for (const citation of sortedCitations) {
+      const indices = citation.source_indices || []
+      if (indices.length === 0) continue
+
+      // Create citation marker HTML
+      const markers = indices.map(idx => {
+        const source = this.sourceReferences[idx - 1]
+        const preview = source?.content_preview || ''
+        const title = source?.title || `Source ${idx}`
+        const docId = source?.document_id || source?.id
+        const chunkIdx = source?.chunk_index
+
+        return `<span class="citation-marker" data-citation-idx="${idx}" data-doc-id="${docId}" data-chunk-idx="${chunkIdx}">
+          <a href="#" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm">[${idx}]</a>
+          <div class="citation-popover hidden absolute z-50 w-72 p-3 bg-white rounded-lg shadow-lg border border-gray-200 text-sm">
+            <p class="font-medium text-gray-900 mb-1">${title}</p>
+            ${chunkIdx !== null && chunkIdx !== undefined ? `<p class="text-xs text-gray-500 mb-2">Chunk ${chunkIdx + 1}</p>` : ''}
+            <p class="text-gray-600 text-xs leading-relaxed">${preview}</p>
+            <a href="/organizations/${this.getOrganizationId()}/documents/${docId}${chunkIdx !== null && chunkIdx !== undefined ? `#chunk-${chunkIdx}` : ''}"
+               target="_blank"
+               class="inline-block mt-2 text-xs text-indigo-600 hover:text-indigo-800">
+              View in document →
+            </a>
+          </div>
+        </span>`
+      }).join(' ')
+
+      // Find sentence end position and insert
+      // We need to convert text position to HTML position (approximate)
+      const sentenceEnd = citation.sentence_end || 0
+      const textUpToEnd = this.currentResponse.substring(0, sentenceEnd)
+
+      // Find the corresponding position in rendered text
+      // Look for the last punctuation mark near that position
+      const searchText = textUpToEnd.slice(-50)
+      const punctMatch = searchText.match(/[.!?](?=[^.!?]*$)/)
+
+      if (punctMatch) {
+        const insertPos = html.lastIndexOf(punctMatch[0]) + 1
+        if (insertPos > 0 && insertPos < html.length) {
+          html = html.slice(0, insertPos) + ' ' + markers + html.slice(insertPos)
+        }
+      }
+    }
+
+    this.streamingResponseTarget.innerHTML = html
+  }
+
+  // Setup hover events for citation popovers
+  setupCitationHovers() {
+    const markers = document.querySelectorAll('.citation-marker')
+
+    markers.forEach(marker => {
+      const popover = marker.querySelector('.citation-popover')
+      if (!popover) return
+
+      marker.addEventListener('mouseenter', () => {
+        // Position popover
+        const rect = marker.getBoundingClientRect()
+        popover.style.top = `${rect.height + 5}px`
+        popover.style.left = '0'
+        popover.classList.remove('hidden')
+
+        // Highlight corresponding source pill
+        const idx = marker.dataset.citationIdx
+        this.highlightSourcePill(idx)
+      })
+
+      marker.addEventListener('mouseleave', () => {
+        popover.classList.add('hidden')
+        this.clearSourcePillHighlight()
+      })
+
+      // Prevent link click from navigating (let popover link handle it)
+      marker.querySelector('a').addEventListener('click', (e) => {
+        e.preventDefault()
+      })
+    })
+  }
+
+  // Highlight source pill by citation index
+  highlightSourcePill(idx) {
+    const pills = this.sourcesTarget.querySelectorAll('.source-pill')
+    pills.forEach(pill => {
+      if (pill.dataset.citationIdx === idx) {
+        pill.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50')
+      }
+    })
+  }
+
+  // Clear source pill highlights
+  clearSourcePillHighlight() {
+    const pills = this.sourcesTarget.querySelectorAll('.source-pill')
+    pills.forEach(pill => {
+      pill.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50')
+    })
   }
   
   // Handle metadata event
@@ -653,16 +750,67 @@ export default class extends Controller {
     this.sourcesTarget.innerHTML = ''
 
     // Style as flex wrap container for pills
-    this.sourcesTarget.className = 'flex flex-wrap gap-1'
+    this.sourcesTarget.className = 'flex flex-wrap gap-2'
 
-    // Add each source as a pill (matching homepage preview style)
-    sources.forEach(source => {
-      const pill = document.createElement('a')
-      pill.href = `/organizations/${this.getOrganizationId()}/documents/${source.id}`
-      pill.target = '_blank'
-      pill.dataset.sourceId = source.id
-      pill.className = 'text-xs bg-white px-2 py-0.5 rounded-full text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors cursor-pointer border border-gray-100'
-      pill.textContent = source.title || `Document ${source.id}`
+    // Add each source as a pill with citation number (chunk-level)
+    sources.forEach((source, index) => {
+      const citationIdx = source.citation_index || (index + 1)
+      const docId = source.document_id || source.id
+      const chunkIdx = source.chunk_index
+      const title = source.title || `Document ${docId}`
+      const preview = source.content_preview || ''
+
+      const pill = document.createElement('div')
+      pill.className = 'source-pill relative inline-flex items-center gap-1 bg-white px-2 py-1 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer border border-gray-200 group'
+      pill.dataset.citationIdx = String(citationIdx)
+      pill.dataset.sourceId = docId
+
+      // Citation number badge
+      const badge = document.createElement('span')
+      badge.className = 'flex items-center justify-center w-5 h-5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full'
+      badge.textContent = citationIdx
+
+      // Title text
+      const titleSpan = document.createElement('span')
+      titleSpan.className = 'text-xs truncate max-w-[150px]'
+      titleSpan.textContent = title
+      if (chunkIdx !== null && chunkIdx !== undefined) {
+        titleSpan.textContent += ` (chunk ${chunkIdx + 1})`
+      }
+
+      // Link to document
+      const link = document.createElement('a')
+      link.href = `/organizations/${this.getOrganizationId()}/documents/${docId}${chunkIdx !== null && chunkIdx !== undefined ? `#chunk-${chunkIdx}` : ''}`
+      link.target = '_blank'
+      link.className = 'text-gray-400 hover:text-indigo-600'
+      link.innerHTML = '<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>'
+      link.title = 'View in document'
+
+      // Popover for preview
+      const popover = document.createElement('div')
+      popover.className = 'absolute bottom-full left-0 mb-2 w-64 p-3 bg-white rounded-lg shadow-lg border border-gray-200 text-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50'
+      popover.innerHTML = `
+        <p class="font-medium text-gray-900 mb-1">${title}</p>
+        ${chunkIdx !== null && chunkIdx !== undefined ? `<p class="text-xs text-gray-500 mb-2">Chunk ${chunkIdx + 1}${source.total_chunks ? ` of ${source.total_chunks}` : ''}</p>` : ''}
+        <p class="text-gray-600 text-xs leading-relaxed line-clamp-3">${preview}</p>
+      `
+
+      pill.appendChild(badge)
+      pill.appendChild(titleSpan)
+      pill.appendChild(link)
+      pill.appendChild(popover)
+
+      // Add hover highlight for corresponding citation markers
+      pill.addEventListener('mouseenter', () => {
+        document.querySelectorAll(`.citation-marker[data-citation-idx="${citationIdx}"]`).forEach(marker => {
+          marker.classList.add('bg-indigo-100', 'rounded')
+        })
+      })
+      pill.addEventListener('mouseleave', () => {
+        document.querySelectorAll('.citation-marker').forEach(marker => {
+          marker.classList.remove('bg-indigo-100', 'rounded')
+        })
+      })
 
       this.sourcesTarget.appendChild(pill)
     })
