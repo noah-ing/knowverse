@@ -5,6 +5,57 @@ All notable changes to the Knowverse project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2025-12-24
+
+### Added - Chunk-Level Citations UI (Week 9-10)
+- **Post-hoc Citation Attribution**: Sentences automatically attributed to source chunks via semantic similarity
+- **Inline Citation Markers**: `[1] [2]` markers inserted at sentence ends linking to sources
+- **Citation Popovers**: Hover to see chunk preview, document title, and "View in document" link
+- **Source Pills with Chunk Info**: Citation number badges, chunk index display, hover previews
+- **Document Chunk Highlighting**: Click citation to navigate to document with chunk highlighted and scrolled into view
+
+### Technical
+- `services/haystack/app/citations.py` - CitationEngine with embedding-based attribution
+- `app/javascript/controllers/rag_controller.js` - Citation marker injection and popover UI
+- `app/javascript/controllers/chunk_highlight_controller.js` - URL hash-based chunk navigation
+- `app/views/documents/show.html.erb` - Chunk anchors and highlight controller
+- `app/assets/stylesheets/application.tailwind.css` - Citation and highlight animations
+
+---
+
+## [2.6.0] - 2025-12-24
+
+### Added - Agentic RAG (Week 7-8)
+- **ReAct Agent**: Reason→Act→Observe loop with tool use for complex queries
+- **Deep Research Mode**: Multi-source investigation with query decomposition and synthesis
+- **Plan-Execute Agent**: Explicit planning with topological step execution
+- **Tool Registry**: 5 built-in tools (search_knowledge_base, calculate, summarize, compare, clarify)
+- **Agent Orchestrator**: Auto-detection of query type to select optimal agent mode
+- **SSE Streaming**: 18 event types for real-time agent progress (thought, action, observation, plan, etc.)
+
+### Technical
+- `services/haystack/app/agents/` - Agent module with base, react, deep_research, plan_execute, orchestrator
+- `services/haystack/app/tools.py` - Tool definitions with OpenAI/Anthropic format conversion
+- `app/controllers/rag_controller.rb` - `agent_stream` action for agentic RAG
+- `app/services/haystack_client.rb` - `generate_agent_stream` method
+
+---
+
+## [2.5.0] - 2025-12-24
+
+### Added - Notion Connector
+- **OAuth 2.0 Integration**: Secure Notion workspace connection
+- **Page & Database Import**: Sync Notion pages with full content extraction
+- **Background Sync**: Sidekiq worker for async document import
+- **UI**: Connect button in Documents page, Notion management page
+
+### Technical
+- `app/controllers/connectors/notion_controller.rb` - OAuth flow
+- `app/services/connectors/notion_service.rb` - Notion API client
+- `app/sidekiq/connectors/notion_sync_worker.rb` - Background sync
+
+---
+
 ## [2.4.0] - 2025-12-24
 
 ### Added - Google Drive Connector (Priority 3)

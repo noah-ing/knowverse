@@ -1453,27 +1453,38 @@ async def rag_stream(request: RAGRequest):
             )
 
             # Convert to dict format for downstream processing
+            # Include full chunk metadata for citations
             context_docs = [
                 {
                     "id": r.id,
-                    "document_id": r.id,
+                    "document_id": r.metadata.get("document_id", r.id),
                     "title": r.metadata.get("title", ""),
                     "source": r.metadata.get("source", r.collection),
                     "content": r.content,
                     "text": r.content,
-                    "score": r.score
+                    "score": r.score,
+                    # Chunk-level metadata for citations
+                    "chunk_index": r.metadata.get("chunk_index"),
+                    "total_chunks": r.metadata.get("total_chunks"),
+                    "start_char": r.metadata.get("start_char"),
+                    "end_char": r.metadata.get("end_char"),
                 }
                 for r in retrieval_results
             ]
 
-            # Send context event
+            # Send context event with chunk-level data for citations
             context_data = {
                 "type": "context",
                 "documents": [
                     {
                         "id": doc.get("id"),
+                        "document_id": doc.get("document_id"),
                         "title": doc.get("title"),
-                        "score": doc.get("score", 0.0)
+                        "score": doc.get("score", 0.0),
+                        # Chunk citation data
+                        "chunk_index": doc.get("chunk_index"),
+                        "total_chunks": doc.get("total_chunks"),
+                        "content_preview": doc.get("content", "")[:200] + "..." if len(doc.get("content", "")) > 200 else doc.get("content", ""),
                     }
                     for doc in context_docs
                 ]
@@ -1499,9 +1510,11 @@ Answer:"""
             # Prepare context for LLM
             context_for_llm = [{"text": doc.get("content", ""), "title": doc.get("title"), "source": doc.get("source")} for doc in context_docs]
 
-            # Stream tokens
+            # Stream tokens and accumulate full response
+            full_response = ""
             async for token in llm.generate_stream(request.query, context_for_llm, request.generation_options):
                 tracker.add_token()
+                full_response += token
                 token_data = {
                     "type": "token",
                     "content": token,
@@ -1509,11 +1522,42 @@ Answer:"""
                 }
                 yield f"data: {json.dumps(token_data)}\n\n"
 
+            # Run post-hoc citation attribution
+            from app.citations import CitationEngine
+            citation_engine = CitationEngine()
+
+            # Attribute sentences to source chunks
+            citations = await asyncio.to_thread(
+                citation_engine.attribute_citations,
+                full_response,
+                context_docs
+            )
+
+            # Send sources event with chunk-level data and citation mappings
+            sources_data = {
+                "type": "sources",
+                "sources": [
+                    {
+                        "citation_index": i + 1,
+                        "document_id": doc.get("document_id"),
+                        "title": doc.get("title"),
+                        "chunk_index": doc.get("chunk_index"),
+                        "total_chunks": doc.get("total_chunks"),
+                        "content_preview": doc.get("content", "")[:200] + "..." if len(doc.get("content", "")) > 200 else doc.get("content", ""),
+                        "score": doc.get("score"),
+                    }
+                    for i, doc in enumerate(context_docs)
+                ],
+                "citations": citations  # Mapping of sentence indices to source indices
+            }
+            yield f"data: {json.dumps(sources_data)}\n\n"
+
             # Send completion event
             completion_data = {
                 "type": "complete",
                 "total_tokens": tracker.tokens,
-                "tokens_per_second": tracker.get_rate()
+                "tokens_per_second": tracker.get_rate(),
+                "has_citations": len(citations) > 0
             }
             yield f"data: {json.dumps(completion_data)}\n\n"
 

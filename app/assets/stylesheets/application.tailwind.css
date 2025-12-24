@@ -17,3 +17,55 @@ body {
   /* Example: Add a default font if needed */
   /* font-family: var(--kv-font-sans); */
 }
+
+/* Citation marker styles for inline [1] [2] references */
+.citation-marker {
+  position: relative;
+  display: inline;
+}
+
+.citation-marker .citation-popover {
+  pointer-events: auto;
+}
+
+/* Line clamp utility for truncating text */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Source pill hover transition */
+.source-pill {
+  transition: all 0.15s ease-in-out;
+}
+
+.source-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Chunk highlight animation for citation navigation */
+@keyframes chunk-highlight-pulse {
+  0% {
+    background-color: rgb(224 231 255); /* indigo-100 */
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    background-color: rgb(199 210 254); /* indigo-200 */
+    box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+  }
+  100% {
+    background-color: rgb(238 242 255); /* indigo-50 */
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+.chunk-section {
+  scroll-margin-top: 1rem;
+}
+
+.chunk-highlighted {
+  animation: chunk-highlight-pulse 2s ease-in-out;
+}
