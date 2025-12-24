@@ -87,7 +87,7 @@ gem "redis-namespace", "~> 1.11" # Namespace support for Redis
 gem "oj", "~> 3.16" # Fast JSON serialization/deserialization
 gem "concurrent-ruby", "~> 1.2" # Thread-safe concurrent operations
 gem "websocket-client-simple", "~> 0.6" # WebSocket client for node communication
-gem "websocket-driver", "~> 0.7" # WebSocket protocol implementation
+gem "websocket-driver", "~> 0.8" # WebSocket protocol implementation
 gem "pgvector", "~> 0.2" # PostgreSQL vector extension support
 gem "pundit", "~> 2.3" # Authorization policies for multi-tenancy
 gem "view_component", "~> 3.9" # Component-based UI
