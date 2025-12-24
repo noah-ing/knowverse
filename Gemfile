@@ -26,6 +26,10 @@ gem "stripe", "~> 9.0"
 gem "pay", "~> 6.8"
 gem "stripe_event"
 
+# Google Drive integration
+gem "google-apis-drive_v3", "~> 0.51"
+gem "googleauth", "~> 1.9"
+
 gem "bootsnap", require: false
 gem "kamal", require: false
 gem "thruster", require: false
