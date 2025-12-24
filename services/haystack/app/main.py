@@ -120,6 +120,22 @@ class RAGRequest(BaseModel):
     retrieval_options: Dict[str, Any] = Field(default_factory=dict, description="Options for document retrieval")
     generation_options: Dict[str, Any] = Field(default_factory=dict, description="Options for response generation")
 
+
+class AgentRAGRequest(BaseModel):
+    """Request model for agentic RAG with tool use."""
+    query: str = Field(..., description="Question or query for the agent")
+    org_id: int = Field(..., description="Organization ID for tenant isolation")
+    session_id: Optional[str] = Field(default=None, description="Session ID for conversation context")
+    mode: Optional[str] = Field(default="auto", description="Agent mode: auto, react, deep_research, plan_execute")
+    provider: Optional[str] = Field(default=None, description="LLM provider name")
+    max_iterations: int = Field(default=10, description="Maximum reasoning iterations")
+    include_trace: bool = Field(default=True, description="Include execution trace in response")
+    temperature: float = Field(default=0.7, description="LLM temperature")
+    max_tokens: int = Field(default=1000, description="Maximum tokens for response")
+    system_prompt: Optional[str] = Field(default=None, description="Custom system prompt")
+    conversation_history: Optional[List[Dict[str, str]]] = Field(default=None, description="Previous conversation messages")
+
+
 class SearchRequest(BaseModel):
     query: str = Field(..., description="Search query")
     filters: Optional[Dict[str, Any]] = Field(default=None, description="Search filters")
@@ -1538,6 +1554,149 @@ async def get_rag_providers():
         ))
 
     return providers
+
+
+# =============================================================================
+# AGENTIC RAG ENDPOINTS
+# Multi-step reasoning with tool use
+# =============================================================================
+
+@app.post("/rag/agent/stream", tags=["agent"])
+async def agent_rag_stream(request: AgentRAGRequest):
+    """
+    Stream an agentic RAG response using Server-Sent Events.
+
+    Supports multiple agent modes:
+    - auto: Automatically selects the best mode based on query analysis
+    - react: Reason-Act-Observe loop with tool use
+    - deep_research: Multi-source investigation with synthesis
+    - plan_execute: Create and execute a step-by-step plan
+
+    Args:
+        request: AgentRAGRequest with query and agent options
+
+    Returns:
+        StreamingResponse with SSE events including thoughts, actions, and final answer
+    """
+    from app.agents import get_agent_orchestrator, AgentContext, AgentMode
+
+    async def generate_stream():
+        try:
+            # Create agent context
+            context = AgentContext(
+                org_id=request.org_id,
+                query=request.query,
+                session_id=request.session_id,
+                max_iterations=request.max_iterations,
+                temperature=request.temperature,
+                max_tokens=request.max_tokens,
+                provider=request.provider,
+                include_trace=request.include_trace,
+                system_prompt=request.system_prompt,
+                conversation_history=request.conversation_history
+            )
+
+            # Get query analysis for mode selection
+            try:
+                query_analysis = analyze_query(request.query)
+                context.query_analysis = query_analysis
+            except Exception as e:
+                logger.warning(f"Query analysis failed: {e}")
+
+            # Get orchestrator and select mode
+            orchestrator = get_agent_orchestrator()
+
+            # Parse mode
+            mode = None
+            if request.mode and request.mode != "auto":
+                try:
+                    mode = AgentMode(request.mode)
+                except ValueError:
+                    logger.warning(f"Invalid mode: {request.mode}, using auto")
+
+            # Run the agent
+            async for event in orchestrator.run(request.query, context, mode):
+                yield event.to_sse()
+
+        except Exception as e:
+            logger.exception("Agent stream error")
+            error_data = {"type": "error", "message": str(e)}
+            yield f"data: {json.dumps(error_data)}\n\n"
+
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@app.get("/rag/agent/modes", tags=["agent"])
+async def get_agent_modes():
+    """
+    Get list of available agent modes.
+
+    Returns:
+        List of agent modes with descriptions
+    """
+    return [
+        {
+            "mode": "auto",
+            "name": "Auto",
+            "description": "Automatically selects the best mode based on query analysis"
+        },
+        {
+            "mode": "react",
+            "name": "ReAct",
+            "description": "Reason-Act-Observe loop. Good for queries requiring tool use."
+        },
+        {
+            "mode": "deep_research",
+            "name": "Deep Research",
+            "description": "Multi-source investigation with synthesis. Good for complex research queries."
+        },
+        {
+            "mode": "plan_execute",
+            "name": "Plan & Execute",
+            "description": "Create and execute a step-by-step plan. Good for multi-step tasks."
+        }
+    ]
+
+
+@app.get("/rag/agent/tools", tags=["agent"])
+async def get_agent_tools():
+    """
+    Get list of available agent tools.
+
+    Returns:
+        List of tools with their schemas
+    """
+    from app.tools import get_tool_registry
+
+    registry = get_tool_registry()
+    tools = []
+
+    for name in registry.list_tools():
+        tool = registry.get(name)
+        if tool:
+            tools.append({
+                "name": tool.name,
+                "description": tool.description,
+                "category": tool.category,
+                "parameters": {
+                    param_name: {
+                        "type": param.type.value,
+                        "description": param.description,
+                        "required": param.required
+                    }
+                    for param_name, param in tool.parameters.items()
+                }
+            })
+
+    return tools
 
 
 # =============================================================================

@@ -649,13 +649,195 @@ class HaystackClient
   def list_llm_providers
     response = get_request('/rag/providers')
     result = parse_response(response)
-    
+
     Response.new(true, result, nil)
   rescue => e
     Rails.logger.error("Failed to get LLM providers: #{e.message}")
     Response.new(false, nil, e.message)
   end
-  
+
+  # =============================================================================
+  # AGENTIC RAG METHODS
+  # Multi-step reasoning with tool use
+  # =============================================================================
+
+  # Generate an agentic RAG response with streaming
+  # Supports multiple agent modes: react, deep_research, plan_execute
+  # @param query [String] The question or query
+  # @param organization_id [Integer] Organization ID
+  # @param options [Hash] Agent options
+  # @option options [String] :mode Agent mode (auto, react, deep_research, plan_execute)
+  # @option options [String] :session_id Session ID for conversation context
+  # @option options [String] :provider LLM provider name
+  # @option options [Integer] :max_iterations Maximum reasoning iterations
+  # @option options [Float] :temperature LLM temperature
+  # @option options [Integer] :max_tokens Maximum tokens for response
+  # @option options [String] :system_prompt Custom system prompt
+  # @option options [Array] :conversation_history Previous conversation messages
+  # @option options [Boolean] :include_trace Include execution trace
+  # @option options [Integer] :timeout Request timeout in seconds
+  # @yield [event] Yields each agent event as it's received
+  def generate_agent_stream(query, organization_id, options = {})
+    raise ArgumentError, "Block is required for streaming" unless block_given?
+
+    # Get options with defaults
+    timeout = options[:timeout] || 300 # 5 minutes default
+
+    # Prepare the payload
+    payload = {
+      query: query,
+      org_id: organization_id,
+      mode: options[:mode] || "auto",
+      session_id: options[:session_id],
+      provider: options[:provider],
+      max_iterations: options[:max_iterations] || 10,
+      include_trace: options.fetch(:include_trace, true),
+      temperature: options[:temperature] || 0.7,
+      max_tokens: options[:max_tokens] || 1000,
+      system_prompt: options[:system_prompt],
+      conversation_history: options[:conversation_history]
+    }
+
+    # Set up the streaming request
+    uri = URI.parse("#{@config[:base_url]}/rag/agent/stream")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = uri.scheme == 'https'
+    http.read_timeout = timeout
+
+    # Create the POST request
+    request = Net::HTTP::Post.new(uri.path)
+    request.content_type = 'application/json'
+    request['Accept'] = 'text/event-stream'
+    request.body = payload.to_json
+
+    # Make the streaming request
+    begin
+      http.request(request) do |response|
+        # Check for errors
+        if response.code.to_i >= 400
+          error = JSON.parse(response.body) rescue {"error" => "Unknown error"}
+          yield({type: :error, data: {error: error["detail"] || "Error streaming agent response"}})
+          return
+        end
+
+        # Process the SSE stream
+        buffer = ""
+        response.read_body do |chunk|
+          buffer += chunk
+
+          # Process each complete event (separated by double newlines)
+          while buffer.include?("\n\n")
+            event_data, buffer = buffer.split("\n\n", 2)
+            event_lines = event_data.split("\n")
+
+            # Parse the event
+            event_type = "message"
+            data_str = nil
+
+            event_lines.each do |line|
+              if line.start_with?("event:")
+                event_type = line.sub("event:", "").strip
+              elsif line.start_with?("data:")
+                data_str = line.sub("data:", "").strip
+              end
+            end
+
+            # Skip if no data
+            next if data_str.nil?
+
+            # Parse JSON data
+            begin
+              parsed_data = JSON.parse(data_str)
+
+              # Get the actual event type from the data
+              actual_type = parsed_data["type"] || event_type
+
+              # Map agent event types to Ruby symbols
+              case actual_type
+              when "mode_selected"
+                yield({type: :mode_selected, data: parsed_data})
+              when "phase"
+                yield({type: :phase, data: parsed_data})
+              when "thinking"
+                yield({type: :thinking, data: parsed_data})
+              when "thought"
+                yield({type: :thought, data: parsed_data})
+              when "action"
+                yield({type: :action, data: parsed_data})
+              when "observation"
+                yield({type: :observation, data: parsed_data})
+              when "plan"
+                yield({type: :plan, data: parsed_data})
+              when "executing_step"
+                yield({type: :executing_step, data: parsed_data})
+              when "step_complete"
+                yield({type: :step_complete, data: parsed_data})
+              when "step_failed"
+                yield({type: :step_failed, data: parsed_data})
+              when "sub_question"
+                yield({type: :sub_question, data: parsed_data})
+              when "researching"
+                yield({type: :researching, data: parsed_data})
+              when "source_found"
+                yield({type: :source_found, data: parsed_data})
+              when "token"
+                yield({type: :token, data: parsed_data})
+              when "context"
+                yield({type: :context, data: parsed_data})
+              when "clarify"
+                yield({type: :clarify, data: parsed_data})
+              when "quality_check"
+                yield({type: :quality_check, data: parsed_data})
+              when "final_answer"
+                yield({type: :final_answer, data: parsed_data})
+              when "complete"
+                yield({type: :complete, data: parsed_data})
+              when "error"
+                yield({type: :error, data: parsed_data})
+              when "warning"
+                yield({type: :warning, data: parsed_data})
+              else
+                # Generic event handler
+                yield({type: actual_type.to_sym, data: parsed_data})
+              end
+            rescue JSON::ParserError => e
+              Rails.logger.error("Failed to parse agent SSE event: #{e.message}")
+              yield({type: :error, data: {error: "Failed to parse event data"}})
+            end
+          end
+        end
+      end
+    rescue Timeout::Error => e
+      Rails.logger.error("Agent streaming request timed out: #{e.message}")
+      yield({type: :error, data: {error: "Agent streaming request timed out after #{timeout} seconds"}})
+    rescue => e
+      Rails.logger.error("Agent streaming request failed: #{e.message}")
+      yield({type: :error, data: {error: "Agent streaming request failed: #{e.message}"}})
+    end
+  end
+
+  # Get available agent modes
+  # @return [Response] List of agent modes with descriptions
+  def list_agent_modes
+    response = get_request('/rag/agent/modes')
+    result = parse_response(response)
+    Response.new(true, result, nil)
+  rescue => e
+    Rails.logger.error("Failed to get agent modes: #{e.message}")
+    Response.new(false, nil, e.message)
+  end
+
+  # Get available agent tools
+  # @return [Response] List of tools with their schemas
+  def list_agent_tools
+    response = get_request('/rag/agent/tools')
+    result = parse_response(response)
+    Response.new(true, result, nil)
+  rescue => e
+    Rails.logger.error("Failed to get agent tools: #{e.message}")
+    Response.new(false, nil, e.message)
+  end
+
   # Check health/status of the Haystack service
   def health_check
     response = get_request('/health')
