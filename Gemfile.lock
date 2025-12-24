@@ -157,6 +157,11 @@ GEM
       logger
     faraday-follow_redirects (0.4.0)
       faraday (>= 1, < 3)
+    faraday-mashify (1.0.2)
+      faraday (~> 2.0)
+      hashie
+    faraday-multipart (1.1.1)
+      multipart-post (~> 2.0)
     faraday-net_http (3.4.2)
       net-http (~> 0.5)
     ffi (1.17.2-aarch64-linux-gnu)
@@ -193,6 +198,7 @@ GEM
     groupdate (6.5.1)
       activesupport (>= 7)
     hashdiff (1.1.2)
+    hashie (5.0.0)
     httparty (0.23.1)
       csv
       mini_mime (>= 1.0.0)
@@ -263,6 +269,7 @@ GEM
     multi_json (1.18.0)
     multi_xml (0.7.1)
       bigdecimal (~> 3.1)
+    multipart-post (2.4.1)
     mutex_m (0.3.0)
     net-http (0.9.1)
       uri (>= 0.11.1)
@@ -289,6 +296,11 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.6-x86_64-linux-gnu)
       racc (~> 1.4)
+    notion-ruby-client (1.2.2)
+      faraday (>= 2.0)
+      faraday-mashify (>= 0.1.1)
+      faraday-multipart (>= 1.0.4)
+      hashie (~> 5)
     oj (3.16.10)
       bigdecimal (>= 3.0)
       ostruct (>= 0.2)
@@ -590,6 +602,7 @@ DEPENDENCIES
   kamal
   kaminari (~> 1.2)
   memory_profiler (~> 1.0)
+  notion-ruby-client (~> 1.2)
   oj (~> 3.16)
   pagy (~> 7.0)
   pay (~> 6.8)
