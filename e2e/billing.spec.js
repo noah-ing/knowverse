@@ -64,8 +64,10 @@ test.describe('Billing & Subscription Pages', () => {
     await page.goto(`/organizations/${orgId}/settings`);
     await page.waitForLoadState('networkidle');
 
-    // Should see settings page
-    await expect(page.locator('text=Settings')).toBeVisible({ timeout: 10000 });
+    // Should see Organization Details section (main content)
+    await expect(page.locator('h3:has-text("Organization Details")')).toBeVisible({ timeout: 10000 });
+    // Should see Team Members section
+    await expect(page.locator('h3:has-text("Team Members")')).toBeVisible();
   });
 
   test('settings page has billing link', async ({ page }) => {
@@ -83,11 +85,14 @@ test.describe('Billing & Subscription Pages', () => {
     await page.goto(`/organizations/${orgId}/subscription`);
     await page.waitForLoadState('networkidle');
 
+    // Should show billing page heading
+    await expect(page.locator('h1:has-text("Billing")')).toBeVisible({ timeout: 10000 });
+
     // Should show current plan section
-    await expect(page.locator('text=Current Plan')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h3:has-text("Current Plan")')).toBeVisible();
 
     // Should show usage section
-    await expect(page.locator('text=Usage')).toBeVisible();
+    await expect(page.locator('h3:has-text("Usage & Quotas")')).toBeVisible();
   });
 
   test('plan selection page displays all plans', async ({ page }) => {
