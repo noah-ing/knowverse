@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_24_200146) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_25_173137) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -85,6 +85,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_24_200146) do
     t.index ["user_id"], name: "index_ahoy_visits_on_user_id"
     t.index ["visit_token"], name: "index_ahoy_visits_on_visit_token", unique: true
     t.index ["visitor_token", "started_at"], name: "index_ahoy_visits_on_visitor_token_and_started_at"
+  end
+
+  create_table "billing_events", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.string "stripe_event_id", null: false
+    t.string "event_type", null: false
+    t.jsonb "data", default: {}
+    t.datetime "processed_at"
+    t.string "status", default: "pending"
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "event_type"], name: "index_billing_events_on_organization_id_and_event_type"
+    t.index ["organization_id"], name: "index_billing_events_on_organization_id"
+    t.index ["status"], name: "index_billing_events_on_status"
+    t.index ["stripe_event_id"], name: "index_billing_events_on_stripe_event_id", unique: true
   end
 
   create_table "cluster_memberships", force: :cascade do |t|
@@ -247,8 +263,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_24_200146) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "mcp_api_key"
+    t.string "stripe_customer_id"
+    t.string "stripe_subscription_id"
+    t.string "subscription_status", default: "none"
+    t.bigint "plan_id"
+    t.datetime "trial_ends_at"
+    t.datetime "current_period_end"
+    t.datetime "canceled_at"
     t.index ["mcp_api_key"], name: "index_organizations_on_mcp_api_key"
+    t.index ["plan_id"], name: "index_organizations_on_plan_id"
     t.index ["slug"], name: "index_organizations_on_slug", unique: true
+    t.index ["stripe_customer_id"], name: "index_organizations_on_stripe_customer_id", unique: true
+    t.index ["stripe_subscription_id"], name: "index_organizations_on_stripe_subscription_id"
   end
 
   create_table "plans", force: :cascade do |t|
@@ -260,6 +286,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_24_200146) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "features", default: [], array: true
+    t.integer "max_documents", default: 50
+    t.integer "max_queries_per_month", default: 1000
+    t.integer "max_team_members", default: 5
+    t.boolean "advanced_search", default: false
+    t.boolean "api_access", default: false
+    t.integer "trial_days", default: 0
+    t.text "description"
+    t.integer "display_order", default: 0
   end
 
   create_table "rag_message_elements", force: :cascade do |t|
@@ -553,6 +587,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_24_200146) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "billing_events", "organizations"
   add_foreign_key "conversation_messages", "conversation_sessions"
   add_foreign_key "conversation_sessions", "organizations"
   add_foreign_key "conversation_sessions", "users"
@@ -561,6 +596,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_24_200146) do
   add_foreign_key "domain_confidence_scores", "organizations"
   add_foreign_key "domain_embedding_models", "organizations"
   add_foreign_key "organization_templates", "organizations"
+  add_foreign_key "organizations", "plans"
   add_foreign_key "rag_message_elements", "conversation_messages"
   add_foreign_key "search_feedbacks", "documents", name: "search_feedbacks_document_id_fkey"
   add_foreign_key "search_feedbacks", "organizations", name: "search_feedbacks_organization_id_fkey"
