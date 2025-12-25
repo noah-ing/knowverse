@@ -47,6 +47,17 @@ Built for teams who need to find information fast and trust the answers they get
 | **SSO/SAML** | Single sign-on with SAML 2.0 and OpenID Connect support. |
 | **Multi-Tenancy** | Organization-based data isolation with role-based access control. |
 | **API Access** | RESTful API with per-organization API keys. |
+| **Stripe Billing** | Subscription management with usage-based quotas and Stripe integration. |
+
+### Billing & Quotas
+
+| Plan | Price | Documents | Queries/mo | Team Members |
+|------|-------|-----------|------------|--------------|
+| Free | $0 | 50 | 500 | 3 |
+| Starter | $49/mo | 500 | 2,500 | 10 |
+| Growth | $149/mo | 2,500 | 15,000 | 25 |
+| Business | $399/mo | 10,000 | 50,000 | 100 |
+| Enterprise | Custom | Unlimited | Custom | Unlimited |
 
 ### Visualization
 
