@@ -13,12 +13,14 @@ import DarkModeController from "controllers/dark_mode_controller"
 import DropdownController from "controllers/dropdown_controller"
 import MobileMenuController from "controllers/mobile_menu_controller"
 import FileUploadController from "controllers/file_upload_controller"
+import ApiKeyController from "controllers/api_key_controller"
 
 // Register main controllers with Stimulus
 application.register("dark-mode", DarkModeController)
 application.register("dropdown", DropdownController)
 application.register("mobile-menu", MobileMenuController)
 application.register("file-upload", FileUploadController)
+application.register("api-key", ApiKeyController)
 
 // Register streaming search controller
 import StreamingSearchController from "controllers/search/streaming_search_controller"
