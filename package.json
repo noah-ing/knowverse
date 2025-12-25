@@ -1,0 +1,27 @@
+{
+  "name": "knowverse",
+  "version": "1.0.0",
+  "description": "AI-powered knowledge management platform with semantic search, RAG, and MCP integration.",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed",
+    "test:billing": "npx playwright test e2e/billing.spec.js",
+    "test:nav": "npx playwright test e2e/navigation.spec.js",
+    "test:report": "npx playwright show-report"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noah-ing/knowverse.git"
+  },
+  "author": "Noah Ingwers",
+  "license": "UNLICENSED",
+  "private": true,
+  "bugs": {
+    "url": "https://github.com/noah-ing/knowverse/issues"
+  },
+  "homepage": "https://github.com/noah-ing/knowverse#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0"
+  }
+}

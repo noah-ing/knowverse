@@ -106,3 +106,8 @@ npm-debug.log*
 
 # 📁 TEST DATA (Large files for local testing)
 test_uploads/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
