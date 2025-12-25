@@ -60,6 +60,21 @@ Rails.application.routes.draw do
         get :callback
         post :sync
       end
+
+      resource :github, only: [:new, :create, :show, :destroy], controller: 'github' do
+        get :callback
+        post :sync
+      end
+
+      resource :slack, only: [:new, :create, :show, :destroy], controller: 'slack' do
+        get :callback
+        post :sync
+      end
+
+      resource :confluence, only: [:new, :create, :show, :destroy], controller: 'confluence' do
+        get :callback
+        post :sync
+      end
     end
 
     # Document routes nested under organizations
