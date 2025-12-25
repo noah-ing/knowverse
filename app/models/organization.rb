@@ -7,20 +7,25 @@ class Organization < ApplicationRecord
     api_access: false
   }.freeze
 
+  # Subscription status constants
+  SUBSCRIPTION_STATUSES = %w[none trialing active past_due canceled unpaid].freeze
+
   # Settings configuration
   store_accessor :settings, :max_documents, :max_queries_per_month, :advanced_search, :api_access,
                 :default_search_provider
-  
+
   # Validations
   validates :name, presence: true, length: { maximum: 100 }
   validates :slug, presence: true, uniqueness: true, length: { maximum: 50 },
             format: { with: /\A[a-z0-9-]+\z/, message: "can only contain lowercase letters, numbers, and hyphens" }
   validates :active, inclusion: { in: [true, false] }
-  
+  validates :subscription_status, inclusion: { in: SUBSCRIPTION_STATUSES }, allow_nil: true
+
   # Callbacks
   before_validation :generate_slug, if: -> { slug.blank? && name.present? }
   before_create :set_default_settings
   before_create :generate_mcp_api_key, if: -> { mcp_api_key.blank? }
+  after_save :sync_quotas_from_plan, if: :saved_change_to_plan_id?
 
   # MCP API key methods
   def regenerate_mcp_api_key!
@@ -33,6 +38,8 @@ class Organization < ApplicationRecord
   end
   
   # Associations
+  belongs_to :plan, optional: true
+  has_many :billing_events, dependent: :destroy
   has_many :organization_users, dependent: :destroy
   has_many :users, through: :organization_users
   has_many :documents, dependent: :destroy
@@ -64,7 +71,78 @@ class Organization < ApplicationRecord
   def sso_provider_type
     sso_config&.provider_type
   end
-  
+
+  # Subscription status helpers
+  def trialing?
+    subscription_status == 'trialing' && trial_ends_at.present? && trial_ends_at > Time.current
+  end
+
+  def subscribed?
+    active_subscription? || trialing?
+  end
+
+  def active_subscription?
+    subscription_status == 'active'
+  end
+
+  def past_due?
+    subscription_status == 'past_due'
+  end
+
+  def canceled?
+    subscription_status == 'canceled'
+  end
+
+  def subscription_active_or_grace_period?
+    subscribed? || (past_due? && current_period_end && current_period_end > Time.current)
+  end
+
+  # Stripe customer management
+  def stripe_customer
+    return Stripe::Customer.retrieve(stripe_customer_id) if stripe_customer_id.present?
+
+    owner_user = owner
+    return nil unless owner_user
+
+    customer = Stripe::Customer.create(
+      email: owner_user.email,
+      name: name,
+      metadata: { organization_id: id, organization_slug: slug }
+    )
+    update!(stripe_customer_id: customer.id)
+    customer
+  end
+
+  # Quota enforcement helpers
+  def can_upload_documents?
+    documents.count < max_documents.to_i
+  end
+
+  def documents_remaining
+    [max_documents.to_i - documents.count, 0].max
+  end
+
+  def can_perform_query?
+    return true if max_queries_per_month.to_i.zero?
+    current_month_queries < max_queries_per_month.to_i
+  end
+
+  def queries_remaining
+    return Float::INFINITY if max_queries_per_month.to_i.zero?
+    [max_queries_per_month.to_i - current_month_queries, 0].max
+  end
+
+  def current_month_queries
+    search_queries.where('created_at >= ?', Time.current.beginning_of_month).count
+  end
+
+  def quota_usage
+    {
+      documents: { used: documents.count, limit: max_documents.to_i, percent: usage_percent(:documents) },
+      queries: { used: current_month_queries, limit: max_queries_per_month.to_i, percent: usage_percent(:queries) }
+    }
+  end
+
   def usage_percent(type = :documents)
     case type
     when :documents
@@ -163,6 +241,15 @@ class Organization < ApplicationRecord
       self.domain_confidence_secondary_threshold ||= 0.4
       self.enable_domain_fallback = true if enable_domain_fallback.nil?
     end
+  end
+
+  def sync_quotas_from_plan
+    return unless plan.present?
+
+    self.max_documents = plan.max_documents
+    self.max_queries_per_month = plan.max_queries_per_month
+    self.advanced_search = plan.advanced_search
+    self.api_access = plan.api_access
   end
 
   def generate_mcp_api_key

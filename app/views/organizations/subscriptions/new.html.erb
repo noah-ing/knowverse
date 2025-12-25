@@ -1,0 +1,191 @@
+<%#
+  Plan Selection & Checkout Page
+  Choose a plan and proceed to Stripe checkout
+%>
+
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <%# Page Header %>
+  <div class="text-center mb-10 animate-in fade-in duration-300">
+    <h1 class="text-3xl font-bold kv-text-primary">Choose Your Plan</h1>
+    <p class="text-lg kv-text-secondary mt-2">Unlock the full power of KnowVerse for your team</p>
+  </div>
+
+  <%# Billing Toggle (Monthly/Annual) %>
+  <div class="flex justify-center mb-8">
+    <div class="bg-gray-100 p-1 rounded-lg inline-flex">
+      <button type="button" class="px-4 py-2 text-sm font-medium rounded-md bg-white shadow text-gray-900" id="monthly-toggle">
+        Monthly
+      </button>
+      <button type="button" class="px-4 py-2 text-sm font-medium rounded-md text-gray-500 hover:text-gray-900" id="annual-toggle">
+        Annual <span class="text-green-600 text-xs ml-1">Save 20%</span>
+      </button>
+    </div>
+  </div>
+
+  <%# Plan Cards %>
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <% @plans.each_with_index do |plan, index| %>
+      <% is_selected = @selected_plan&.id == plan.id %>
+      <% is_popular = plan.name.downcase == 'growth' %>
+
+      <div class="relative flex flex-col p-6 bg-white border-2 rounded-xl transition-all duration-200 hover:shadow-lg <%= is_selected ? 'border-primary-500 ring-2 ring-primary-200' : 'border-gray-200' %> animate-in slide-up duration-300" style="animation-delay: <%= index * 50 %>ms">
+        <%# Popular Badge %>
+        <% if is_popular %>
+          <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+            <span class="bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+              Most Popular
+            </span>
+          </div>
+        <% end %>
+
+        <%# Plan Header %>
+        <div class="text-center mb-6">
+          <h3 class="text-xl font-bold kv-text-primary"><%= plan.name %></h3>
+          <div class="mt-4">
+            <span class="text-4xl font-extrabold kv-text-primary"><%= plan.formatted_price.split('/').first %></span>
+            <% unless plan.free? %>
+              <span class="text-sm kv-text-secondary">/month</span>
+            <% end %>
+          </div>
+          <% if plan.description.present? %>
+            <p class="mt-2 text-sm kv-text-secondary"><%= plan.description %></p>
+          <% end %>
+        </div>
+
+        <%# Features List %>
+        <ul class="space-y-3 mb-6 flex-grow">
+          <li class="flex items-start">
+            <svg class="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-sm kv-text-primary">
+              <strong><%= number_with_delimiter(plan.max_documents || 50) %></strong> documents
+            </span>
+          </li>
+          <li class="flex items-start">
+            <svg class="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-sm kv-text-primary">
+              <strong><%= number_with_delimiter(plan.max_queries_per_month || 1000) %></strong> queries/month
+            </span>
+          </li>
+          <li class="flex items-start">
+            <svg class="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-sm kv-text-primary">
+              <strong><%= plan.max_team_members || 5 %></strong> team members
+            </span>
+          </li>
+          <% if plan.api_access %>
+            <li class="flex items-start">
+              <svg class="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span class="text-sm kv-text-primary">API Access</span>
+            </li>
+          <% else %>
+            <li class="flex items-start">
+              <svg class="h-5 w-5 text-gray-300 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+              <span class="text-sm text-gray-400">API Access</span>
+            </li>
+          <% end %>
+          <% if plan.advanced_search %>
+            <li class="flex items-start">
+              <svg class="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span class="text-sm kv-text-primary">Advanced Search & Analytics</span>
+            </li>
+          <% else %>
+            <li class="flex items-start">
+              <svg class="h-5 w-5 text-gray-300 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+              <span class="text-sm text-gray-400">Advanced Search & Analytics</span>
+            </li>
+          <% end %>
+        </ul>
+
+        <%# CTA Button %>
+        <div class="mt-auto">
+          <% if plan.free? %>
+            <%= form_with url: organization_subscription_path(@organization), method: :post, local: true do |f| %>
+              <%= f.hidden_field :plan_id, value: plan.id %>
+              <%= f.submit "Get Started Free",
+                  class: "w-full kv-btn #{is_popular ? 'kv-btn-primary' : 'kv-btn-secondary'}" %>
+            <% end %>
+          <% else %>
+            <%= form_with url: organization_subscription_path(@organization), method: :post, local: true do |f| %>
+              <%= f.hidden_field :plan_id, value: plan.id %>
+              <% if plan.has_trial? && !@organization.trialing? %>
+                <%= f.submit "Start #{plan.trial_days}-day Free Trial",
+                    class: "w-full kv-btn #{is_popular ? 'kv-btn-primary' : 'kv-btn-secondary'}" %>
+              <% else %>
+                <%= f.submit "Subscribe Now",
+                    class: "w-full kv-btn #{is_popular ? 'kv-btn-primary' : 'kv-btn-secondary'}" %>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+
+        <%# Trial Badge %>
+        <% if plan.has_trial? && !plan.free? %>
+          <p class="mt-3 text-center text-xs text-green-600">
+            <%= plan.trial_days %>-day free trial included
+          </p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Enterprise CTA %>
+  <div class="mt-12 text-center p-8 bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl animate-in fade-in duration-300" style="animation-delay: 200ms">
+    <h3 class="text-2xl font-bold text-white">Need Enterprise Features?</h3>
+    <p class="mt-2 text-gray-300">Custom limits, SSO/SAML, dedicated support, SLA, and more.</p>
+    <div class="mt-6 flex justify-center gap-4">
+      <a href="mailto:sales@knowverse.ai" class="kv-btn bg-white text-gray-900 hover:bg-gray-100">
+        Contact Sales
+      </a>
+      <a href="https://calendly.com/knowverse" target="_blank" class="kv-btn kv-btn-secondary border-white text-white hover:bg-gray-700">
+        Schedule Demo
+      </a>
+    </div>
+  </div>
+
+  <%# FAQ Section %>
+  <div class="mt-16">
+    <h2 class="text-2xl font-bold kv-text-primary text-center mb-8">Frequently Asked Questions</h2>
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div class="p-6 bg-gray-50 rounded-lg">
+        <h4 class="font-semibold kv-text-primary">Can I change plans later?</h4>
+        <p class="mt-2 text-sm kv-text-secondary">Yes! You can upgrade or downgrade your plan at any time. Upgrades take effect immediately with prorated billing. Downgrades take effect at the end of your billing period.</p>
+      </div>
+      <div class="p-6 bg-gray-50 rounded-lg">
+        <h4 class="font-semibold kv-text-primary">What happens if I exceed my limits?</h4>
+        <p class="mt-2 text-sm kv-text-secondary">We'll notify you when you're approaching your limits. You'll have a small grace period to upgrade. We never delete your data.</p>
+      </div>
+      <div class="p-6 bg-gray-50 rounded-lg">
+        <h4 class="font-semibold kv-text-primary">Do you offer annual billing?</h4>
+        <p class="mt-2 text-sm kv-text-secondary">Yes! Annual plans come with a 20% discount. Contact us to switch to annual billing.</p>
+      </div>
+      <div class="p-6 bg-gray-50 rounded-lg">
+        <h4 class="font-semibold kv-text-primary">Can I cancel anytime?</h4>
+        <p class="mt-2 text-sm kv-text-secondary">Absolutely. Cancel anytime with no questions asked. You'll retain access until the end of your billing period.</p>
+      </div>
+    </div>
+  </div>
+
+  <%# Back Link %>
+  <div class="mt-8 text-center">
+    <%= link_to organization_subscription_path(@organization), class: "text-sm kv-text-secondary hover:text-primary-600" do %>
+      <svg class="inline h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Back to Billing
+    <% end %>
+  </div>
+</div>

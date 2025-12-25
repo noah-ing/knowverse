@@ -36,6 +36,14 @@ Rails.application.routes.draw do
       post :regenerate_api_key
     end
 
+    # Billing & Subscription management (owner-only)
+    resource :subscription, only: [:show, :new, :create, :update], controller: 'organizations/subscriptions' do
+      patch :cancel
+      patch :resume
+      post :start_trial
+      get :portal
+    end
+
     # SSO Configuration (for org admins)
     resource :sso_config, only: [:show, :new, :create, :edit, :update, :destroy] do
       post :test
