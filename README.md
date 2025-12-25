@@ -1,31 +1,61 @@
 # KnowVerse
 
-AI-powered knowledge management platform with semantic search and retrieval-augmented generation (RAG).
+**AI-powered knowledge management platform with semantic search, RAG, and MCP integration.**
 
+![KnowVerse Homepage](docs/images/homepage.png)
 
-## Overview
+---
 
-KnowVerse is a multi-tenant document intelligence platform that enables organizations to:
+## Why KnowVerse?
 
-- **Upload documents** (PDF, Word, Excel) and automatically extract and index content
-- **Search semantically** using natural language instead of exact keywords
-- **Ask questions** and receive AI-generated answers grounded in your actual documents
-- **Track sources** with inline citations linking back to original documents
+Most document search tools force you to remember exact keywords. KnowVerse understands what you mean.
 
-Built with Rails 8, PostgreSQL, Qdrant vector database, and Python/Haystack for ML operations.
+- **Ask questions in plain English** - "What was our Q2 revenue?" instead of hunting through files
+- **Get answers with citations** - Every response links back to the exact source chunks
+- **Connect your existing tools** - Google Drive, Notion, or direct uploads
+- **Use with Claude Desktop** - Native MCP server integration for AI assistants
+- **Keep data isolated** - Multi-tenant architecture with organization-level separation
+
+Built for teams who need to find information fast and trust the answers they get.
+
+---
 
 ## Features
 
+### Core Capabilities
+
 | Feature | Description |
 |---------|-------------|
-| **Semantic Search** | Vector similarity search using sentence embeddings (all-mpnet-base-v2) |
-| **Hybrid Search** | Combines semantic and keyword search using Reciprocal Rank Fusion |
-| **RAG Chat** | Conversational AI with streaming responses, powered by GPT-4o or Claude |
-| **Document Processing** | PDF, DOCX, and Excel extraction with table support |
-| **Vector Visualization** | Interactive 3D visualization of document embeddings with t-SNE/UMAP projections |
-| **Document Clustering** | Group similar documents using K-Means, Hierarchical, or DBSCAN algorithms |
-| **Multi-Tenancy** | Organization-based data isolation with role-based access |
-| **Cross-Encoder Reranking** | Optional second-stage reranking for improved relevance |
+| **Semantic Search** | Find documents by meaning, not just keywords. Powered by sentence embeddings. |
+| **Hybrid Search** | Combines semantic and keyword search using Reciprocal Rank Fusion for best results. |
+| **RAG Chat** | Ask questions and get AI-generated answers grounded in your documents. Streaming responses. |
+| **Chunk-Level Citations** | Every answer includes clickable citations to the exact source passages. |
+| **Cross-Encoder Reranking** | Optional second-stage reranking for improved relevance on complex queries. |
+
+### Integrations
+
+| Feature | Description |
+|---------|-------------|
+| **MCP Server** | Connect Claude Desktop directly to your knowledge base via Model Context Protocol. |
+| **Google Drive** | Sync documents from Google Drive with automatic updates. |
+| **Notion** | Import pages and databases from Notion workspaces. |
+
+### Enterprise
+
+| Feature | Description |
+|---------|-------------|
+| **SSO/SAML** | Single sign-on with SAML 2.0 and OpenID Connect support. |
+| **Multi-Tenancy** | Organization-based data isolation with role-based access control. |
+| **API Access** | RESTful API with per-organization API keys. |
+
+### Visualization
+
+| Feature | Description |
+|---------|-------------|
+| **3D Vector Space** | Interactive visualization of document embeddings with t-SNE/UMAP projections. |
+| **Document Clustering** | Group similar documents using K-Means, Hierarchical, or DBSCAN algorithms. |
+
+---
 
 ## Architecture
 
@@ -38,6 +68,8 @@ Rails 8 (Web/API)  ─────┬───── PostgreSQL (Metadata + pgve
            (Python)
 ```
 
+---
+
 ## Quick Start
 
 ### Prerequisites
@@ -46,13 +78,13 @@ Rails 8 (Web/API)  ─────┬───── PostgreSQL (Metadata + pgve
 - Python 3.11+
 - PostgreSQL 14+ with pgvector
 - Redis 7+
-- Docker (optional)
+- Docker (optional, for Qdrant)
 
 ### Development Setup
 
 ```bash
 # Clone and install
-git clone https://github.com/your-org/knowverse.git
+git clone https://github.com/noah-ing/knowverse.git
 cd knowverse
 
 # Install dependencies
@@ -76,6 +108,8 @@ cd services/haystack && uvicorn app.main:app --reload
 docker compose up -d
 ```
 
+---
+
 ## Configuration
 
 Create a `.env` file:
@@ -91,7 +125,30 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-## API Endpoints
+---
+
+## MCP Integration
+
+Connect Claude Desktop to your knowledge base:
+
+```json
+{
+  "mcpServers": {
+    "knowverse": {
+      "url": "https://your-instance.com/mcp",
+      "headers": {
+        "X-MCP-Key": "<YOUR_API_KEY>"
+      }
+    }
+  }
+}
+```
+
+Generate your API key from Organization Settings.
+
+---
+
+## API Reference
 
 ### Documents
 
@@ -115,31 +172,45 @@ ANTHROPIC_API_KEY=sk-ant-...
 | POST | `/rag/query` | Single question/answer |
 | POST | `/rag/stream` | Streaming response (SSE) |
 
+Full API documentation available at `/docs/api`.
+
+---
+
 ## Technology Stack
 
-- **Backend**: Rails 8, Ruby 3.2
-- **Database**: PostgreSQL 14+ with pgvector
-- **Vector Store**: Qdrant (HNSW indexing)
-- **ML Services**: Python 3.11, Haystack, FastAPI
-- **Embeddings**: SentenceTransformers (all-mpnet-base-v2)
-- **LLMs**: OpenAI GPT-4o, Anthropic Claude
-- **Frontend**: Hotwire (Turbo + Stimulus), Tailwind CSS
-- **Background Jobs**: Solid Queue
-- **Caching**: Solid Cache + Redis
+| Layer | Technology |
+|-------|------------|
+| **Backend** | Rails 8, Ruby 3.2 |
+| **Database** | PostgreSQL 14+ with pgvector |
+| **Vector Store** | Qdrant (HNSW indexing) |
+| **ML Services** | Python 3.11, Haystack 2.0, FastAPI |
+| **Embeddings** | SentenceTransformers (all-mpnet-base-v2) |
+| **LLMs** | OpenAI GPT-4o, Anthropic Claude |
+| **Frontend** | Hotwire (Turbo + Stimulus), Tailwind CSS |
+| **Background Jobs** | Solid Queue |
+| **Caching** | Solid Cache + Redis |
+
+---
 
 ## Testing
 
 ```bash
-# Rails
+# Rails tests
 bundle exec rspec
 
-# Python
+# Python tests
 cd services/haystack && pytest
 
 # Linting
 bundle exec rubocop
 ```
 
+---
+
 ## License
 
-Proprietary - All rights reserved.
+Copyright 2024-2025 Noah Ingwers. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution, or use of this software is strictly prohibited.
+
+For licensing inquiries, contact: noah.ing@protonmail.com
