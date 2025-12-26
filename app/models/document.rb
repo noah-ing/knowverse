@@ -11,7 +11,7 @@ class Document < ApplicationRecord
   has_one_attached :file
   
   # Constants
-  VALID_FILE_TYPES = %w[pdf docx doc txt rtf md xlsx xls].freeze
+  VALID_FILE_TYPES = %w[pdf docx doc txt rtf md xlsx xls csv html htm rst xml json yaml yml png jpg jpeg gif webp svg].freeze
   STATUSES = %w[pending processing processed error].freeze
   EMBEDDING_STATUSES = %w[pending processing processed error].freeze
   
