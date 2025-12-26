@@ -194,7 +194,7 @@ class DocumentsController < ApplicationController
 
     # Handle file upload
     if params[:files].present?
-      files = params[:files]
+      files = params[:files].reject { |f| f.blank? || !f.respond_to?(:original_filename) }
       saved_documents = []
 
       # First, save all documents (quick DB operation)

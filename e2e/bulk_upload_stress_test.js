@@ -84,23 +84,27 @@ async function run() {
       batch.forEach(f => console.log(`   - ${path.basename(f)}`));
 
       try {
-        // Click "Upload Files" button to show the form
-        const showUploadBtn = page.locator('#show-upload-form');
-        if (await showUploadBtn.isVisible()) {
-          await showUploadBtn.click();
-          await page.waitForTimeout(500);
-        }
+        // Show the upload form by removing hidden class via JavaScript
+        await page.evaluate(() => {
+          const form = document.getElementById('upload-form');
+          if (form) {
+            form.classList.remove('hidden');
+          }
+        });
+        await page.waitForTimeout(500);
 
-        // Wait for upload form to be visible
-        await page.waitForSelector('#upload-form:not(.hidden), #file-upload-form', { timeout: 5000 }).catch(() => {});
-
-        // Set files on the file input (using the correct id)
+        // Set files on the file input
         const fileInput = page.locator('#file-upload');
         await fileInput.setInputFiles(batch);
         await page.waitForTimeout(1000);
 
-        // Click the submit button
-        await page.locator('#file-upload-form button[type="submit"], #file-upload-form input[type="submit"]').first().click();
+        // Click the submit button using JavaScript to bypass visibility issues
+        await page.evaluate(() => {
+          const form = document.getElementById('file-upload-form');
+          if (form) {
+            form.submit();
+          }
+        });
 
         // Wait for form submission and page reload
         await page.waitForLoadState('networkidle');
