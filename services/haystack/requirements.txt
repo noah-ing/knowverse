@@ -52,6 +52,10 @@ python-docx>=1.1.0         # Word document extraction
 fastexcel>=0.10.0          # Excel extraction (Rust/calamine, 10-100x faster than openpyxl)
 polars>=0.20.0             # DataFrame library for fastexcel (Arrow-based, zero-copy)
 openpyxl>=3.1.0            # Excel fallback for complex features
+xlrd>=2.0.0                # Legacy Excel (.xls) format support
+beautifulsoup4>=4.12.0     # HTML parsing and text extraction
+lxml>=5.0.0                # Fast HTML/XML parser backend for BeautifulSoup
+docutils>=0.20.0           # reStructuredText parsing
 
 # File handling
 python-multipart>=0.0.6    # File upload support for FastAPI

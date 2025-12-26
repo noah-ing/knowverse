@@ -596,7 +596,7 @@ async def extract_auto(
     """
     Auto-detect document type and extract text.
 
-    Supports: PDF, DOCX, XLSX, XLS, TXT, MD, RTF
+    Supports: PDF, DOCX, DOC, XLSX, XLS, CSV, HTML, HTM, RST, TXT, MD, RTF
 
     Returns:
         ExtractionResponse with extracted content and metadata
@@ -613,14 +613,34 @@ async def extract_auto(
             from app.extractors import extract_text_from_pdf
             result = extract_text_from_pdf(content)
             extraction_method = "pdf"
-        elif ext in ("docx", "doc"):
+        elif ext == "docx":
             from app.extractors import extract_text_from_docx
             result = extract_text_from_docx(content)
             extraction_method = "docx"
-        elif ext in ("xlsx", "xls"):
+        elif ext == "doc":
+            # Legacy .doc format - try textract or antiword, fallback to basic extraction
+            result = _extract_legacy_doc(content)
+            extraction_method = "doc_legacy"
+        elif ext == "xlsx":
             from app.extractors import extract_text_from_excel
             result = extract_text_from_excel(content)
             extraction_method = "excel"
+        elif ext == "xls":
+            # Legacy .xls format - use xlrd
+            result = _extract_legacy_xls(content)
+            extraction_method = "xls_legacy"
+        elif ext == "csv":
+            from app.extractors import extract_text_from_csv
+            result = extract_text_from_csv(content)
+            extraction_method = "csv"
+        elif ext in ("html", "htm"):
+            from app.extractors import extract_text_from_html
+            result = extract_text_from_html(content)
+            extraction_method = "html"
+        elif ext == "rst":
+            from app.extractors import extract_text_from_rst
+            result = extract_text_from_rst(content)
+            extraction_method = "rst"
         elif ext in ("txt", "md", "rtf"):
             # Plain text - just decode
             try:
@@ -639,7 +659,7 @@ async def extract_auto(
         else:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                detail=f"Unsupported file type: {ext}. Supported: pdf, docx, xlsx, xls, txt, md, rtf"
+                detail=f"Unsupported file type: {ext}. Supported: pdf, docx, doc, xlsx, xls, csv, html, rst, txt, md, rtf"
             )
 
         processing_time = time.time() - start_time
@@ -813,6 +833,173 @@ def _split_with_overlap(text: str, chunk_size: int, overlap: int) -> List[str]:
         i += chunk_size - overlap
 
     return chunks
+
+
+def _extract_legacy_doc(content: bytes) -> Dict[str, Any]:
+    """
+    Extract text from legacy .doc files (Word 97-2003).
+
+    Tries multiple methods:
+    1. antiword (if installed)
+    2. textract (if installed)
+    3. Basic binary string extraction as fallback
+    """
+    import subprocess
+    import tempfile
+    import os
+
+    # Try antiword first (fastest and most reliable)
+    try:
+        with tempfile.NamedTemporaryFile(suffix='.doc', delete=False) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            result = subprocess.run(
+                ['antiword', temp_path],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                text = result.stdout
+                return {
+                    "success": True,
+                    "content": text,
+                    "total_chars": len(text),
+                    "total_words": len(text.split()),
+                    "metadata": {"extraction_method": "antiword"},
+                    "errors": []
+                }
+        finally:
+            os.unlink(temp_path)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass  # antiword not installed or timed out
+    except Exception as e:
+        logger.warning(f"antiword extraction failed: {e}")
+
+    # Try textract if available
+    try:
+        import textract
+        with tempfile.NamedTemporaryFile(suffix='.doc', delete=False) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            text = textract.process(temp_path).decode('utf-8')
+            return {
+                "success": True,
+                "content": text,
+                "total_chars": len(text),
+                "total_words": len(text.split()),
+                "metadata": {"extraction_method": "textract"},
+                "errors": []
+            }
+        finally:
+            os.unlink(temp_path)
+    except ImportError:
+        pass  # textract not installed
+    except Exception as e:
+        logger.warning(f"textract extraction failed: {e}")
+
+    # Fallback: extract readable strings from binary
+    try:
+        # Look for text between null bytes
+        text_parts = []
+        current = []
+        for byte in content:
+            if 32 <= byte <= 126:  # Printable ASCII
+                current.append(chr(byte))
+            elif current:
+                if len(current) > 10:  # Only keep strings longer than 10 chars
+                    text_parts.append(''.join(current))
+                current = []
+
+        if current and len(current) > 10:
+            text_parts.append(''.join(current))
+
+        text = ' '.join(text_parts)
+
+        if text.strip():
+            return {
+                "success": True,
+                "content": text,
+                "total_chars": len(text),
+                "total_words": len(text.split()),
+                "metadata": {"extraction_method": "binary_fallback"},
+                "errors": ["Limited extraction from binary format - install antiword for better results"]
+            }
+    except Exception as e:
+        logger.error(f"Binary extraction failed: {e}")
+
+    return {
+        "success": False,
+        "content": "",
+        "errors": ["Failed to extract text from .doc file. Install antiword: brew install antiword"]
+    }
+
+
+def _extract_legacy_xls(content: bytes) -> Dict[str, Any]:
+    """
+    Extract text from legacy .xls files (Excel 97-2003).
+
+    Uses xlrd library for reading old Excel format.
+    """
+    try:
+        import xlrd
+    except ImportError:
+        return {
+            "success": False,
+            "content": "",
+            "errors": ["xlrd not installed. Run: pip install xlrd"]
+        }
+
+    try:
+        import io
+        workbook = xlrd.open_workbook(file_contents=content)
+
+        text_parts = []
+        total_rows = 0
+
+        for sheet_idx in range(workbook.nsheets):
+            sheet = workbook.sheet_by_index(sheet_idx)
+            text_parts.append(f"\n## Sheet: {sheet.name}\n")
+
+            if sheet.nrows > 0:
+                # Get headers
+                headers = [str(sheet.cell_value(0, col)) for col in range(sheet.ncols)]
+                text_parts.append("| " + " | ".join(headers) + " |")
+                text_parts.append("| " + " | ".join("---" for _ in headers) + " |")
+
+                # Get data rows (limit to 100 for preview)
+                for row_idx in range(1, min(sheet.nrows, 101)):
+                    row_data = [str(sheet.cell_value(row_idx, col))[:50] for col in range(sheet.ncols)]
+                    text_parts.append("| " + " | ".join(row_data) + " |")
+
+                total_rows += sheet.nrows - 1
+
+        text = '\n'.join(text_parts)
+
+        return {
+            "success": True,
+            "content": text,
+            "total_chars": len(text),
+            "total_words": len(text.split()),
+            "metadata": {
+                "extraction_method": "xlrd",
+                "total_sheets": workbook.nsheets,
+                "total_rows": total_rows
+            },
+            "errors": []
+        }
+
+    except Exception as e:
+        logger.error(f"XLS extraction failed: {e}")
+        return {
+            "success": False,
+            "content": "",
+            "errors": [f"XLS extraction failed: {str(e)}"]
+        }
 
 
 # =============================================================================
