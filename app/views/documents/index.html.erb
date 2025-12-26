@@ -420,7 +420,7 @@
 
   <!-- Bulk Upload Section -->
   <% upload_header_actions = capture do %>
-    <button type="button" id="show-upload-form" class="kv-btn kv-btn-primary kv-btn-sm">
+    <button type="button" id="show-upload-form" class="kv-btn kv-btn-primary kv-btn-sm" onclick="document.getElementById('upload-form').classList.toggle('hidden')">
       <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
       </svg>
@@ -463,11 +463,12 @@
           </div>
           
           <div class="flex flex-wrap justify-end gap-3">
-            <%= render "shared/button", 
+            <%= render "shared/button",
               text: "Cancel",
               variant: "outline",
               id: "cancel-upload",
-              type: "button"
+              type: "button",
+              onclick: "document.getElementById('upload-form').classList.add('hidden')"
             %>
                      
             <%= render "shared/button", 
