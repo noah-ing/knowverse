@@ -185,6 +185,20 @@ Rails.application.routes.draw do
     resource :usage, only: [:show]
   end
   
+  # API routes (v1)
+  namespace :api, defaults: { format: :json } do
+    namespace :v1 do
+      resources :organizations, only: [] do
+        resources :bulk_uploads, only: [:index, :show, :create, :destroy] do
+          member do
+            post :add_files
+            post :start
+          end
+        end
+      end
+    end
+  end
+
   # Admin routes
   namespace :admin do
     get '/', to: 'dashboard#index', as: :dashboard

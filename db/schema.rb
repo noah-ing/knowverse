@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_25_173137) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_28_222301) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -103,6 +103,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_25_173137) do
     t.index ["stripe_event_id"], name: "index_billing_events_on_stripe_event_id", unique: true
   end
 
+  create_table "bulk_uploads", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "user_id", null: false
+    t.string "status", default: "pending", null: false
+    t.integer "total_files", default: 0
+    t.integer "processed_files", default: 0
+    t.integer "failed_files", default: 0
+    t.jsonb "metadata", default: {}
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "status"], name: "index_bulk_uploads_on_organization_id_and_status"
+    t.index ["organization_id"], name: "index_bulk_uploads_on_organization_id"
+    t.index ["status"], name: "index_bulk_uploads_on_status"
+    t.index ["user_id"], name: "index_bulk_uploads_on_user_id"
+  end
+
   create_table "cluster_memberships", force: :cascade do |t|
     t.bigint "document_id"
     t.bigint "document_cluster_id"
@@ -182,6 +200,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_25_173137) do
     t.bigint "document_source_id"
     t.string "external_id"
     t.string "external_url"
+    t.bigint "bulk_upload_id"
+    t.index ["bulk_upload_id"], name: "index_documents_on_bulk_upload_id"
     t.index ["document_source_id", "external_id"], name: "index_documents_on_document_source_id_and_external_id", unique: true, where: "(document_source_id IS NOT NULL)"
     t.index ["document_source_id"], name: "index_documents_on_document_source_id"
     t.index ["organization_id"], name: "index_documents_on_organization_id"
@@ -588,10 +608,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_25_173137) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "billing_events", "organizations"
+  add_foreign_key "bulk_uploads", "organizations"
+  add_foreign_key "bulk_uploads", "users"
   add_foreign_key "conversation_messages", "conversation_sessions"
   add_foreign_key "conversation_sessions", "organizations"
   add_foreign_key "conversation_sessions", "users"
   add_foreign_key "document_sources", "organizations"
+  add_foreign_key "documents", "bulk_uploads"
   add_foreign_key "documents", "document_sources"
   add_foreign_key "domain_confidence_scores", "organizations"
   add_foreign_key "domain_embedding_models", "organizations"

@@ -1,20 +1,43 @@
 # Universal SolidQueue configuration for all platforms
-# This file provides consistent SolidQueue worker configuration across all environments
-# Full SolidQueue support on all platforms with Docker and local development
+# Enterprise-ready configuration with queue separation and high concurrency
+#
+# Queue Priority:
+#   - critical: User-facing operations (auth, API responses)
+#   - default: Standard operations
+#   - document_processing: Text extraction (CPU-bound)
+#   - embedding_generation: Embedding creation (API-bound, rate-limited)
+#   - bulk_processing: Large batch operations (background)
+#   - connectors: External service syncs
 
 development:
-  # Development configuration - optimized for local development
+  # Development configuration - moderate concurrency for testing
   dispatchers:
-    - polling_interval: 2
+    - polling_interval: 1
       batch_size: 100
   workers:
-    - queues: "*"
-      threads: 1
+    # Critical queue - fast response
+    - queues: [critical, default]
+      threads: 2
+      processes: 1
+      polling_interval: 0.5
+    # Document processing - CPU intensive
+    - queues: [document_processing]
+      threads: 2
       processes: 1
       polling_interval: 1
+    # Embedding generation - API rate-limited
+    - queues: [embedding_generation]
+      threads: 2
+      processes: 1
+      polling_interval: 1
+    # Bulk and connectors - background
+    - queues: [bulk_processing, connectors]
+      threads: 2
+      processes: 1
+      polling_interval: 2
 
 test:
-  # Test environment configuration
+  # Test environment - single worker
   dispatchers:
     - polling_interval: 5
       batch_size: 50
@@ -25,12 +48,64 @@ test:
       polling_interval: 2
 
 production:
-  # Production configuration - full SolidQueue setup for enterprise workloads
+  # Production configuration - enterprise-ready high concurrency
+  # Total capacity: ~48 concurrent jobs (adjustable via env vars)
   dispatchers:
-    - polling_interval: 1
-      batch_size: 500
+    - polling_interval: 0.5
+      batch_size: 1000
   workers:
-    - queues: "*"
-      threads: 3
-      processes: <%= ENV.fetch("JOB_CONCURRENCY", 2) %>
+    # Critical queue - immediate response (API, auth)
+    - queues: [critical, default]
+      threads: 5
+      processes: <%= ENV.fetch("CRITICAL_WORKERS", 2) %>
       polling_interval: 0.1
+
+    # Document processing - CPU intensive text extraction
+    # Scale based on CPU cores available
+    - queues: [document_processing]
+      threads: <%= ENV.fetch("DOC_THREADS", 4) %>
+      processes: <%= ENV.fetch("DOC_WORKERS", 4) %>
+      polling_interval: 0.2
+
+    # Embedding generation - API-bound, rate-limited
+    # Lower concurrency to respect API limits
+    - queues: [embedding_generation]
+      threads: <%= ENV.fetch("EMBED_THREADS", 3) %>
+      processes: <%= ENV.fetch("EMBED_WORKERS", 4) %>
+      polling_interval: 0.5
+
+    # Bulk processing - large batch operations
+    - queues: [bulk_processing]
+      threads: <%= ENV.fetch("BULK_THREADS", 2) %>
+      processes: <%= ENV.fetch("BULK_WORKERS", 2) %>
+      polling_interval: 1
+
+    # Connectors - external service syncs
+    - queues: [connectors]
+      threads: 2
+      processes: <%= ENV.fetch("CONNECTOR_WORKERS", 2) %>
+      polling_interval: 2
+
+# Enterprise scaling guide:
+# -------------------------
+# For 100k documents, recommended settings:
+#
+# Small instance (4 CPU, 8GB RAM):
+#   DOC_WORKERS=2, DOC_THREADS=4
+#   EMBED_WORKERS=2, EMBED_THREADS=3
+#   Estimated time: ~50 hours
+#
+# Medium instance (8 CPU, 16GB RAM):
+#   DOC_WORKERS=4, DOC_THREADS=4
+#   EMBED_WORKERS=4, EMBED_THREADS=3
+#   Estimated time: ~25 hours
+#
+# Large instance (16 CPU, 32GB RAM):
+#   DOC_WORKERS=8, DOC_THREADS=4
+#   EMBED_WORKERS=8, EMBED_THREADS=3
+#   Estimated time: ~12 hours
+#
+# Embedding API rate limits (adjust EMBED_WORKERS accordingly):
+#   OpenAI: 3000 RPM (50 RPS) - up to 16 workers
+#   Anthropic: 60 RPM (1 RPS) - max 2 workers
+#   Local models: Unlimited - scale to CPU

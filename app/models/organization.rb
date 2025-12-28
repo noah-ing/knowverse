@@ -43,6 +43,7 @@ class Organization < ApplicationRecord
   has_many :organization_users, dependent: :destroy
   has_many :users, through: :organization_users
   has_many :documents, dependent: :destroy
+  has_many :bulk_uploads, dependent: :destroy
   has_many :search_queries, dependent: :destroy
   has_many :search_feedbacks, dependent: :destroy
   has_many :domain_embedding_models, dependent: :destroy
