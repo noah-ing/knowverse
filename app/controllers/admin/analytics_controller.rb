@@ -1,4 +1,9 @@
 class Admin::AnalyticsController < Admin::BaseController
+  def show
+    index
+    render :index
+  end
+
   def index
     @visits_count = Ahoy::Visit.count
     @events_count = Ahoy::Event.count

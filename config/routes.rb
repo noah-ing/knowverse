@@ -188,6 +188,10 @@ Rails.application.routes.draw do
   # Admin routes
   namespace :admin do
     get '/', to: 'dashboard#index', as: :dashboard
+
+    # Mission Control - NASA-style dashboard
+    get 'mission_control', to: 'mission_control#index', as: :mission_control
+    get 'mission_control/status', to: 'mission_control#status', as: :mission_control_status
     
     # Embedding cache management
     get 'embedding_cache/dashboard', to: 'embedding_cache#dashboard', as: :embedding_cache_dashboard
