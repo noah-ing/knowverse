@@ -1,6 +1,7 @@
 class Document < ApplicationRecord
   belongs_to :organization
   belongs_to :document_source, optional: true
+  belongs_to :bulk_upload, optional: true
   has_many :vector_embeddings, dependent: :destroy
   has_many :vector_projections, through: :vector_embeddings
   has_many :cluster_memberships, dependent: :destroy
@@ -40,6 +41,7 @@ class Document < ApplicationRecord
   # Callbacks
   before_create :set_initial_statuses
   before_save :update_word_count, if: -> { content_changed? }
+  after_update :track_bulk_upload_progress, if: :embedding_status_changed?
   
   # Instance methods
   
@@ -213,48 +215,51 @@ class Document < ApplicationRecord
   
   # Search methods
   def self.nearest_neighbors(embedding_vector, dimension: nil, model_name: nil, limit: 10, min_similarity: 0.5)
+    vector_literal = format_vector_for_query(embedding_vector)
+
     if dimension || model_name
       # New dimension-aware approach with JOIN to vector_embeddings
       query = joins(:vector_embeddings).where(vector_embeddings: { status: VectorEmbedding::STATUS_PROCESSED })
-      
+
       if dimension
         query = query.where(vector_embeddings: { dimension: dimension })
       elsif model_name
         query = query.where(vector_embeddings: { model_name: model_name })
       end
-      
-      query.select('documents.*, vector_embeddings.embedding <-> ? as distance', sanitize_vector(embedding_vector))
+
+      query.select("documents.*, vector_embeddings.embedding <-> #{vector_literal} as distance")
            .order('distance')
            .limit(limit)
     else
       # Legacy approach using document.embedding field
       where.not(embedding: nil)
-           .order(Arel.sql("embedding <-> '#{sanitize_vector(embedding_vector)}'"))
+           .order(Arel.sql("embedding <-> #{vector_literal}"))
            .limit(limit)
     end
   end
-  
+
   def self.similar_to(embedding_vector, dimension: nil, model_name: nil, min_similarity: 0.5, limit: 10)
+    vector_literal = format_vector_for_query(embedding_vector)
+
     if dimension || model_name
       # New dimension-aware approach with JOIN to vector_embeddings
       query = joins(:vector_embeddings).where(vector_embeddings: { status: VectorEmbedding::STATUS_PROCESSED })
-      
+
       if dimension
         query = query.where(vector_embeddings: { dimension: dimension })
       elsif model_name
         query = query.where(vector_embeddings: { model_name: model_name })
       end
-      
-      similarity_expr = "vector_embeddings.embedding <=> ?"
-      query.select("documents.*, #{similarity_expr} as similarity", sanitize_vector(embedding_vector))
-           .where("#{similarity_expr} > ?", sanitize_vector(embedding_vector), min_similarity)
+
+      query.select("documents.*, vector_embeddings.embedding <=> #{vector_literal} as similarity")
+           .where("vector_embeddings.embedding <=> #{vector_literal} > ?", min_similarity)
            .order('similarity DESC')
            .limit(limit)
     else
       # Legacy approach using document.embedding field
       where.not(embedding: nil)
-           .where("embedding <=> '#{sanitize_vector(embedding_vector)}' > ?", min_similarity)
-           .order(Arel.sql("embedding <=> '#{sanitize_vector(embedding_vector)}' DESC"))
+           .where("embedding <=> #{vector_literal} > ?", min_similarity)
+           .order(Arel.sql("embedding <=> #{vector_literal} DESC"))
            .limit(limit)
     end
   end
@@ -271,8 +276,34 @@ class Document < ApplicationRecord
     return unless content.present?
     self.word_count = content.split(/\s+/).size
   end
+
+  def track_bulk_upload_progress
+    return unless bulk_upload_id && %w[processed error].include?(embedding_status)
+    return if bulk_upload.nil? || bulk_upload.finished?
+
+    if embedding_status == 'processed'
+      bulk_upload.increment_processed!
+    else
+      bulk_upload.increment_failed!(
+        document_id: id,
+        error: metadata['embedding_error'] || metadata['error_message']
+      )
+    end
+  end
   
-  def self.sanitize_vector(vector)
-    vector.is_a?(Array) ? vector.to_s.gsub('[', '[').gsub(']', ']') : vector.to_s
+  # Safely format a vector for pgvector queries
+  # Validates input is numeric array and properly quotes for SQL
+  def self.format_vector_for_query(vector)
+    raise ArgumentError, "Vector must be an Array" unless vector.is_a?(Array)
+    raise ArgumentError, "Vector cannot be empty" if vector.empty?
+
+    # Validate all elements are numeric to prevent SQL injection
+    validated = vector.map do |v|
+      raise ArgumentError, "Vector elements must be numeric" unless v.is_a?(Numeric)
+      v.to_f
+    end
+
+    # Format as pgvector literal with proper quoting
+    "'[#{validated.join(',')}]'::vector"
   end
 end
