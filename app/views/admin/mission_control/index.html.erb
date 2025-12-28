@@ -1,0 +1,676 @@
+<%
+def calculate_uptime
+  boot_time = Rails.application.config.respond_to?(:boot_time) ? Rails.application.config.boot_time : Time.current - 1.hour
+  seconds = (Time.current - boot_time).to_i
+  "#{seconds / 86400}d #{(seconds % 86400) / 3600}h #{(seconds % 3600) / 60}m"
+end
+%>
+
+<style>
+  /* Mission Control - Dense Layout with KnowVerse Colors */
+  .mc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .mc-clock {
+    font-family: 'Berkeley Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--kv-primary-600);
+  }
+
+  .mc-date {
+    font-size: 0.75rem;
+    color: var(--kv-gray-500);
+  }
+
+  /* Dense Grid System */
+  .mc-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  .mc-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .mc-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+  @media (max-width: 1024px) {
+    .mc-grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .mc-grid-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 640px) {
+    .mc-grid-4, .mc-grid-3, .mc-grid-2 { grid-template-columns: 1fr; }
+  }
+
+  /* Metric Cards */
+  .mc-metric-card {
+    background: white;
+    border: 1px solid var(--kv-gray-200);
+    border-radius: var(--kv-radius-lg);
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .mc-metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--kv-primary-600);
+    line-height: 1;
+  }
+
+  .mc-metric-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--kv-gray-500);
+    margin-top: 0.25rem;
+  }
+
+  .mc-metric-sub {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .mc-metric-sub-item {
+    text-align: center;
+  }
+
+  .mc-metric-sub-value {
+    font-weight: 600;
+    color: var(--kv-gray-700);
+  }
+
+  .mc-metric-sub-label {
+    font-size: 0.65rem;
+    color: var(--kv-gray-400);
+  }
+
+  /* Status Grid */
+  .mc-status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .mc-status-item {
+    background: var(--kv-gray-50);
+    border: 1px solid var(--kv-gray-200);
+    border-radius: var(--kv-radius-md);
+    padding: 0.75rem;
+    text-align: center;
+  }
+
+  .mc-status-item.operational {
+    border-color: var(--kv-success-500);
+    background: var(--kv-success-50);
+  }
+
+  .mc-status-item.degraded {
+    border-color: var(--kv-warning-500);
+    background: var(--kv-warning-50);
+  }
+
+  .mc-status-item.offline {
+    border-color: var(--kv-error-500);
+    background: var(--kv-error-50);
+  }
+
+  .mc-status-name {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--kv-gray-500);
+    margin-bottom: 0.25rem;
+  }
+
+  .mc-status-indicator {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .mc-status-indicator.operational { color: var(--kv-success-600); }
+  .mc-status-indicator.degraded { color: var(--kv-warning-600); }
+  .mc-status-indicator.offline { color: var(--kv-error-600); }
+
+  .mc-status-latency {
+    font-size: 0.65rem;
+    color: var(--kv-gray-400);
+    margin-top: 0.125rem;
+  }
+
+  /* Gauges */
+  .mc-gauges {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+
+  .mc-gauge {
+    background: var(--kv-gray-50);
+    border: 1px solid var(--kv-gray-200);
+    border-radius: var(--kv-radius-md);
+    padding: 0.75rem;
+    text-align: center;
+  }
+
+  .mc-gauge-dial {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 0.5rem;
+  }
+
+  .mc-gauge-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .mc-gauge-bg {
+    fill: none;
+    stroke: var(--kv-gray-200);
+    stroke-width: 6;
+  }
+
+  .mc-gauge-arc {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+
+  .mc-gauge-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--kv-gray-700);
+  }
+
+  .mc-gauge-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--kv-gray-500);
+  }
+
+  .mc-gauge-range {
+    font-size: 0.6rem;
+    color: var(--kv-gray-400);
+  }
+
+  /* Pipeline Flow */
+  .mc-pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+  }
+
+  .mc-pipeline-node {
+    background: white;
+    border: 2px solid var(--kv-gray-300);
+    border-radius: var(--kv-radius-md);
+    padding: 0.75rem 1rem;
+    text-align: center;
+    min-width: 80px;
+  }
+
+  .mc-pipeline-node.active {
+    border-color: var(--kv-primary-500);
+    background: var(--kv-primary-50);
+  }
+
+  .mc-pipeline-node.processing {
+    border-color: var(--kv-warning-500);
+    background: var(--kv-warning-50);
+  }
+
+  .mc-pipeline-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--kv-gray-500);
+  }
+
+  .mc-pipeline-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--kv-gray-700);
+  }
+
+  .mc-pipeline-sub {
+    font-size: 0.6rem;
+    color: var(--kv-gray-400);
+  }
+
+  .mc-pipeline-arrow {
+    color: var(--kv-gray-300);
+    font-size: 1.5rem;
+  }
+
+  /* Data Table */
+  .mc-table {
+    width: 100%;
+    font-size: 0.75rem;
+  }
+
+  .mc-table th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    background: var(--kv-gray-50);
+    color: var(--kv-gray-500);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    border-bottom: 1px solid var(--kv-gray-200);
+  }
+
+  .mc-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--kv-gray-100);
+    color: var(--kv-gray-700);
+  }
+
+  .mc-table tr:hover td {
+    background: var(--kv-gray-50);
+  }
+
+  /* Activity Log */
+  .mc-log-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--kv-gray-100);
+    font-size: 0.75rem;
+  }
+
+  .mc-log-time {
+    color: var(--kv-gray-400);
+    font-family: 'Berkeley Mono', monospace;
+    font-size: 0.7rem;
+    min-width: 60px;
+  }
+
+  .mc-log-message {
+    color: var(--kv-gray-600);
+  }
+
+  /* Panel styling */
+  .mc-panel {
+    background: white;
+    border: 1px solid var(--kv-gray-200);
+    border-radius: var(--kv-radius-lg);
+    overflow: hidden;
+  }
+
+  .mc-panel-header {
+    background: var(--kv-gray-50);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--kv-gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mc-panel-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--kv-gray-700);
+  }
+
+  .mc-panel-body {
+    padding: 1rem;
+  }
+
+  /* Stats Row */
+  .mc-stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--kv-gray-200);
+    border: 1px solid var(--kv-gray-200);
+    border-radius: var(--kv-radius-md);
+    overflow: hidden;
+  }
+
+  .mc-stat {
+    background: white;
+    padding: 0.75rem;
+    text-align: center;
+  }
+
+  .mc-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--kv-primary-600);
+  }
+
+  .mc-stat-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    color: var(--kv-gray-500);
+    margin-top: 0.125rem;
+  }
+</style>
+
+<!-- Header -->
+<div class="mc-header">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Mission Control</h1>
+    <p class="text-sm text-gray-500">System Overview & Monitoring</p>
+  </div>
+  <div class="text-right">
+    <div class="mc-clock" id="mc-clock">--:--:--</div>
+    <div class="mc-date" id="mc-date">---</div>
+  </div>
+</div>
+
+<!-- Top Metrics Row -->
+<div class="mc-grid-4 mb-6">
+  <div class="mc-metric-card">
+    <div class="mc-metric-value"><%= @system_metrics[:total_documents] %></div>
+    <div class="mc-metric-label">Total Documents</div>
+    <div class="mc-metric-sub">
+      <div class="mc-metric-sub-item">
+        <div class="mc-metric-sub-value" style="color: var(--kv-success-600);"><%= @system_metrics[:search_ready] %></div>
+        <div class="mc-metric-sub-label">Ready</div>
+      </div>
+      <div class="mc-metric-sub-item">
+        <div class="mc-metric-sub-value" style="color: var(--kv-warning-600);"><%= @system_metrics[:pending_documents] %></div>
+        <div class="mc-metric-sub-label">Pending</div>
+      </div>
+      <div class="mc-metric-sub-item">
+        <div class="mc-metric-sub-value" style="color: var(--kv-error-600);"><%= @system_metrics[:error_documents] %></div>
+        <div class="mc-metric-sub-label">Errors</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mc-metric-card">
+    <div class="mc-metric-value"><%= @search_metrics[:total_queries] %></div>
+    <div class="mc-metric-label">Search Queries</div>
+    <div class="mc-metric-sub">
+      <div class="mc-metric-sub-item">
+        <div class="mc-metric-sub-value"><%= @search_metrics[:queries_today] %></div>
+        <div class="mc-metric-sub-label">Today</div>
+      </div>
+      <div class="mc-metric-sub-item">
+        <div class="mc-metric-sub-value"><%= @search_metrics[:avg_latency_ms] %>ms</div>
+        <div class="mc-metric-sub-label">Avg Latency</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mc-metric-card">
+    <div class="mc-metric-value"><%= @system_metrics[:total_embeddings] %></div>
+    <div class="mc-metric-label">Vector Embeddings</div>
+    <% coverage = @system_metrics[:total_documents] > 0 ? ((@system_metrics[:search_ready].to_f / @system_metrics[:total_documents]) * 100).round : 0 %>
+    <div class="mt-2">
+      <div class="flex justify-between text-xs mb-1">
+        <span class="text-gray-500">Coverage</span>
+        <span class="font-semibold text-indigo-600"><%= coverage %>%</span>
+      </div>
+      <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div class="h-full bg-indigo-500 rounded-full" style="width: <%= coverage %>%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mc-metric-card">
+    <div class="mc-metric-value"><%= @system_metrics[:total_users] %></div>
+    <div class="mc-metric-label">Users</div>
+    <div class="mc-metric-sub">
+      <div class="mc-metric-sub-item">
+        <div class="mc-metric-sub-value"><%= @system_metrics[:active_users] %></div>
+        <div class="mc-metric-sub-label">Active</div>
+      </div>
+      <div class="mc-metric-sub-item">
+        <div class="mc-metric-sub-value"><%= @system_metrics[:total_organizations] %></div>
+        <div class="mc-metric-sub-label">Orgs</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="mc-grid-3 mb-6">
+  <!-- Infrastructure Status -->
+  <div class="mc-panel">
+    <div class="mc-panel-header">
+      <span class="mc-panel-title">Infrastructure</span>
+      <span class="kv-badge kv-badge-success">Online</span>
+    </div>
+    <div class="mc-panel-body">
+      <div class="mc-status-grid">
+        <% status_map = { 'operational' => 'operational', 'degraded' => 'degraded', 'offline' => 'offline', 'error' => 'offline' } %>
+        <% @infrastructure.each do |name, info| %>
+          <% stat = status_map[info[:status]] || 'offline' %>
+          <div class="mc-status-item <%= stat %>">
+            <div class="mc-status-name"><%= name.to_s.gsub('_', ' ') %></div>
+            <div class="mc-status-indicator <%= stat %>"><%= info[:status] == 'operational' ? 'Online' : info[:status].titleize %></div>
+            <% if info[:latency_ms] %>
+              <div class="mc-status-latency"><%= info[:latency_ms] %>ms</div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Processing Gauges -->
+  <div class="mc-panel">
+    <div class="mc-panel-header">
+      <span class="mc-panel-title">Processing Status</span>
+    </div>
+    <div class="mc-panel-body">
+      <div class="mc-gauges">
+        <% doc_pct = @system_metrics[:total_documents] > 0 ? (@system_metrics[:processed_documents].to_f / @system_metrics[:total_documents] * 100).round : 0 %>
+        <% embed_pct = @system_metrics[:total_documents] > 0 ? (@system_metrics[:search_ready].to_f / @system_metrics[:total_documents] * 100).round : 0 %>
+
+        <div class="mc-gauge">
+          <div class="mc-gauge-dial">
+            <svg class="mc-gauge-svg" viewBox="0 0 60 60">
+              <circle class="mc-gauge-bg" cx="30" cy="30" r="24"/>
+              <circle class="mc-gauge-arc" cx="30" cy="30" r="24"
+                stroke="<%= doc_pct >= 80 ? 'var(--kv-success-500)' : doc_pct >= 50 ? 'var(--kv-warning-500)' : 'var(--kv-error-500)' %>"
+                stroke-dasharray="<%= 150.8 * doc_pct / 100 %> 150.8"/>
+            </svg>
+            <div class="mc-gauge-center"><%= doc_pct %>%</div>
+          </div>
+          <div class="mc-gauge-label">Processed</div>
+        </div>
+
+        <div class="mc-gauge">
+          <div class="mc-gauge-dial">
+            <svg class="mc-gauge-svg" viewBox="0 0 60 60">
+              <circle class="mc-gauge-bg" cx="30" cy="30" r="24"/>
+              <circle class="mc-gauge-arc" cx="30" cy="30" r="24"
+                stroke="<%= embed_pct >= 80 ? 'var(--kv-success-500)' : embed_pct >= 50 ? 'var(--kv-warning-500)' : 'var(--kv-error-500)' %>"
+                stroke-dasharray="<%= 150.8 * embed_pct / 100 %> 150.8"/>
+            </svg>
+            <div class="mc-gauge-center"><%= embed_pct %>%</div>
+          </div>
+          <div class="mc-gauge-label">Embedded</div>
+        </div>
+
+        <div class="mc-gauge">
+          <div class="mc-gauge-dial">
+            <svg class="mc-gauge-svg" viewBox="0 0 60 60">
+              <circle class="mc-gauge-bg" cx="30" cy="30" r="24"/>
+              <% queue_pct = [@pipeline_status[:queue_depth] * 10, 100].min %>
+              <circle class="mc-gauge-arc" cx="30" cy="30" r="24"
+                stroke="var(--kv-primary-500)"
+                stroke-dasharray="<%= 150.8 * queue_pct / 100 %> 150.8"/>
+            </svg>
+            <div class="mc-gauge-center"><%= @pipeline_status[:queue_depth] %></div>
+          </div>
+          <div class="mc-gauge-label">Queue</div>
+        </div>
+
+        <div class="mc-gauge">
+          <div class="mc-gauge-dial">
+            <svg class="mc-gauge-svg" viewBox="0 0 60 60">
+              <circle class="mc-gauge-bg" cx="30" cy="30" r="24"/>
+              <% tp_pct = [@pipeline_status[:throughput_per_hour] * 5, 100].min %>
+              <circle class="mc-gauge-arc" cx="30" cy="30" r="24"
+                stroke="var(--kv-info-500)"
+                stroke-dasharray="<%= 150.8 * tp_pct / 100 %> 150.8"/>
+            </svg>
+            <div class="mc-gauge-center"><%= @pipeline_status[:throughput_per_hour] %></div>
+          </div>
+          <div class="mc-gauge-label">Rate/hr</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Feed -->
+  <div class="mc-panel">
+    <div class="mc-panel-header">
+      <span class="mc-panel-title">Activity Log</span>
+    </div>
+    <div class="mc-panel-body" style="max-height: 200px; overflow-y: auto;">
+      <% @activity_log.each do |activity| %>
+        <div class="mc-log-item">
+          <span class="mc-log-time"><%= activity[:time].strftime('%H:%M') %></span>
+          <span class="kv-badge <%= activity[:type] == 'document' ? 'kv-badge-primary' : 'kv-badge-success' %>" style="font-size: 0.6rem;"><%= activity[:type] %></span>
+          <span class="mc-log-message"><%= activity[:action] %> <%= activity[:subject] %></span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Pipeline Flow -->
+<div class="mc-panel mb-6">
+  <div class="mc-panel-header">
+    <span class="mc-panel-title">Document Pipeline</span>
+    <div class="flex gap-4 text-xs">
+      <span class="text-gray-500">Extraction Errors: <span class="font-semibold <%= @pipeline_status[:stages][:extraction][:failed] > 0 ? 'text-red-600' : 'text-green-600' %>"><%= @pipeline_status[:stages][:extraction][:failed] %></span></span>
+      <span class="text-gray-500">Embedding Errors: <span class="font-semibold <%= @pipeline_status[:stages][:embedding][:failed] > 0 ? 'text-red-600' : 'text-green-600' %>"><%= @pipeline_status[:stages][:embedding][:failed] %></span></span>
+    </div>
+  </div>
+  <div class="mc-panel-body">
+    <div class="mc-pipeline">
+      <div class="mc-pipeline-node active">
+        <div class="mc-pipeline-label">Input</div>
+        <div class="mc-pipeline-value"><%= @system_metrics[:total_documents] %></div>
+        <div class="mc-pipeline-sub">total</div>
+      </div>
+      <div class="mc-pipeline-arrow">→</div>
+      <div class="mc-pipeline-node <%= @pipeline_status[:stages][:extraction][:active] > 0 ? 'processing' : 'active' %>">
+        <div class="mc-pipeline-label">Extract</div>
+        <div class="mc-pipeline-value"><%= @pipeline_status[:stages][:extraction][:completed] %></div>
+        <div class="mc-pipeline-sub"><%= @pipeline_status[:stages][:extraction][:active] %> active</div>
+      </div>
+      <div class="mc-pipeline-arrow">→</div>
+      <div class="mc-pipeline-node <%= @pipeline_status[:stages][:embedding][:active] > 0 ? 'processing' : 'active' %>">
+        <div class="mc-pipeline-label">Embed</div>
+        <div class="mc-pipeline-value"><%= @pipeline_status[:stages][:embedding][:completed] %></div>
+        <div class="mc-pipeline-sub"><%= @pipeline_status[:stages][:embedding][:active] %> active</div>
+      </div>
+      <div class="mc-pipeline-arrow">→</div>
+      <div class="mc-pipeline-node active">
+        <div class="mc-pipeline-label">Ready</div>
+        <div class="mc-pipeline-value"><%= @system_metrics[:search_ready] %></div>
+        <div class="mc-pipeline-sub">searchable</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Tables -->
+<div class="mc-grid-2">
+  <!-- Recent Documents -->
+  <div class="mc-panel">
+    <div class="mc-panel-header">
+      <span class="mc-panel-title">Recent Documents</span>
+    </div>
+    <div class="mc-panel-body" style="padding: 0; max-height: 300px; overflow-y: auto;">
+      <table class="mc-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Embed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% status_badges = { 'processed' => 'kv-badge-success', 'processing' => 'kv-badge-info', 'pending' => 'kv-badge-warning', 'error' => 'kv-badge-error' } %>
+          <% @pipeline_status[:recent_jobs].each do |job| %>
+            <tr>
+              <td class="text-gray-400">#<%= job[:id] %></td>
+              <td><%= job[:title] %></td>
+              <td><span class="kv-badge <%= status_badges[job[:status]] || 'kv-badge-gray' %>"><%= job[:status] %></span></td>
+              <td><span class="kv-badge <%= status_badges[job[:embedding_status]] || 'kv-badge-gray' %>"><%= job[:embedding_status] %></span></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Queries -->
+  <div class="mc-panel">
+    <div class="mc-panel-header">
+      <span class="mc-panel-title">Recent Queries</span>
+    </div>
+    <div class="mc-panel-body" style="padding: 0; max-height: 300px; overflow-y: auto;">
+      <% if @search_metrics[:recent_queries].any? %>
+        <table class="mc-table">
+          <thead>
+            <tr>
+              <th>Query</th>
+              <th>Provider</th>
+              <th>Latency</th>
+              <th>Results</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @search_metrics[:recent_queries].each do |q| %>
+              <tr>
+                <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= q[:query] %></td>
+                <td><span class="kv-badge kv-badge-primary"><%= q[:provider] || 'default' %></span></td>
+                <td class="<%= q[:latency].to_i < 100 ? 'text-green-600' : q[:latency].to_i < 500 ? 'text-yellow-600' : 'text-red-600' %>"><%= q[:latency] %>ms</td>
+                <td><%= q[:results] %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <div class="p-8 text-center text-gray-400">
+          <p>No search queries yet</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="flex justify-between items-center mt-6 pt-4 border-t border-gray-200 text-sm text-gray-500">
+  <div class="flex gap-6">
+    <span>Response: <span class="font-semibold text-indigo-600"><%= @system_metrics[:avg_response_time] %>ms</span></span>
+    <span>Uptime: <span class="font-semibold"><%= calculate_uptime %></span></span>
+    <span>Env: <span class="font-semibold"><%= Rails.env %></span></span>
+  </div>
+  <div class="flex gap-2">
+    <%= link_to 'Refresh', admin_mission_control_path, class: 'kv-btn kv-btn-secondary kv-btn-sm' %>
+    <%= link_to 'Dashboard', admin_dashboard_path, class: 'kv-btn kv-btn-primary kv-btn-sm' %>
+  </div>
+</div>
+
+<script>
+function updateClock() {
+  const now = new Date();
+  document.getElementById('mc-clock').textContent = now.toTimeString().split(' ')[0];
+  document.getElementById('mc-date').textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+}
+updateClock();
+setInterval(updateClock, 1000);
+</script>
