@@ -61,14 +61,14 @@ RUN groupadd -g 1000 haystack && \
 # Copy application code (do this last for better caching)
 COPY --chown=haystack:haystack . .
 
-# Create optimized entrypoint
+# Create optimized entrypoint (Redis is optional - use host.docker.internal)
 RUN echo '#!/bin/sh\n\
 set -e\n\
-echo "🔍 Waiting for dependencies..."\n\
-until pg_isready -h postgres -p 5432 -U postgres && nc -z redis 6379; do\n\
+echo "Waiting for PostgreSQL..."\n\
+until pg_isready -h postgres -p 5432 -U postgres; do\n\
   sleep 1\n\
 done\n\
-echo "✅ Dependencies ready! Starting Haystack..."\n\
+echo "PostgreSQL ready! Starting Haystack..."\n\
 exec "$@"' > /usr/local/bin/docker-entrypoint && \
     chmod +x /usr/local/bin/docker-entrypoint
 
