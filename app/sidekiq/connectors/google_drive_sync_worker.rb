@@ -1,7 +1,7 @@
 module Connectors
   class GoogleDriveSyncWorker < ActiveJob::Base
     queue_as :connectors
-    retry_on StandardError, wait: :exponentially_longer, attempts: 3
+    retry_on StandardError, wait: ->(attempt) { (attempt ** 4) + 2 }, attempts: 3
 
     def perform(document_source_id)
       document_source = DocumentSource.find(document_source_id)

@@ -13,7 +13,7 @@ module BulkProcessing
     queue_as :bulk_processing
 
     # Retry with exponential backoff
-    retry_on StandardError, wait: :exponentially_longer, attempts: 3
+    retry_on StandardError, wait: ->(attempt) { (attempt ** 4) + 2 }, attempts: 3
     discard_on ActiveRecord::RecordNotFound
 
     BATCH_SIZE = 50 # Process files in batches of 50

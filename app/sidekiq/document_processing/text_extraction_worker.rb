@@ -2,8 +2,8 @@ module DocumentProcessing
   class TextExtractionWorker < ActiveJob::Base
     queue_as :document_processing
     
-    # Retry options for more resilience
-    retry_on StandardError, wait: :exponentially_longer, attempts: 3
+    # Retry options for more resilience (exponential backoff: 3s, 18s, 83s)
+    retry_on StandardError, wait: ->(attempt) { (attempt ** 4) + 2 }, attempts: 3
     
     # For backwards compatibility with existing code that might still use Sidekiq API
     def self.perform_async(document_id)
