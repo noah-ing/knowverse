@@ -2,45 +2,101 @@
 
 <div class="px-6 py-4">
   <h1 class="text-2xl font-bold text-gray-800 mb-6">Analytics Dashboard</h1>
-  
+
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-2">Total Visits</h2>
-      <p class="text-3xl font-bold text-blue-600"><%= @visits_count %></p>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Total Visits</h2>
+      <p class="text-4xl font-bold text-indigo-600"><%= number_with_delimiter(@visits_count) %></p>
     </div>
-    
-    <div class="bg-white rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-2">Total Events</h2>
-      <p class="text-3xl font-bold text-blue-600"><%= @events_count %></p>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Total Events</h2>
+      <p class="text-4xl font-bold text-emerald-600"><%= number_with_delimiter(@events_count) %></p>
     </div>
-    
-    <div class="bg-white rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-2">Total Users</h2>
-      <p class="text-3xl font-bold text-blue-600"><%= @users_count %></p>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Total Users</h2>
+      <p class="text-4xl font-bold text-violet-600"><%= number_with_delimiter(@users_count) %></p>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-4">Visits by Day</h2>
-      <%= line_chart @visits_per_day, colors: ["#3B82F6"], min: 0 %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Visits by Day</h2>
+      <div style="height: 280px;">
+        <%= area_chart @visits_per_day,
+            colors: ["#6366F1"],
+            min: 0,
+            curve: true,
+            points: false,
+            library: {
+              tension: 0.4,
+              fill: true,
+              backgroundColor: "rgba(99, 102, 241, 0.1)",
+              borderWidth: 2,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+                x: { grid: { display: false } }
+              }
+            } %>
+      </div>
     </div>
-    
-    <div class="bg-white rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-4">Events by Day</h2>
-      <%= line_chart @events_per_day, colors: ["#10B981"], min: 0 %>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Events by Day</h2>
+      <div style="height: 280px;">
+        <%= area_chart @events_per_day,
+            colors: ["#10B981"],
+            min: 0,
+            curve: true,
+            points: false,
+            library: {
+              tension: 0.4,
+              fill: true,
+              backgroundColor: "rgba(16, 185, 129, 0.1)",
+              borderWidth: 2,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+                x: { grid: { display: false } }
+              }
+            } %>
+      </div>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-4">Subscription Status Distribution</h2>
-      <%= pie_chart @subscription_counts, colors: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"] %>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Subscription Status</h2>
+      <div style="height: 280px;">
+        <%= pie_chart @subscription_counts,
+            donut: true,
+            colors: ["#6366F1", "#10B981", "#F59E0B", "#EF4444"],
+            library: {
+              plugins: {
+                legend: { position: "bottom", labels: { padding: 20, usePointStyle: true } }
+              },
+              cutout: "60%"
+            } %>
+      </div>
     </div>
-    
-    <div class="bg-white rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-4">Top Referring Domains</h2>
-      <%= bar_chart @top_referrers.reject { |domain, _| domain.nil? }, colors: ["#6366F1"] %>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Top Referrers</h2>
+      <div style="height: 280px;">
+        <%= bar_chart @top_referrers.reject { |domain, _| domain.nil? },
+            colors: ["#6366F1"],
+            library: {
+              indexAxis: "y",
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { color: "rgba(0,0,0,0.05)" } },
+                y: { grid: { display: false } }
+              },
+              borderRadius: 4
+            } %>
+      </div>
     </div>
   </div>
 
