@@ -58,7 +58,7 @@
               <% end %>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              <%= user.current_plan&.name || "None" %>
+              <%= @plans_by_stripe_id[user.stripe_subscription_id]&.name || "None" %>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <% if user.admin? %>

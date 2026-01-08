@@ -3,10 +3,17 @@ class Admin::UsersController < Admin::BaseController
   before_action :set_plans, only: [:show, :edit, :update, :update_subscription]
 
   def index
+    # Eager load organizations to avoid N+1 when displaying user stats
+    # Note: current_plan is computed from stripe_subscription_id, no eager loading needed
+    # Pre-load all plans to avoid N+1 in view (user.current_plan makes a query per user)
+    @plans_by_stripe_id = Plan.all.index_by(&:stripe_price_id)
     @users = User.all.order(created_at: :desc).page(params[:page]).per(15)
   end
 
   def search
+    # Pre-load all plans to avoid N+1 in view
+    @plans_by_stripe_id = Plan.all.index_by(&:stripe_price_id)
+
     if params[:query].present?
       # Security fix: Use sanitize_sql_like to prevent SQL injection in ILIKE queries
       sanitized_query = User.sanitize_sql_like(params[:query])

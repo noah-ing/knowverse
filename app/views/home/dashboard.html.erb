@@ -29,7 +29,7 @@
             </div>
             <div class="ml-4">
               <p class="text-sm font-medium kv-text-secondary">Organizations</p>
-              <p class="text-2xl font-semibold kv-text-primary"><%= current_user.organizations.count %></p>
+              <p class="text-2xl font-semibold kv-text-primary"><%= @org_count || 0 %></p>
             </div>
           </div>
         </div>
@@ -46,8 +46,7 @@
             </div>
             <div class="ml-4">
               <p class="text-sm font-medium kv-text-secondary">Documents</p>
-              <% doc_count = current_organization&.documents&.count || 0 %>
-              <p class="text-2xl font-semibold kv-text-primary"><%= doc_count %></p>
+              <p class="text-2xl font-semibold kv-text-primary"><%= @doc_count || 0 %></p>
             </div>
           </div>
         </div>
@@ -64,8 +63,7 @@
             </div>
             <div class="ml-4">
               <p class="text-sm font-medium kv-text-secondary">Vector Embeddings</p>
-              <% vector_count = VectorEmbedding.joins(:document).where(documents: { organization_id: current_organization&.id }).count rescue 0 %>
-              <p class="text-2xl font-semibold kv-text-primary"><%= number_with_delimiter(vector_count) %></p>
+              <p class="text-2xl font-semibold kv-text-primary"><%= number_with_delimiter(@vector_count || 0) %></p>
             </div>
           </div>
         </div>
@@ -82,8 +80,7 @@
             </div>
             <div class="ml-4">
               <p class="text-sm font-medium kv-text-secondary">RAG Conversations</p>
-              <% conv_count = ConversationSession.where(organization_id: current_organization&.id).count rescue 0 %>
-              <p class="text-2xl font-semibold kv-text-primary"><%= conv_count %></p>
+              <p class="text-2xl font-semibold kv-text-primary"><%= @conv_count || 0 %></p>
             </div>
           </div>
         </div>
@@ -161,9 +158,9 @@
               <%= link_to "View all", organization_documents_path(current_organization), class: "text-sm kv-text-accent hover:underline" %>
             <% end %>
           </div>
-          <% if current_organization && current_organization.documents.any? %>
+          <% if @recent_documents&.any? %>
             <div class="space-y-3">
-              <% current_organization.documents.order(created_at: :desc).limit(5).each do |doc| %>
+              <% @recent_documents.each do |doc| %>
                 <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50">
                   <div class="flex items-center">
                     <div class="bg-white rounded-lg p-2 mr-3 shadow-sm">

@@ -62,6 +62,7 @@ end
 
 group :development do
   gem "web-console"
+  gem "bullet" # N+1 query detection
 end
 
 group :test do

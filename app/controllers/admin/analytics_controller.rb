@@ -28,18 +28,30 @@ class Admin::AnalyticsController < Admin::BaseController
                               .group_by_day(:time)
                               .count
     
-    # Get subscription metrics
-    @subscription_events = Ahoy::Event.where(name: 'subscription_changed').order(time: :desc).limit(10)
-    @subscription_counts = {}
+    # Get subscription metrics - eager load user to avoid N+1 queries in view
+    @subscription_events = Ahoy::Event.where(name: 'subscription_changed')
+                                       .includes(:user)
+                                       .order(time: :desc)
+                                       .limit(10)
+
+    # Use a single query with GROUP BY instead of N queries for each status
+    @subscription_counts = User.group(:subscription_status).count
+    # Ensure all statuses are present (even with 0 count)
     User::SUBSCRIPTION_STATUSES.each do |status|
-      @subscription_counts[status] = User.where(subscription_status: status).count
+      @subscription_counts[status] ||= 0
     end
-    
-    # Get profile update metrics
-    @profile_updates = Ahoy::Event.where(name: 'profile_updated').order(time: :desc).limit(10)
-    
-    # Get magic link login metrics
-    @magic_link_logins = Ahoy::Event.where(name: 'magic_link_login').order(time: :desc).limit(10)
+
+    # Get profile update metrics - eager load user to avoid N+1 queries in view
+    @profile_updates = Ahoy::Event.where(name: 'profile_updated')
+                                   .includes(:user)
+                                   .order(time: :desc)
+                                   .limit(10)
+
+    # Get magic link login metrics - eager load user to avoid N+1 queries in view
+    @magic_link_logins = Ahoy::Event.where(name: 'magic_link_login')
+                                     .includes(:user)
+                                     .order(time: :desc)
+                                     .limit(10)
   end
   
   def user_activity
