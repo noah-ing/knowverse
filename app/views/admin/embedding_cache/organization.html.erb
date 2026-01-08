@@ -1,76 +1,67 @@
 <div class="container mx-auto px-4 py-8">
   <!-- Header Card -->
-  <%= render 'shared/card', animation_delay: 0.1 do |card| %>
-    <% card.with_header do %>
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <div class="mr-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-lg font-semibold kv-text-primary">Embedding Cache: <%= @organization.name %></h1>
-            <p class="text-sm kv-text-secondary">Cache performance and management for this organization</p>
-          </div>
-        </div>
-        
-        <%= render 'shared/button', 
-                text: 'Back to Dashboard', 
-                url: admin_embedding_cache_dashboard_path, 
-                variant: 'secondary', 
-                size: 'sm',
-                icon: 'arrow-left',
-                animate: true,
-                animation_delay: 0.1 %>
-      </div>
-    <% end %>
-    
-    <% card.with_body do %>
-    
+  <% header_actions_content = capture do %>
+    <%= render partial: 'shared/button',
+            locals: {
+              text: 'Back to Dashboard',
+              url: admin_embedding_cache_dashboard_path,
+              variant: 'secondary',
+              size: 'sm',
+              icon: 'arrow-left',
+              animate: true
+            } %>
+  <% end %>
+
+  <%= render partial: 'shared/card',
+             locals: {
+               title: "Embedding Cache: #{@organization.name}",
+               subtitle: "Cache performance and management for this organization",
+               animate: "fade-in",
+               animate_delay: "0.1s",
+               header_actions: header_actions_content
+             } do %>
+
       <!-- Stats Cards Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 mt-4 animate-fade-in" style="animation-delay: 0.2s">
         <!-- Cache Stats Card -->
-        <%= render 'shared/card', animation_delay: 0.3, border: true do |stat_card| %>
-          <% stat_card.with_header do %>
-            <div class="flex items-center">
-              <div class="mr-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-sm font-medium kv-text-primary">Cache Statistics</h3>
-              </div>
-            </div>
-          <% end %>
-          
-          <% stat_card.with_body do %>
+        <% hit_rate = @stats.dig(:analytics, :hit_rate) || 0 %>
+        <% memory_size = @stats.dig(:memory, :size) || 0 %>
+        <% redis_size = @stats.dig(:redis, :size) || 0 %>
+        <% total_requests = @stats.dig(:analytics, :total_requests) || 0 %>
+        <% memory_bytes = @stats.dig(:memory, :memory_bytes) || 0 %>
+
+        <%= render partial: 'shared/card',
+                   locals: {
+                     title: "Cache Statistics",
+                     border: true,
+                     animate: "fade-in",
+                     animate_delay: "0.3s"
+                   } do %>
             <div class="space-y-3">
               <div class="flex justify-between animate-fade-in" style="animation-delay: 0.35s">
                 <span class="kv-text-secondary">Total Hit Rate:</span>
-                <span class="font-medium <%= @stats[:analytics][:hit_rate] > 0.8 ? 'text-green-600' : (@stats[:analytics][:hit_rate] > 0.5 ? 'text-yellow-600' : 'text-red-600') %>">
-                  <%= (@stats[:analytics][:hit_rate] * 100).round(2) %>%
+                <span class="font-medium <%= hit_rate > 0.8 ? 'text-green-600' : (hit_rate > 0.5 ? 'text-yellow-600' : 'text-red-600') %>">
+                  <%= (hit_rate * 100).round(2) %>%
                 </span>
               </div>
               <div class="flex justify-between animate-fade-in" style="animation-delay: 0.4s">
                 <span class="kv-text-secondary">Memory Tier Entries:</span>
-                <span class="kv-text-primary font-medium"><%= @stats[:memory][:size] %></span>
+                <span class="kv-text-primary font-medium"><%= memory_size %></span>
               </div>
               <div class="flex justify-between animate-fade-in" style="animation-delay: 0.45s">
                 <span class="kv-text-secondary">Redis Tier Entries:</span>
-                <span class="kv-text-primary font-medium"><%= @stats[:redis][:size] %></span>
+                <span class="kv-text-primary font-medium"><%= redis_size %></span>
               </div>
               <div class="flex justify-between animate-fade-in" style="animation-delay: 0.5s">
                 <span class="kv-text-secondary">Total Requests:</span>
-                <span class="kv-text-primary font-medium"><%= @stats[:analytics][:total_requests] %></span>
+                <span class="kv-text-primary font-medium"><%= total_requests %></span>
               </div>
               <div class="flex justify-between animate-fade-in" style="animation-delay: 0.55s">
                 <span class="kv-text-secondary">Memory Used:</span>
-                <span class="kv-text-primary font-medium"><%= (@stats[:memory][:memory_bytes].to_f / 1_048_576).round(2) %> MB</span>
+                <span class="kv-text-primary font-medium"><%= (memory_bytes.to_f / 1_048_576).round(2) %> MB</span>
               </div>
             </div>
-            
+
             <div class="mt-6 animate-fade-in" style="animation-delay: 0.6s">
               <h3 class="kv-text-primary text-md font-medium mb-3">Actions</h3>
               <div class="flex flex-wrap gap-2">
@@ -78,62 +69,54 @@
                   <%= hidden_field_tag :organization_id, @organization.id %>
                   <%= hidden_field_tag :source, 'popular_queries' %>
                   <%= hidden_field_tag :limit, 100 %>
-                  <%= render 'shared/button', 
-                        text: 'Warm Cache', 
-                        variant: 'primary',
-                        type: 'submit',
-                        icon: 'fire',
-                        animate: true,
-                        animation_delay: 0.1 %>
+                  <%= render partial: 'shared/button',
+                        locals: {
+                          text: 'Warm Cache',
+                          variant: 'primary',
+                          type: 'submit',
+                          icon: 'fire',
+                          animate: true
+                        } %>
                 <% end %>
-                
-                <%= form_tag admin_embedding_cache_clear_path, method: :delete, class: "inline-block", 
+
+                <%= form_tag admin_embedding_cache_clear_path, method: :delete, class: "inline-block",
                           data: { confirm: "Are you sure you want to clear the cache for this organization?" } do %>
                   <%= hidden_field_tag :organization_id, @organization.id %>
-                  <%= render 'shared/button', 
-                        text: 'Clear Cache', 
-                        variant: 'danger',
-                        type: 'submit',
-                        icon: 'trash',
-                        animate: true,
-                        animation_delay: 0.2 %>
+                  <%= render partial: 'shared/button',
+                        locals: {
+                          text: 'Clear Cache',
+                          variant: 'danger',
+                          type: 'submit',
+                          icon: 'trash',
+                          animate: true
+                        } %>
                 <% end %>
               </div>
             </div>
-          <% end %>
         <% end %>
-      
+
         <!-- Hit/Miss Chart Card -->
-        <%= render 'shared/card', animation_delay: 0.7, border: true do |stat_card| %>
-          <% stat_card.with_header do %>
-            <div class="flex items-center">
-              <div class="mr-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-                  <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-sm font-medium kv-text-primary">Hit/Miss Breakdown</h3>
-              </div>
-            </div>
-          <% end %>
-          
-          <% stat_card.with_body do %>
+        <%
+          hits = @stats.dig(:analytics, :hits).to_i
+          misses = @stats.dig(:analytics, :misses).to_i
+          memory_hits = @stats.dig(:analytics, :memory_hits).to_i
+          redis_hits = @stats.dig(:analytics, :redis_hits).to_i
+          total = hits + misses
+
+          hit_percent = total > 0 ? (hits.to_f / total * 100).round : 0
+          miss_percent = total > 0 ? (misses.to_f / total * 100).round : 0
+          memory_percent = hits > 0 ? (memory_hits.to_f / hits * 100).round : 0
+          redis_percent = hits > 0 ? (redis_hits.to_f / hits * 100).round : 0
+        %>
+
+        <%= render partial: 'shared/card',
+                   locals: {
+                     title: "Hit/Miss Breakdown",
+                     border: true,
+                     animate: "fade-in",
+                     animate_delay: "0.7s"
+                   } do %>
             <div class="h-64 flex items-center justify-center mt-4 animate-fade-in" style="animation-delay: 0.8s">
-          <% 
-            hits = @stats[:analytics][:hits].to_i
-            misses = @stats[:analytics][:misses].to_i
-            memory_hits = @stats[:analytics][:memory_hits].to_i
-            redis_hits = @stats[:analytics][:redis_hits].to_i
-            total = hits + misses
-            
-            hit_percent = total > 0 ? (hits.to_f / total * 100).round : 0
-            miss_percent = total > 0 ? (misses.to_f / total * 100).round : 0
-            memory_percent = hits > 0 ? (memory_hits.to_f / hits * 100).round : 0
-            redis_percent = hits > 0 ? (redis_hits.to_f / hits * 100).round : 0
-          %>
-          
               <div class="w-full">
                 <!-- Hit/Miss Ratio -->
                 <div class="mb-8 animate-fade-in" style="animation-delay: 0.85s">
@@ -145,7 +128,7 @@
                     <div class="h-full bg-green-500 rounded-full transition-all duration-1000" style="width: <%= hit_percent %>%"></div>
                   </div>
                 </div>
-                
+
                 <!-- Memory/Redis Hit Distribution -->
                 <div class="animate-fade-in" style="animation-delay: 0.9s">
                   <div class="flex justify-between mb-1">
@@ -159,29 +142,18 @@
                 </div>
               </div>
             </div>
-          <% end %>
         <% end %>
       </div>
-    <% end %>
   <% end %>
-  
+
   <!-- Domain Breakdown Card -->
-  <%= render 'shared/card', animation_delay: 1.0 do |card| %>
-    <% card.with_header do %>
-      <div class="flex items-center">
-        <div class="mr-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
-          </svg>
-        </div>
-        <div>
-          <h2 class="text-lg font-medium kv-text-primary">Domain Breakdown</h2>
-          <p class="text-sm kv-text-secondary">Cache statistics by knowledge domain</p>
-        </div>
-      </div>
-    <% end %>
-    
-    <% card.with_body do %>
+  <%= render partial: 'shared/card',
+             locals: {
+               title: "Domain Breakdown",
+               subtitle: "Cache statistics by knowledge domain",
+               animate: "fade-in",
+               animate_delay: "1.0s"
+             } do %>
       <% if @domains.present? %>
         <div class="overflow-x-auto mt-4 animate-fade-in" style="animation-delay: 1.1s">
           <table class="min-w-full divide-y divide-gray-200">
@@ -201,9 +173,9 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm kv-text-secondary">
                     <div class="flex items-center">
                       <div class="mr-2 w-24 bg-gray-200 rounded-full h-2.5">
-                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: <%= domain[:confidence] * 100 %>%"></div>
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: <%= (domain[:confidence] || 0) * 100 %>%"></div>
                       </div>
-                      <span><%= (domain[:confidence] * 100).round %>%</span>
+                      <span><%= ((domain[:confidence] || 0) * 100).round %>%</span>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -218,9 +190,8 @@
                 </tr>
               <% end %>
             </tbody>
-          </div>
+          </table>
         </div>
-      <% end %>
       <% else %>
         <div class="py-12 text-center animate-fade-in" style="animation-delay: 1.1s">
           <svg class="h-16 w-16 mx-auto kv-text-secondary mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -230,31 +201,21 @@
           <p class="kv-text-secondary">No domain-specific cache data available yet.</p>
         </div>
       <% end %>
-    <% end %>
   <% end %>
-  
+
   <!-- Popular Cached Queries Card -->
-  <%= render 'shared/card', animation_delay: 1.4 do |card| %>
-    <% card.with_header do %>
-      <div class="flex items-center">
-        <div class="mr-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 kv-text-secondary" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-          </svg>
-        </div>
-        <div>
-          <h2 class="text-lg font-medium kv-text-primary">Popular Cached Queries</h2>
-          <p class="text-sm kv-text-secondary">Most frequently accessed and cached search terms</p>
-        </div>
-      </div>
-    <% end %>
-    
-    <% card.with_body do %>
-      <% 
+  <%= render partial: 'shared/card',
+             locals: {
+               title: "Popular Cached Queries",
+               subtitle: "Most frequently accessed and cached search terms",
+               animate: "fade-in",
+               animate_delay: "1.4s"
+             } do %>
+      <%
         # This would typically be populated from the cache manager
         # For now, show a placeholder
       %>
-      
+
       <div class="py-12 text-center animate-fade-in" style="animation-delay: 1.5s">
         <svg class="h-16 w-16 mx-auto kv-text-secondary mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -262,6 +223,5 @@
         <h3 class="text-lg font-medium kv-text-primary mb-2">Query Statistics</h3>
         <p class="kv-text-secondary">Cache statistics for individual queries will appear here as they are used.</p>
       </div>
-    <% end %>
   <% end %>
 </div>

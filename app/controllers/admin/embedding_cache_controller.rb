@@ -7,16 +7,17 @@ module Admin
     def dashboard
       # Get cache manager
       @cache_manager = EmbeddingCache::CacheManager.instance
-      
-      # Get overall statistics
-      @stats = @cache_manager.stats
-      
+
+      # Get overall statistics with nil guard
+      @stats = @cache_manager&.stats || default_stats
+
       # Get statistics for all organizations (for admin view)
       @organizations = Organization.all.map do |org|
+        org_stats = @cache_manager&.organization_stats(org.id) || default_stats
         {
           id: org.id,
           name: org.name,
-          stats: @cache_manager.organization_stats(org.id)
+          stats: org_stats
         }
       end
     end
@@ -25,25 +26,26 @@ module Admin
     def organization
       # Get organization
       @organization = Organization.find(params[:id])
-      
+
       # Get cache manager
       @cache_manager = EmbeddingCache::CacheManager.instance
-      
-      # Get organization-specific statistics
-      @stats = @cache_manager.organization_stats(@organization.id)
-      
-      # Get domain information
+
+      # Get organization-specific statistics with nil guard
+      @stats = @cache_manager&.organization_stats(@organization.id) || default_stats
+
+      # Get domain information with nil guards
       @domains = []
-      if @stats[:redis][:domains].present?
-        @domains = @stats[:redis][:domains].map do |domain_data|
+      domains_data = @stats.dig(:redis, :domains)
+      if domains_data.present?
+        @domains = domains_data.map do |domain_data|
           domain_name = domain_data[:domain]
-          
+
           # Try to get confidence score for this domain
           confidence_score = DomainConfidenceScore.where(
             organization_id: @organization.id,
             domain: domain_name
           ).order(created_at: :desc).first
-          
+
           {
             name: domain_name,
             count: domain_data[:count],
@@ -95,12 +97,40 @@ module Admin
     end
     
     private
-    
+
     def ensure_admin
       unless current_user.admin?
         flash[:alert] = "You must be an administrator to access this page"
         redirect_to root_path
       end
+    end
+
+    # Default stats structure to avoid nil reference errors
+    def default_stats
+      {
+        memory: {
+          size: 0,
+          max_entries: 0,
+          memory_bytes: 0,
+          max_memory: 0
+        },
+        redis: {
+          size: 0,
+          organizations: [],
+          domains: []
+        },
+        analytics: {
+          hit_rate: 0,
+          memory_hit_rate: 0,
+          redis_hit_rate: 0,
+          total_requests: 0,
+          requests_per_second: 0,
+          hits: 0,
+          misses: 0,
+          memory_hits: 0,
+          redis_hits: 0
+        }
+      }
     end
   end
 end
