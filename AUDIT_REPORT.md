@@ -56,9 +56,9 @@
 |----------|-------|-------|-----------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 5 | 0 | 5 |
-| MEDIUM | 12 | 0 | 12 |
-| LOW | 12 | 0 | 12 |
-| INFO | 25 | - | - |
+| MEDIUM | 15 | 0 | 15 |
+| LOW | 17 | 0 | 17 |
+| INFO | 37 | - | - |
 
 ---
 
@@ -808,8 +808,250 @@ The KnowVerse codebase follows standard Rails conventions with a well-organized 
    - Document the architectural decisions for multi-language microservices
    - Consider adding ARCHITECTURE.md with service boundaries and data flow
 
-### V6-007: Code Quality - Performance
-*To be completed*
+### V6-007: Code Quality - Performance and Scalability
+
+#### Summary
+The application has a well-designed caching architecture with a two-tier embedding cache (memory + Redis) and uses background processing for heavy operations. However, several N+1 query patterns and potential performance bottlenecks were identified.
+
+#### N+1 Query Findings
+
+##### PERF-001: N+1 in Dashboard View (MEDIUM)
+- **Location**: `app/views/home/dashboard.html.erb:166`
+- **Description**: Direct query in view without preloading associations.
+- **Vulnerable Code**:
+  ```erb
+  <% current_organization.documents.order(created_at: :desc).limit(5).each do |doc| %>
+  ```
+- **Risk**: If documents access associated user or organization data in the loop, N+1 queries will occur.
+- **Remediation**: Move query to controller with eager loading:
+  ```ruby
+  @recent_documents = current_organization.documents
+                        .includes(:user)
+                        .order(created_at: :desc)
+                        .limit(5)
+  ```
+
+##### PERF-002: N+1 in Vectors Index View (MEDIUM)
+- **Location**: `app/views/vectors/index.html.erb:331, 340`
+- **Description**: Direct database queries in view iterate over documents.
+- **Vulnerable Code**:
+  ```erb
+  <% Document.where(organization_id: @organization&.id).limit(50).each do |doc| %>
+  ```
+- **Risk**: Queries executed in view layer, bypassing controller caching and eager loading.
+- **Remediation**: Move all queries to controller and use instance variables.
+
+##### PERF-003: N+1 in Admin Distributed Stats (MEDIUM)
+- **Location**: `app/controllers/admin/distributed_controller.rb:109, 126`
+- **Description**: Loops over all organizations with individual API calls to Qdrant.
+- **Vulnerable Code**:
+  ```ruby
+  Organization.all.map do |org|
+    stats = SearchRouter.stats(org.id)  # External API call per org
+  ```
+- **Risk**: Linear scaling with number of organizations; potential timeout for large deployments.
+- **Remediation**: Consider batch API endpoints or caching strategy for stats.
+
+##### PERF-004: N+1 in Organization Activity Timeline (LOW)
+- **Location**: `app/controllers/organizations_controller.rb:84-160`
+- **Description**: Activity timeline queries multiple models separately.
+- **Current Pattern**:
+  - Documents query (line 84)
+  - Processed documents query (line 99)
+  - SearchQuery query (line 117)
+  - ConversationSession query (line 135)
+  - VectorEmbedding query (line 154)
+- **Risk**: 5 separate queries for activity feed, though each is limited.
+- **Status**: Acceptable - queries are limited and scoped. Could be consolidated with UNION if performance issues arise.
+
+#### Good N+1 Prevention (INFO - Positive)
+
+##### PERF-005: Includes Used in Search Metrics
+- **Location**: `app/controllers/admin/search_metrics_controller.rb:29, 98, 104, 110`
+- **Code**: `.includes(:organization, :user)`
+- **Status**: Properly prevents N+1 for search query listings.
+
+##### PERF-006: Includes Used in Organizations Controller
+- **Location**: `app/controllers/organizations_controller.rb:174`
+- **Code**: `@organization.organization_users.includes(:user)`
+- **Status**: Properly prevents N+1 for member listings.
+
+##### PERF-007: Includes Used in Vectors Controller
+- **Location**: `app/controllers/vectors_controller.rb:13, 297, 357`
+- **Code**: `.includes(:vector_embedding)`, `.includes(vector_embedding: :document)`
+- **Status**: Proper eager loading for vector associations.
+
+#### Missing Index Analysis
+
+##### PERF-008: Database Indexes Well-Designed (INFO - Positive)
+- **Location**: `db/schema.rb`
+- **Findings**: Comprehensive indexing on:
+  - Foreign keys (all properly indexed)
+  - Status columns (documents, vector_embeddings, bulk_uploads)
+  - Composite indexes for common queries
+  - Unique constraints where appropriate
+- **Notable Indexes**:
+  ```ruby
+  index ["organization_id", "user_id"] on organization_users
+  index ["conversation_session_id", "created_at"] on conversation_messages
+  index ["organization_id", "query_text", "domain"] on domain_confidence_scores
+  ```
+
+##### PERF-009: Potential Missing Index (LOW)
+- **Location**: `documents` table
+- **Description**: No index on `created_at` column used frequently in ORDER BY clauses.
+- **Affected Queries**: Dashboard recent documents, activity timeline
+- **Remediation**: Add index for common sort operations:
+  ```ruby
+  add_index :documents, [:organization_id, :created_at]
+  ```
+
+#### Memory and Resource Management
+
+##### PERF-010: Two-Tier Embedding Cache (INFO - Positive)
+- **Location**: `app/services/embedding_cache/cache_manager.rb`
+- **Description**: Well-designed LRU memory cache + Redis persistence layer.
+- **Features**:
+  - Memory-first lookup for fast access
+  - Redis promotion for frequently accessed data
+  - Organization-scoped cache keys
+  - Analytics tracking for hits/misses
+  - Cache warming via background worker
+- **Status**: Excellent caching architecture.
+
+##### PERF-011: Redis Connection Management (LOW)
+- **Location**: `app/services/rate_limiter.rb:44`, `app/services/embedding_cache/redis_store.rb:29`
+- **Description**: Redis clients are instantiated in initializers, not connection-pooled.
+- **Current Code**:
+  ```ruby
+  @redis = Redis.new(url: redis_url)
+  ```
+- **Risk**: Under high load, connection exhaustion possible without pooling.
+- **Remediation**: Use connection pooling:
+  ```ruby
+  @redis = ConnectionPool.new(size: 10) { Redis.new(url: redis_url) }
+  ```
+
+##### PERF-012: Solid Cache for Rails Cache (INFO - Positive)
+- **Location**: `config/environments/production.rb:23`
+- **Configuration**: `config.cache_store = :solid_cache_store`
+- **Status**: Using database-backed cache appropriate for Rails 8.
+
+#### Blocking Operations Analysis
+
+##### PERF-013: ActionController::Live Properly Used (INFO - Positive)
+- **Location**: `app/controllers/rag_controller.rb:2`
+- **Description**: SSE streaming uses ActionController::Live for RAG responses.
+- **Features**:
+  - Proper SSE headers set
+  - Stream properly closed in ensure blocks
+  - Handles Warden authentication errors
+- **Status**: Well-implemented streaming.
+
+##### PERF-014: Background Processing Consistent (INFO - Positive)
+- **Location**: Various controllers and workers
+- **Description**: Heavy operations properly delegated to Sidekiq/Solid Queue.
+- **Examples**:
+  - Document processing via `TextExtractionWorker.perform_later`
+  - Embedding generation via `EmbeddingGenerationWorker.perform_later`
+  - Connector syncs via `*SyncWorker.perform_later`
+  - Cache warming via `CacheWarmingWorker.perform_async`
+- **Status**: Proper async processing for expensive operations.
+
+##### PERF-015: Sleep Usage in Workers (LOW)
+- **Location**: Multiple Sidekiq workers
+- **Description**: Sleep calls used for rate limiting external APIs.
+- **Examples**:
+  - `app/sidekiq/connectors/slack_sync_worker.rb:36` - `sleep 1`
+  - `app/sidekiq/connectors/notion_sync_worker.rb:39` - `sleep 0.5`
+  - `app/sidekiq/connectors/confluence_sync_worker.rb:42` - `sleep 0.2`
+- **Purpose**: Rate limiting external API calls
+- **Status**: Acceptable for background workers, prevents API throttling.
+
+##### PERF-016: Synchronous Processing for Single Documents (LOW)
+- **Location**: `app/controllers/documents_controller.rb:56`
+- **Description**: Single document uploads processed synchronously.
+- **Code Comment**: `# Always process synchronously for now to ensure it works`
+- **Risk**: Blocks request for large documents
+- **Status**: Intentional for reliability; batch uploads properly async.
+
+#### Caching Strategy Analysis
+
+##### PERF-017: Embedding Cache Architecture (INFO - Positive)
+- **Location**: `app/services/embedding_cache/`
+- **Components**:
+  - `CacheManager` - Singleton orchestrating two-tier cache
+  - `MemoryStore` - LRU in-memory cache
+  - `RedisStore` - Persistent Redis layer
+  - `EvictionStrategy` - Smart memory promotion
+  - `Analytics` - Hit/miss tracking
+  - `CacheWarmingWorker` - Background cache priming
+- **Features**:
+  - Organization-scoped keys
+  - Domain/model namespacing
+  - TTL-based expiration
+  - Warm cache from popular/recent queries
+- **Status**: Production-ready caching architecture.
+
+##### PERF-018: Search Results Caching (INFO - Positive)
+- **Location**: `app/controllers/search_controller.rb:77`
+- **Code**: `Rails.cache.write("search_results_#{search_query.id}", search_results, expires_in: 1.hour)`
+- **Status**: Search results cached for 1 hour.
+
+##### PERF-019: No View Fragment Caching Detected (LOW)
+- **Location**: `app/views/`
+- **Description**: No `cache` blocks found in ERB templates.
+- **Risk**: Repeated rendering of expensive view fragments.
+- **Candidates for Caching**:
+  - Document listings (filtered, paginated)
+  - Organization dashboard statistics
+  - Vector visualization components
+- **Remediation**: Add fragment caching for expensive partials:
+  ```erb
+  <% cache [@organization, "document_list", @documents.cache_key_with_version] do %>
+    ... expensive rendering ...
+  <% end %>
+  ```
+
+#### Performance Recommendations Summary
+
+| ID | Issue | Severity | Type | Status |
+|----|-------|----------|------|--------|
+| PERF-001 | N+1 in dashboard view | MEDIUM | N+1 | Open |
+| PERF-002 | N+1 in vectors index | MEDIUM | N+1 | Open |
+| PERF-003 | N+1 in admin stats | MEDIUM | N+1/API | Open |
+| PERF-004 | Activity timeline queries | LOW | N+1 | Acceptable |
+| PERF-005 | Includes in search metrics | INFO | N+1 | Good |
+| PERF-006 | Includes in org controller | INFO | N+1 | Good |
+| PERF-007 | Includes in vectors | INFO | N+1 | Good |
+| PERF-008 | Database indexes | INFO | Index | Good |
+| PERF-009 | Missing created_at index | LOW | Index | Recommended |
+| PERF-010 | Two-tier cache | INFO | Caching | Excellent |
+| PERF-011 | Redis connection pooling | LOW | Resource | Recommended |
+| PERF-012 | Solid Cache | INFO | Caching | Good |
+| PERF-013 | Live streaming | INFO | Async | Good |
+| PERF-014 | Background processing | INFO | Async | Good |
+| PERF-015 | Worker sleep calls | LOW | Blocking | Acceptable |
+| PERF-016 | Sync document processing | LOW | Blocking | Intentional |
+| PERF-017 | Embedding cache | INFO | Caching | Excellent |
+| PERF-018 | Search result caching | INFO | Caching | Good |
+| PERF-019 | No view caching | LOW | Caching | Recommended |
+
+#### Recommendations
+
+1. **High Priority**:
+   - Move view queries to controllers with proper eager loading (PERF-001, PERF-002)
+   - Add composite index on documents (organization_id, created_at)
+
+2. **Medium Priority**:
+   - Add Redis connection pooling for high-traffic deployments
+   - Consider caching admin stats with short TTL (PERF-003)
+   - Implement view fragment caching for expensive partials
+
+3. **Low Priority**:
+   - Document caching architecture decisions
+   - Consider consolidating activity timeline with UNION query if performance issues arise
+   - Add performance monitoring/APM integration
 
 ### V6-008: Frontend UX Audit
 *To be completed*
