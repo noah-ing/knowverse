@@ -70,51 +70,8 @@ Rails.application.config.session_store :cookie_store,
   same_site: :lax,
   expire_after: 24.hours
 
-# Rate limiting configuration (if Rack::Attack is available)
-if defined?(Rack::Attack)
-  Rails.application.configure do
-    config.middleware.use Rack::Attack
-  end
-
-  # Enable logging
-  ActiveSupport::Notifications.subscribe("throttle.rack_attack") do |name, start, finish, request_id, req|
-    Rails.logger.warn "Rate limit exceeded for IP: #{req.ip}"
-  end
-
-  # Rate limiting rules
-  Rack::Attack.throttle('general', limit: 300, period: 1.minute) do |req|
-    req.ip unless req.path.start_with?('/assets')
-  end
-
-  Rack::Attack.throttle('search', limit: 60, period: 1.minute) do |req|
-    req.ip if req.path.match?(/\/search/)
-  end
-
-  Rack::Attack.throttle('api', limit: 100, period: 1.minute) do |req|
-    req.ip if req.path.start_with?('/api')
-  end
-
-  # Login rate limiting - prevent brute force attacks (AUTH-001 fix)
-  Rack::Attack.throttle('login', limit: 5, period: 1.minute) do |req|
-    req.ip if req.path == '/users/sign_in' && req.post?
-  end
-
-  # Magic link rate limiting - prevent enumeration attacks
-  Rack::Attack.throttle('magic_link', limit: 3, period: 1.minute) do |req|
-    req.ip if req.path.include?('/magic_link') && req.post?
-  end
-
-  # Block suspicious requests
-  Rack::Attack.blocklist('fail2ban pentesters') do |req|
-    # Block known bad IPs
-    Rack::Attack::Fail2Ban.filter("pentesters-#{req.ip}", maxretry: 5, findtime: 10.minutes, bantime: 1.hour) do
-      req.path.match?(/\.(php|asp|aspx|jsp|cgi)$/) ||
-      req.path.include?('wp-admin') ||
-      req.path.include?('phpmyadmin') ||
-      req.user_agent&.include?('bot')
-    end
-  end
-end
+# Rate limiting configuration is now in config/initializers/rack_attack.rb
+# Rack::Attack middleware is automatically loaded by the gem
 
 # Enterprise audit logging
 class SecurityAuditLogger
