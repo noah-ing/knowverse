@@ -55,7 +55,7 @@ class Users::MagicLinksController < ApplicationController
           expires_at: Time.now + 15.minutes
         )
         
-        Rails.logger.info "[MagicLink] Created fallback login token: #{login_token.inspect}"
+        Rails.logger.info "[MagicLink] Created fallback login token for user: #{user.email}"
       end
 
       Rails.logger.info "[MagicLink] Sending email via Resend..."
@@ -93,13 +93,13 @@ class Users::MagicLinksController < ApplicationController
   
   def show
     token = params[:login_token]
-    Rails.logger.info "[MagicLink] Processing magic link with token: #{token}"
+    Rails.logger.info "[MagicLink] Processing magic link with token: #{Digest::SHA256.hexdigest(token.to_s)[0..7]}"
     
     begin
       user = User.find_by(login_token: token)
       
       if user.nil?
-        Rails.logger.warn "[MagicLink] No user found with token: #{token}"
+        Rails.logger.warn "[MagicLink] No user found with token hash: #{Digest::SHA256.hexdigest(token.to_s)[0..7]}"
         flash[:alert] = "Invalid login link. Please request a new one."
         redirect_to new_user_session_path and return
       end

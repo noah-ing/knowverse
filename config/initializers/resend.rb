@@ -4,8 +4,8 @@ require 'resend'
 # Set the API key
 Resend.api_key = ENV.fetch("RESEND_API_KEY")
 
-# Log information about the configuration for debugging
-Rails.logger.info "[Resend] Initialized with API key: #{Resend.api_key.present? ? 'Present (first 5 chars: ' + Resend.api_key.to_s.first(5) + ')' : 'Missing'}"
+# Log information about the configuration for debugging (without exposing key)
+Rails.logger.info "[Resend] Initialized with API key: #{Resend.api_key.present? ? 'Present' : 'Missing'}"
 
 # Check if ActionMailer is configured to use Resend
 if defined?(ActionMailer::Base) && ActionMailer::Base.delivery_methods.key?(:resend)
