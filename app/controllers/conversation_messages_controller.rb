@@ -64,7 +64,7 @@ class ConversationMessagesController < ApplicationController
     respond_to do |format|
       format.html { redirect_to organization_conversation_path(@organization, @conversation), alert: "Error creating messages: #{e.message}" }
       format.json { render json: { error: e.message }, status: :unprocessable_entity }
-      format.turbo_stream { render turbo_stream: turbo_stream.replace("new_message_form", html: "<div class='alert alert-danger'>#{e.message}</div>") }
+      format.turbo_stream { render turbo_stream: turbo_stream.replace("new_message_form", html: "<div class='alert alert-danger'>#{ERB::Util.html_escape(e.message)}</div>") }
     end
   end
   
