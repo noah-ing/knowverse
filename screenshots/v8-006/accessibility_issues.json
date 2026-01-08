@@ -1,0 +1,8 @@
+[
+  {
+    "severity": "LOW",
+    "category": "Accessibility",
+    "description": "No skip to main content link found",
+    "element": null
+  }
+]
