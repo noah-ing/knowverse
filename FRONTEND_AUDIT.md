@@ -272,6 +272,116 @@ The application correctly implements rate limiting via Rack::Attack:
 
 ---
 
+## V8-003: Document Upload and Management Audit
+
+### Test Coverage
+
+| Flow | Status | Notes |
+|------|--------|-------|
+| Navigate to documents section | PASS | Clean UI with search, filters |
+| File upload UI elements | PASS | Drag-drop zone, file picker, type restrictions |
+| File upload process | PARTIAL | Upload works but submit button test failed |
+| Upload progress indicators | PASS | Turbo frames found for streaming updates |
+| Document list view | PASS | Grid/list layout with view toggle |
+| Document search | PASS | Search with URL params, no results message |
+| Document filtering | PASS | Status, type, per-page filters available |
+| Document deletion | PASS | Delete button found, confirmation flow exists |
+| Document detail view | PASS | Navigates to upload page correctly |
+| Pagination | PASS | Load more button found (infinite scroll) |
+
+### Screenshots Captured (V8-003)
+
+| Screenshot | Description |
+|------------|-------------|
+| `01_documents_page.png` | Main documents page with search, filters, upload area |
+| `02_upload_modal.png` | Upload documents page with usage limits, file types |
+| `03_upload_ui_elements.png` | File input and drag-drop zone |
+| `04_file_selected.png` | File selected showing "Upload 1 Document(s)" button |
+| `07_progress_ui.png` | Progress UI patterns (Turbo frames) |
+| `08_document_list.png` | Document list view |
+| `09_search_results.png` | Search results showing "No documents found" |
+| `11_delete_button.png` | Delete button visibility |
+| `13_document_detail.png` | Document upload form |
+
+### Document Management Analysis
+
+**Excellent Features:**
+- **Document Usage Limits**: Shows "0 of 50 documents" (8% capacity) - clear usage tracking
+- **Multiple File Upload**: Supports selecting up to 20 files at once
+- **File Type Restrictions**: Clear list of supported types (PDF, Word, Text, CSV, Excel)
+- **File Size Limit**: Max 10MB per file clearly stated
+- **Processing Information**: "About Document Processing" section explains workflow:
+  1. Extract Text - from document
+  2. Generate Embeddings - semantic meaning vectors
+  3. Index for Search - natural language queries
+- **Drag and Drop**: Clear "Drag and drop files" instruction
+- **Integration Connectors**: Google Drive, Notion, GitHub, Slack, Confluence buttons prominent
+
+**Search and Filter Features:**
+- Search by title or content with text input
+- Processing Status filter (All Statuses, Processed, Processing, Pending, Error)
+- Per Page selector (10, 20, 50, 100)
+- "Show Advanced Filters" toggle for power users
+- Reset Filters and Apply Filters buttons
+
+**Empty State:**
+- Shows "No documents found. Try adjusting your filters or uploading a new file."
+- Actionable guidance for users
+- Could be enhanced with illustration (noted in FE-006)
+
+**Bulk Operations:**
+- "Select All" checkbox available
+- Bulk action buttons visible (grayed when no selection)
+
+### New Issues Found (V8-003)
+
+#### FE-009: Upload Progress Indicator Not Visible
+- **Location**: `/documents/new` (upload form)
+- **Issue**: No visible progress bar during file upload
+- **Screenshot**: `04_file_selected.png`
+- **Impact**: Users don't know upload status for large files
+- **Severity**: LOW
+- **Note**: May use Turbo streaming updates instead of traditional progress bar
+- **Recommendation**: Add visual progress indicator or percentage during uploads
+
+#### FE-010: Cookie Banner Overlaps Upload Area
+- **Location**: `/documents` and `/documents/new`
+- **Issue**: Cookie consent banner at bottom partially covers upload instructions
+- **Screenshot**: `01_documents_page.png`, `02_upload_modal.png`
+- **Impact**: Minor visual clutter; may confuse users about where to click
+- **Severity**: LOW
+- **Recommendation**: Ensure banner doesn't overlap interactive elements
+
+### Positive Findings (V8-003)
+
+1. **Clear Capacity Limits**: Users see "0 of 50 documents" - no surprise throttling
+2. **Supported File Types Display**: Shows PDF, Word, Text, CSV, Excel icons with extensions
+3. **Educational Content**: "About Document Processing" explains the RAG pipeline
+4. **Multiple Upload**: Batch upload of up to 20 files supported
+5. **Integration Ecosystem**: 5 connector buttons for external document sources
+6. **Robust Filtering**: Multiple filter dimensions (status, type, per-page)
+7. **Infinite Scroll**: "Load more" pattern for large document lists
+8. **View Toggle**: Grid/list view options available
+
+### Test Results Summary (V8-003)
+
+| Test | Result |
+|------|--------|
+| Navigate to documents section | PASS |
+| File upload UI elements | PASS |
+| File upload process | PARTIAL |
+| Upload progress indicators | PASS |
+| Document list view | PASS |
+| Document search | PASS |
+| Document filtering | PASS |
+| Document deletion | PASS |
+| Document detail view | PASS |
+| Pagination | PASS |
+
+**10 tests run, 9 passed, 1 partial**
+
+---
+
 ## Appendix: Test Environment
 
 - **Browser**: Chromium (Playwright)

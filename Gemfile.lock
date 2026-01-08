@@ -99,6 +99,9 @@ GEM
     brakeman (7.0.0)
       racc
     builder (3.3.0)
+    bullet (8.1.0)
+      activesupport (>= 3.0.0)
+      uniform_notifier (~> 1.11)
     capybara (3.40.0)
       addressable
       matrix
@@ -376,6 +379,8 @@ GEM
     raabro (1.4.0)
     racc (1.8.1)
     rack (3.1.12)
+    rack-attack (6.8.0)
+      rack (>= 1.0, < 4)
     rack-oauth2 (2.3.0)
       activesupport
       attr_required
@@ -595,6 +600,7 @@ GEM
     unicode-display_width (3.1.4)
       unicode-emoji (~> 4.0, >= 4.0.4)
     unicode-emoji (4.0.4)
+    uniform_notifier (1.18.0)
     uri (1.0.3)
     useragent (0.16.11)
     validate_url (1.0.15)
@@ -646,6 +652,7 @@ DEPENDENCIES
   benchmark-ips (~> 2.12)
   bootsnap
   brakeman
+  bullet
   capybara
   chartkick
   colorize (~> 1.1)
@@ -680,6 +687,7 @@ DEPENDENCIES
   propshaft
   puma (>= 5.0)
   pundit (~> 2.3)
+  rack-attack (~> 6.7)
   rails (~> 8.0.2)
   redis (~> 5.0)
   redis-namespace (~> 1.11)

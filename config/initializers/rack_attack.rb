@@ -5,6 +5,14 @@ class Rack::Attack
   # Use Rails cache store for throttle tracking
   Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
 
+  # === SAFELIST CONFIGURATION ===
+
+  # Safelist localhost in test/development for Playwright testing
+  safelist('allow_localhost_in_test') do |req|
+    # Allow localhost requests in test/development environments
+    Rails.env.test? || Rails.env.development? && req.ip == '127.0.0.1'
+  end
+
   # === THROTTLE CONFIGURATION ===
 
   # General API rate limiting: 100 requests per minute

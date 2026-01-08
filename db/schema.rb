@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_28_222301) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_08_100001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -139,6 +139,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_28_222301) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["conversation_session_id", "created_at"], name: "idx_conv_msgs_on_conv_session_id_and_created_at"
+    t.index ["conversation_session_id", "role"], name: "idx_conv_msgs_session_role"
     t.index ["conversation_session_id"], name: "index_conversation_messages_on_conversation_session_id"
     t.index ["role"], name: "index_conversation_messages_on_role"
   end
@@ -204,7 +205,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_28_222301) do
     t.index ["bulk_upload_id"], name: "index_documents_on_bulk_upload_id"
     t.index ["document_source_id", "external_id"], name: "index_documents_on_document_source_id_and_external_id", unique: true, where: "(document_source_id IS NOT NULL)"
     t.index ["document_source_id"], name: "index_documents_on_document_source_id"
+    t.index ["organization_id", "created_at"], name: "idx_documents_org_created_at"
+    t.index ["organization_id", "status"], name: "idx_documents_org_status"
     t.index ["organization_id"], name: "index_documents_on_organization_id"
+    t.index ["user_id", "created_at"], name: "idx_documents_user_created_at"
     t.index ["user_id"], name: "index_documents_on_user_id"
   end
 
@@ -564,9 +568,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_28_222301) do
     t.string "provider"
     t.string "uid"
     t.bigint "sso_organization_id"
+    t.integer "failed_attempts", default: 0, null: false
+    t.string "unlock_token"
+    t.datetime "locked_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true, where: "(provider IS NOT NULL)"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["unlock_token"], name: "index_users_on_unlock_token", unique: true
   end
 
   create_table "vector_embeddings", force: :cascade do |t|
@@ -581,6 +589,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_28_222301) do
     t.integer "dimension", default: 768
     t.string "domain", limit: 255, default: "general"
     t.index ["dimension"], name: "index_vector_embeddings_on_dimension"
+    t.index ["document_id", "status"], name: "idx_vector_emb_doc_status"
     t.index ["document_id"], name: "index_vector_embeddings_on_document_id"
     t.index ["embedding_model"], name: "index_vector_embeddings_on_model_name"
     t.index ["status"], name: "index_vector_embeddings_on_status"
