@@ -7,7 +7,10 @@ that agents can use during their reasoning process.
 
 import logging
 import asyncio
+import ast
 import json
+import math
+import operator
 import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Callable, Union
@@ -15,6 +18,185 @@ from enum import Enum
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
+
+
+class SafeMathEvaluator:
+    """
+    Safe mathematical expression evaluator using AST parsing.
+
+    This replaces eval() with a whitelist-based approach that only allows
+    safe mathematical operations. It walks the AST and rejects any
+    dangerous nodes like function calls to arbitrary functions, attribute
+    access, or code execution.
+    """
+
+    # Allowed binary operators
+    BINARY_OPS = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.FloorDiv: operator.floordiv,
+        ast.Mod: operator.mod,
+        ast.Pow: operator.pow,
+    }
+
+    # Allowed unary operators
+    UNARY_OPS = {
+        ast.UAdd: operator.pos,
+        ast.USub: operator.neg,
+    }
+
+    # Allowed math functions (whitelist)
+    SAFE_FUNCTIONS = {
+        'abs': abs,
+        'round': round,
+        'min': min,
+        'max': max,
+        'sum': sum,
+        'len': len,
+        'pow': pow,
+        'sqrt': math.sqrt,
+        'log': math.log,
+        'log10': math.log10,
+        'sin': math.sin,
+        'cos': math.cos,
+        'tan': math.tan,
+        'asin': math.asin,
+        'acos': math.acos,
+        'atan': math.atan,
+        'ceil': math.ceil,
+        'floor': math.floor,
+        'exp': math.exp,
+    }
+
+    # Allowed constants
+    SAFE_CONSTANTS = {
+        'pi': math.pi,
+        'e': math.e,
+        'tau': math.tau,
+        'inf': math.inf,
+    }
+
+    def __init__(self, variables: Optional[Dict[str, Any]] = None):
+        """Initialize with optional variable bindings."""
+        self.variables = variables or {}
+
+    def evaluate(self, expression: str) -> Any:
+        """
+        Safely evaluate a mathematical expression.
+
+        Args:
+            expression: Mathematical expression string
+
+        Returns:
+            Result of the calculation
+
+        Raises:
+            ValueError: If expression contains unsafe operations
+            SyntaxError: If expression is malformed
+        """
+        # Input validation - reject obviously malicious patterns
+        if len(expression) > 1000:
+            raise ValueError("Expression too long (max 1000 characters)")
+
+        # Reject dangerous patterns before parsing
+        dangerous_patterns = [
+            '__', 'import', 'exec', 'eval', 'compile', 'open', 'file',
+            'input', 'raw_input', 'reload', 'globals', 'locals', 'vars',
+            'getattr', 'setattr', 'delattr', 'hasattr', 'dir', 'type',
+            'isinstance', 'issubclass', 'callable', 'classmethod', 'staticmethod',
+            'property', 'super', 'object', 'help', 'breakpoint', 'memoryview',
+            'bytearray', 'bytes', 'frozenset', 'set', 'dict', 'list', 'tuple',
+            'lambda', 'class', 'def', 'yield', 'async', 'await', 'with', 'as',
+        ]
+        expr_lower = expression.lower()
+        for pattern in dangerous_patterns:
+            if pattern in expr_lower:
+                raise ValueError(f"Unsafe pattern detected: {pattern}")
+
+        try:
+            tree = ast.parse(expression, mode='eval')
+        except SyntaxError as e:
+            raise ValueError(f"Invalid expression syntax: {e}")
+
+        return self._eval_node(tree.body)
+
+    def _eval_node(self, node: ast.AST) -> Any:
+        """Recursively evaluate an AST node."""
+
+        # Numbers (int, float, complex)
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, (int, float, complex)):
+                return node.value
+            raise ValueError(f"Unsupported constant type: {type(node.value)}")
+
+        # For Python < 3.8 compatibility
+        if isinstance(node, ast.Num):
+            return node.n
+
+        # Variable/name lookup
+        if isinstance(node, ast.Name):
+            name = node.id
+            # Check variables first
+            if name in self.variables:
+                val = self.variables[name]
+                if isinstance(val, (int, float, complex)):
+                    return val
+                raise ValueError(f"Variable '{name}' must be numeric")
+            # Check constants
+            if name in self.SAFE_CONSTANTS:
+                return self.SAFE_CONSTANTS[name]
+            # Check if it's a function name (will be handled in Call)
+            if name in self.SAFE_FUNCTIONS:
+                return name  # Return the name for function lookup
+            raise ValueError(f"Unknown variable: {name}")
+
+        # Binary operations (a + b, a * b, etc.)
+        if isinstance(node, ast.BinOp):
+            left = self._eval_node(node.left)
+            right = self._eval_node(node.right)
+            op_type = type(node.op)
+            if op_type not in self.BINARY_OPS:
+                raise ValueError(f"Unsupported operator: {op_type.__name__}")
+            return self.BINARY_OPS[op_type](left, right)
+
+        # Unary operations (-a, +a)
+        if isinstance(node, ast.UnaryOp):
+            operand = self._eval_node(node.operand)
+            op_type = type(node.op)
+            if op_type not in self.UNARY_OPS:
+                raise ValueError(f"Unsupported unary operator: {op_type.__name__}")
+            return self.UNARY_OPS[op_type](operand)
+
+        # Function calls (sqrt(x), sin(y), etc.)
+        if isinstance(node, ast.Call):
+            if not isinstance(node.func, ast.Name):
+                raise ValueError("Only simple function calls allowed")
+
+            func_name = node.func.id
+            if func_name not in self.SAFE_FUNCTIONS:
+                raise ValueError(f"Unknown or unsafe function: {func_name}")
+
+            # Evaluate arguments
+            args = [self._eval_node(arg) for arg in node.args]
+
+            # Reject keyword arguments for safety
+            if node.keywords:
+                raise ValueError("Keyword arguments not supported")
+
+            return self.SAFE_FUNCTIONS[func_name](*args)
+
+        # Comparison operations (for min/max with multiple args)
+        if isinstance(node, ast.Compare):
+            raise ValueError("Comparison operators not supported in expressions")
+
+        # Tuple/List (for functions like max(1, 2, 3))
+        if isinstance(node, (ast.Tuple, ast.List)):
+            return [self._eval_node(elem) for elem in node.elts]
+
+        # Reject everything else
+        raise ValueError(f"Unsupported expression type: {type(node).__name__}")
 
 
 class ToolParameterType(str, Enum):
@@ -342,7 +524,6 @@ class ToolRegistry:
             variables: Optional[Dict[str, Any]] = None
         ) -> Dict[str, Any]:
             """Perform mathematical or date calculations safely."""
-            import math
             from dateutil import parser as date_parser
             from dateutil.relativedelta import relativedelta
 
@@ -401,22 +582,10 @@ class ToolRegistry:
                     raise ToolError("calculate", f"Date calculation failed: {str(e)}")
 
             else:
-                # Math calculation
+                # Math calculation using SafeMathEvaluator (replaces unsafe eval)
                 try:
-                    # Create safe namespace with math functions
-                    safe_dict = {
-                        'abs': abs, 'round': round, 'min': min, 'max': max,
-                        'sum': sum, 'len': len, 'pow': pow,
-                        'sqrt': math.sqrt, 'log': math.log, 'log10': math.log10,
-                        'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
-                        'pi': math.pi, 'e': math.e,
-                        **variables
-                    }
-
-                    # Sanitize expression (remove dangerous characters)
-                    sanitized = re.sub(r'[^0-9+\-*/%().a-zA-Z_ ]', '', expression)
-
-                    result = eval(sanitized, {"__builtins__": {}}, safe_dict)
+                    evaluator = SafeMathEvaluator(variables=variables)
+                    result = evaluator.evaluate(expression)
 
                     return {
                         "result": result,
@@ -424,6 +593,8 @@ class ToolRegistry:
                         "type": "math"
                     }
 
+                except ValueError as e:
+                    raise ToolError("calculate", f"Invalid expression: {str(e)}")
                 except Exception as e:
                     raise ToolError("calculate", f"Math calculation failed: {str(e)}")
 
