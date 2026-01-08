@@ -1,0 +1,66 @@
+{
+  "screenshots": [
+    {
+      "filename": "01_404_page.png",
+      "description": "404 error page"
+    },
+    {
+      "filename": "02_404_api.png",
+      "description": "API 404 response"
+    },
+    {
+      "filename": "03_registration_empty.png",
+      "description": "Registration form empty state"
+    },
+    {
+      "filename": "04_registration_validation.png",
+      "description": "Registration form validation errors"
+    },
+    {
+      "filename": "05_registration_invalid_email.png",
+      "description": "Invalid email validation"
+    },
+    {
+      "filename": "06_registration_short_password.png",
+      "description": "Short password validation"
+    },
+    {
+      "filename": "07_login_before_submit.png",
+      "description": "Login form before invalid submit"
+    },
+    {
+      "filename": "08_login_error.png",
+      "description": "Login error state"
+    }
+  ],
+  "positiveFindings": [
+    "Form validation: 3 error messages displayed",
+    "Password length validation message displayed",
+    "Login error message displayed",
+    "User stays on login page after failed attempt"
+  ],
+  "issues": [
+    {
+      "severity": "MEDIUM",
+      "id": "FE-023",
+      "title": "No clear 404 heading",
+      "description": "The 404 page lacks a clear \"Page Not Found\" heading",
+      "screenshot": null
+    },
+    {
+      "severity": "MEDIUM",
+      "id": "FE-024",
+      "title": "No navigation from 404",
+      "description": "404 page lacks clear navigation back to main site",
+      "screenshot": null
+    },
+    {
+      "severity": "CRITICAL",
+      "id": "FE-001",
+      "title": "404 page exposes debug info",
+      "description": "The 404 page shows Rails debug/exception information in production mode",
+      "screenshot": "01_404_page.png"
+    }
+  ],
+  "timestamp": "2026-01-08T19:10:10.616Z"
+}
