@@ -56,9 +56,9 @@
 |----------|-------|-------|-----------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 5 | 0 | 5 |
-| MEDIUM | 8 | 0 | 8 |
-| LOW | 8 | 0 | 8 |
-| INFO | 13 | - | - |
+| MEDIUM | 12 | 0 | 12 |
+| LOW | 12 | 0 | 12 |
+| INFO | 25 | - | - |
 
 ---
 
@@ -587,8 +587,226 @@ The application has generally good secrets management with proper .gitignore con
 | DATA-013 | Model validations | INFO | models | Good |
 | DATA-014 | No CORS config | LOW | (missing) | Acceptable |
 
-### V6-006: Code Quality - Architecture
-*To be completed*
+### V6-006: Code Quality - Architecture and Organization
+
+#### Summary
+The KnowVerse codebase follows standard Rails conventions with a well-organized structure. However, several code quality issues were identified including large controller files, bare exception handling patterns, and missing model concerns for shared behavior.
+
+#### Project Structure Analysis
+
+##### ARCH-001: Project Structure (INFO - Positive)
+- **Description**: The application follows Rails conventions with clear separation.
+- **Structure**:
+  ```
+  app/
+  ├── controllers/          # 17 controllers (REST + admin)
+  │   ├── admin/            # 5 admin controllers
+  │   ├── api/              # API v1 controllers
+  │   ├── connectors/       # 5 connector controllers (OAuth flows)
+  │   └── users/            # Auth controllers
+  ├── models/               # 25 models with associations
+  │   ├── concerns/         # Empty (missed opportunity)
+  │   └── ahoy/             # Analytics models
+  ├── services/             # 27 service objects
+  │   ├── billing/          # Subscription services
+  │   ├── connectors/       # OAuth service objects
+  │   ├── embedding_cache/  # Caching layer
+  │   ├── infrastructure/   # Rate limiting, metrics
+  │   ├── mcp/              # Model Context Protocol
+  │   ├── search/           # Search services
+  │   └── vector_store/     # Qdrant integration
+  ├── sidekiq/              # Background workers
+  │   ├── bulk_processing/  # Batch uploads
+  │   ├── connectors/       # Sync workers
+  │   ├── document_processing/  # ML pipeline
+  │   └── embedding_cache/  # Cache warming
+  └── views/                # ERB templates with Turbo
+
+  services/                 # External microservices
+  ├── haystack/             # Python ML service (FastAPI)
+  ├── document-processor/   # Rust doc processor
+  └── embedding-rust/       # Rust embedding service
+  ```
+- **Status**: Well-organized multi-language microservices architecture.
+
+##### ARCH-002: Large Controller Files (MEDIUM)
+- **Description**: Several controllers exceed recommended size, indicating potential for refactoring.
+- **Findings**:
+  | Controller | Lines | Recommendation |
+  |------------|-------|----------------|
+  | rag_controller.rb | 599 | Split into concerns or service objects |
+  | vectors_controller.rb | 491 | Extract vector operations to service |
+  | documents_controller.rb | 447 | Move filtering/search to service |
+  | organizations_controller.rb | 237 | Consider extracting invitation logic |
+- **Best Practice**: Controllers should be <100 lines, delegating to services.
+- **Remediation**: Use service objects for complex business logic.
+
+##### ARCH-003: Empty Model Concerns Directory (LOW)
+- **Location**: `app/models/concerns/`
+- **Description**: The concerns directory exists but is empty (.keep file only). Shared model behavior could be extracted to concerns.
+- **Candidates for Concerns**:
+  - `Auditable` - common timestamp/audit patterns across models
+  - `Searchable` - shared search functionality (document, conversation)
+  - `Embeddable` - vector embedding behavior (document, vector_embedding)
+  - `OrganizationScoped` - common organization association patterns
+- **Remediation**: Extract shared model behavior to concerns for DRY code.
+
+##### ARCH-004: Service Object Pattern Inconsistency (LOW)
+- **Description**: Service objects have inconsistent patterns - some use class methods, others instance methods.
+- **Example (Class Methods)**:
+  ```ruby
+  # app/services/connectors/slack_service.rb
+  def self.client_id
+  def self.client_secret
+  def self.redirect_uri(organization_id)
+  ```
+- **Example (Instance Methods)**:
+  ```ruby
+  # app/services/haystack_client.rb
+  def initialize(config = {})
+  def search(options = {})
+  ```
+- **Recommendation**: Standardize on one pattern (prefer instance methods with dependency injection).
+
+#### DRY Violations
+
+##### ARCH-005: HTTP Request Methods Consolidated (INFO - Positive)
+- **Location**: `app/services/haystack_client.rb`
+- **Description**: HTTP methods (post_request, get_request) are properly consolidated in HaystackClient.
+- **Status**: Good encapsulation of HTTP logic.
+
+##### ARCH-006: Minimal TODO Comments (INFO - Positive)
+- **Finding**: Only 1 TODO found in codebase.
+- **Location**: `app/controllers/organizations_controller.rb`
+- **Content**: `# TODO: Implement invitation for non-existing users`
+- **Status**: Clean codebase with minimal technical debt markers.
+
+#### Error Handling
+
+##### ARCH-007: Bare Rescue Usage (MEDIUM)
+- **Description**: 30+ instances of bare `rescue => e` pattern found, primarily in Sidekiq workers.
+- **Locations**:
+  - `app/sidekiq/connectors/*.rb` (12 instances)
+  - `app/sidekiq/document_processing/*.rb` (14 instances)
+  - `app/models/streaming_element.rb` (2 instances)
+  - `app/models/conversation_session.rb` (3 instances)
+- **Risk**: Bare rescue catches all StandardError subclasses, potentially masking unexpected errors.
+- **Best Practice**: Rescue specific exception classes:
+  ```ruby
+  # Instead of:
+  rescue => e
+    Rails.logger.error("Failed: #{e.message}")
+
+  # Use:
+  rescue Net::OpenTimeout, Faraday::ConnectionFailed => e
+    Rails.logger.error("Network error: #{e.message}")
+  rescue JSON::ParserError => e
+    Rails.logger.error("Parse error: #{e.message}")
+  ```
+
+##### ARCH-008: Custom Exceptions Defined (INFO - Positive)
+- **Description**: The codebase defines custom exceptions for domain-specific errors.
+- **Examples**:
+  - `ExtractionError` - document extraction failures
+  - `EmbeddingGenerationError` - ML pipeline errors
+- **Status**: Good practice for error classification.
+
+##### ARCH-009: Logging Usage (INFO - Positive)
+- **Finding**: 316 Rails.logger calls across the codebase.
+- **Pattern**: Consistent use of Rails.logger.info/warn/error (no puts/print in production code except metrics exporter).
+- **Status**: Proper logging hygiene.
+
+#### Code Style
+
+##### ARCH-010: RuboCop Configuration (INFO - Positive)
+- **Location**: `.rubocop.yml`
+- **Description**: Project uses rubocop-rails-omakase gem for Rails-style enforcement.
+- **Status**: Standardized style guide in place.
+
+##### ARCH-011: Consistent Naming Conventions (INFO - Positive)
+- **Description**: Codebase follows Ruby/Rails naming conventions.
+- **Patterns**:
+  - Methods: snake_case (e.g., `apply_filters`, `generate_embeddings`)
+  - Classes: PascalCase (e.g., `HaystackClient`, `BulkUploadJob`)
+  - Constants: SCREAMING_SNAKE_CASE (e.g., `VALID_FILE_TYPES`, `MAX_CONTEXT_MESSAGES`)
+  - Variables: snake_case
+- **Status**: Consistent throughout.
+
+##### ARCH-012: Magic Numbers in Constants (INFO - Positive)
+- **Description**: Magic numbers are extracted to named constants.
+- **Examples**:
+  ```ruby
+  CHUNK_SIZE = 450
+  CHUNK_OVERLAP = 50
+  MAX_CONTEXT_MESSAGES = 10
+  VALID_FILE_TYPES = %w[pdf docx doc txt...].freeze
+  ```
+- **Status**: Good practice followed.
+
+#### Dead Code and Unused Imports
+
+##### ARCH-013: Minimal Commented Code (INFO - Positive)
+- **Finding**: Comments are primarily documentation, not commented-out code.
+- **Status**: Clean codebase with no significant dead code.
+
+##### ARCH-014: Manual Requires (LOW)
+- **Finding**: 10 files use `require` or `require_relative`.
+- **Locations**: Mostly in services that integrate with external systems (Redis, Qdrant).
+- **Assessment**: Acceptable for non-autoloaded code paths.
+
+#### Separation of Concerns
+
+##### ARCH-015: Controller Responsibilities (MEDIUM)
+- **Description**: Some controllers mix presentation and business logic.
+- **Examples**:
+  - `rag_controller.rb:541` - Private method `find_or_create_conversation` could be a service
+  - `documents_controller.rb:372` - `apply_filters` method duplicates search service logic
+- **Remediation**: Extract business logic to dedicated service objects.
+
+##### ARCH-016: Service Layer Well-Defined (INFO - Positive)
+- **Description**: 27 service objects provide good separation.
+- **Notable Services**:
+  - `HaystackClient` - ML service integration (1241 lines - should be split)
+  - `UnifiedSearchService` - Search abstraction
+  - `QdrantClusterAdapter` - Vector store integration
+  - `RateLimiter` - Rate limiting abstraction
+- **Status**: Good service object adoption.
+
+#### Summary Table
+
+| ID | Issue | Severity | Location | Status |
+|----|-------|----------|----------|--------|
+| ARCH-001 | Project structure | INFO | (overall) | Good |
+| ARCH-002 | Large controllers | MEDIUM | rag, vectors, documents | Refactor needed |
+| ARCH-003 | Empty concerns | LOW | models/concerns | Opportunity |
+| ARCH-004 | Service patterns | LOW | services/ | Inconsistent |
+| ARCH-005 | HTTP methods | INFO | haystack_client.rb | Good |
+| ARCH-006 | TODO comments | INFO | organizations_controller | Clean |
+| ARCH-007 | Bare rescue | MEDIUM | sidekiq workers | 30+ instances |
+| ARCH-008 | Custom exceptions | INFO | workers | Good |
+| ARCH-009 | Logging usage | INFO | (overall) | Good |
+| ARCH-010 | RuboCop config | INFO | .rubocop.yml | Good |
+| ARCH-011 | Naming conventions | INFO | (overall) | Good |
+| ARCH-012 | Named constants | INFO | models, workers | Good |
+| ARCH-013 | Dead code | INFO | (overall) | Clean |
+| ARCH-014 | Manual requires | LOW | services | Acceptable |
+| ARCH-015 | Controller logic | MEDIUM | controllers | Split needed |
+| ARCH-016 | Service layer | INFO | services/ | Good |
+
+#### Recommendations Summary
+
+1. **High Priority**:
+   - Split large controllers (rag, vectors, documents) into smaller controllers or extract to services
+   - Replace bare `rescue => e` with specific exception classes in Sidekiq workers
+
+2. **Medium Priority**:
+   - Create model concerns for shared behavior (Auditable, Searchable, Embeddable)
+   - Split HaystackClient (1241 lines) into smaller, focused service classes
+   - Standardize service object patterns (prefer instance methods)
+
+3. **Low Priority**:
+   - Document the architectural decisions for multi-language microservices
+   - Consider adding ARCHITECTURE.md with service boundaries and data flow
 
 ### V6-007: Code Quality - Performance
 *To be completed*
