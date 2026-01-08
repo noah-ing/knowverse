@@ -1,0 +1,32 @@
+{
+  "screenshots": [
+    {
+      "filename": "03_message_typed.png",
+      "description": "Test message typed"
+    },
+    {
+      "filename": "04_after_submit.png",
+      "description": "After message submission"
+    },
+    {
+      "filename": "05_streaming_start.png",
+      "description": "Streaming response start"
+    },
+    {
+      "filename": "06_streaming_middle.png",
+      "description": "Streaming response middle"
+    },
+    {
+      "filename": "07_streaming_complete.png",
+      "description": "Streaming response complete"
+    }
+  ],
+  "positiveFindings": [
+    "Submit button clicked",
+    "Response received: ▌...",
+    "Streaming status shown during response generation",
+    "Streaming cursor visible (typing indicator)"
+  ],
+  "issues": [],
+  "timestamp": "2026-01-08T18:45:21.208Z"
+}
