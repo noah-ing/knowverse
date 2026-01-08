@@ -1,0 +1,105 @@
+{
+  "directory": "/Users/noah-ing/Desktop/knowverse",
+  "total_files": 45,
+  "total_lines": 18073,
+  "naming_conventions": {
+    "function_style": "mixed",
+    "class_style": "PascalCase",
+    "variable_style": "snake_case",
+    "constant_style": "UPPER_SNAKE_CASE",
+    "private_prefix": "_",
+    "samples": {
+      "functions": [
+        "load_wikipedia",
+        "load_arxiv",
+        "load_stackoverflow",
+        "ingest_dataset",
+        "show_status"
+      ],
+      "classes": [
+        "Chunk",
+        "EmbeddingBatch",
+        "ProgressTracker",
+        "SemanticChunker",
+        "LocalEmbedder"
+      ],
+      "variables": [
+        "logger",
+        "dataset",
+        "count",
+        "skipped",
+        "dataset"
+      ]
+    }
+  },
+  "type_hint_coverage": {
+    "functions_with_hints": 412,
+    "total_functions": 519,
+    "parameters_with_hints": 728,
+    "total_parameters": 821,
+    "return_type_coverage": 63.8,
+    "coverage_percentage": 88.7,
+    "style": "partial"
+  },
+  "docstring_style": {
+    "format": "simple",
+    "coverage_percentage": 85.0,
+    "average_length": 99,
+    "samples": [
+      "Elite Multi-Collection Ingestion Pipeline for KnowVerse.\n\nDesigned for scale: 100M+ vectors across multiple knowledge domains.\n\nArchitecture:\n- Collection-config driven (uses config/collections.py)\n- Local embeddings (e5-large-v2) for cost-effective scale\n- OpenAI embeddings for high-precision domains\n- Binary/scalar quantization per collection\n- Resume capability with progress tracking\n- Batch processing with memory management\n\nSupported datasets:\n- Wikipedia (6M+ articles) - General knowledge\n- arXiv (2M+ papers) - Scientific research\n- StackOverflow (23M+ Q&A) - Technical knowledge\n- MS MARCO (8.8M passages) - Benchmark/diverse\n\nUsage:\n    python scripts/ingest_elite.py --dataset wikipedia --limit 100000\n    python scripts/ingest_elite.py --dataset arxiv --categories cs.AI cs.LG\n    python scripts/ingest_elite.py --dataset stackoverflow --limit 1000000\n    python scripts/ingest_elite.py --list\n    python scripts/ingest_elite.py --status",
+      "Document chunk with position metadata.",
+      "Batch of embeddings with metadata."
+    ]
+  },
+  "import_style": {
+    "prefers_from_imports": true,
+    "groups_imports": true,
+    "relative_import_usage": 6.0,
+    "common_stdlib": [
+      "typing",
+      "logging",
+      "time",
+      "dataclasses",
+      "re"
+    ],
+    "common_third_party": [
+      "app",
+      "numpy",
+      "qdrant_client",
+      "config",
+      "haystack"
+    ]
+  },
+  "error_handling": {
+    "uses_bare_except": true,
+    "exception_specificity": "specific",
+    "try_block_count": 193,
+    "custom_exceptions": [
+      "ClarificationNeeded",
+      "ToolError"
+    ],
+    "common_handlers": [
+      "Exception",
+      "ImportError",
+      "ValueError",
+      "UnicodeDecodeError",
+      "ClarificationNeeded"
+    ]
+  },
+  "test_coverage": {
+    "has_tests": true,
+    "test_framework": "pytest",
+    "test_file_count": 7,
+    "test_to_source_ratio": 0.18,
+    "uses_fixtures": true,
+    "uses_mocks": true
+  },
+  "function_metrics": {
+    "average_length": 27.1,
+    "max_length": 241,
+    "average_complexity": 4.5,
+    "max_complexity": 38,
+    "total_functions": 519,
+    "deeply_nested_count": 509
+  }
+}
