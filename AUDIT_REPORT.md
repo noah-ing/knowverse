@@ -55,10 +55,10 @@
 | Severity | Count | Fixed | Remaining |
 |----------|-------|-------|-----------|
 | CRITICAL | 0 | 0 | 0 |
-| HIGH | 3 | 0 | 3 |
-| MEDIUM | 2 | 0 | 2 |
-| LOW | 1 | 0 | 1 |
-| INFO | 3 | - | - |
+| HIGH | 5 | 0 | 5 |
+| MEDIUM | 5 | 0 | 5 |
+| LOW | 5 | 0 | 5 |
+| INFO | 4 | - | - |
 
 ---
 
@@ -232,7 +232,162 @@ The application uses Devise with magic link authentication, standard database au
 - **Remediation**: Add rate limiting for MCP authentication failures
 
 ### V6-004: Injection Vulnerabilities
-*To be completed*
+
+#### Summary
+Multiple injection vulnerabilities were identified across the Rails and Python codebase. The most critical are SQL injection points via string interpolation in ILIKE queries and a sandboxed eval() in the Python tools module.
+
+#### SQL Injection Findings
+
+##### INJ-001: SQL Injection in Document Search (HIGH)
+- **Location**: `app/controllers/documents_controller.rb:277, 372`
+- **Description**: User input from `params[:q]` is interpolated directly into ILIKE queries without parameterization.
+- **Vulnerable Code**:
+  ```ruby
+  # Line 277 (search action)
+  @documents = @organization.documents.where("title ILIKE ? OR content ILIKE ?", "%#{@query}%", "%#{@query}%")
+
+  # Line 372 (apply_filters)
+  documents = documents.where("title ILIKE ? OR content ILIKE ?", "%#{params[:q]}%", "%#{params[:q]}%")
+  ```
+- **Exploit PoC**:
+  ```
+  GET /organizations/1/documents?q=%25' OR 1=1 --
+  ```
+- **Risk**: An authenticated user could extract data from other organizations, bypass access controls, or perform database enumeration.
+- **Remediation**: Use ActiveRecord's sanitize_sql_like:
+  ```ruby
+  sanitized_query = Document.sanitize_sql_like(params[:q])
+  documents.where("title ILIKE ? OR content ILIKE ?", "%#{sanitized_query}%", "%#{sanitized_query}%")
+  ```
+
+##### INJ-002: SQL Injection in MCP Tool Executor Fallback (HIGH)
+- **Location**: `app/services/mcp/tool_executor.rb:154`
+- **Description**: Same pattern - fallback search uses string interpolation in ILIKE.
+- **Vulnerable Code**:
+  ```ruby
+  .where("title ILIKE ? OR content ILIKE ?", "%#{query}%", "%#{query}%")
+  ```
+- **Remediation**: Same as INJ-001
+
+##### INJ-003: SQL Injection in Unified Search Service (MEDIUM)
+- **Location**: `app/services/search/unified_search_service.rb:108`
+- **Description**: Uses `sanitize_sql_like` in `Arel.sql()` but still constructs raw SQL.
+- **Code**:
+  ```ruby
+  .order(Arel.sql("ts_rank(to_tsvector('english', content), plainto_tsquery('english', '#{Document.sanitize_sql_like(query)}')) DESC"))
+  ```
+- **Risk**: Lower risk due to sanitization, but raw SQL construction is not ideal.
+- **Remediation**: Consider using pg_search gem or proper parameterized queries for full-text search.
+
+##### INJ-004: SQL Injection in Order By Clause (LOW)
+- **Location**: `app/controllers/documents_controller.rb:445`
+- **Description**: Sort field is interpolated into ORDER BY clause, but input is validated against allowlist.
+- **Code**:
+  ```ruby
+  valid_sort_fields = ['created_at', 'title', 'status', 'embedding_status', 'file_type', 'word_count', 'updated_at']
+  @sort_field = 'created_at' unless valid_sort_fields.include?(@sort_field)
+  documents.order("#{@sort_field} #{@sort_direction}")
+  ```
+- **Status**: Mitigated by allowlist validation, but should use Arel for better safety.
+
+##### INJ-005: SQL Injection in Rake Task (LOW)
+- **Location**: `lib/tasks/mark_migrations.rake:30`
+- **Description**: String interpolation in INSERT statement.
+- **Code**:
+  ```ruby
+  conn.execute("INSERT INTO schema_migrations (version) VALUES ('#{timestamp}')")
+  ```
+- **Risk**: Low - rake task only runs from admin context, timestamp comes from filename.
+- **Remediation**: Use parameterized query:
+  ```ruby
+  conn.execute("INSERT INTO schema_migrations (version) VALUES ($1)", [timestamp])
+  ```
+
+#### Command Injection Findings
+
+##### INJ-006: Sandboxed Eval in Python Tools (MEDIUM)
+- **Location**: `services/haystack/app/tools.py:419`
+- **Description**: The calculate tool uses eval() with attempted sandboxing.
+- **Code**:
+  ```python
+  # Sanitize expression (remove dangerous characters)
+  sanitized = re.sub(r'[^0-9+\-*/%().a-zA-Z_ ]', '', expression)
+  result = eval(sanitized, {"__builtins__": {}}, safe_dict)
+  ```
+- **Risk**: While __builtins__ is disabled and characters are filtered, Python eval sandboxing is notoriously difficult. Exploits may exist using attribute access on allowed objects.
+- **Remediation**: Replace with a proper expression parser like `ast.literal_eval` combined with a custom math evaluator, or use a library like `simpleeval`.
+
+##### INJ-007: Subprocess Call in DOC Extraction (LOW)
+- **Location**: `services/haystack/app/main.py:858`
+- **Description**: Uses subprocess.run() with list arguments (safe pattern).
+- **Code**:
+  ```python
+  result = subprocess.run(
+      ['antiword', temp_path],
+      capture_output=True,
+      text=True,
+      timeout=30
+  )
+  ```
+- **Status**: Safe - uses list arguments instead of shell=True, temp_path is controlled.
+
+#### XSS Findings
+
+##### INJ-008: Reflected XSS via Exception Message (MEDIUM)
+- **Location**: `app/controllers/conversation_messages_controller.rb:67`
+- **Description**: Exception message is rendered directly in HTML without escaping.
+- **Code**:
+  ```ruby
+  format.turbo_stream { render turbo_stream: turbo_stream.replace("new_message_form", html: "<div class='alert alert-danger'>#{e.message}</div>") }
+  ```
+- **Risk**: If exception message contains user-controlled data, XSS is possible.
+- **Remediation**: Use ERB::Util.html_escape or Rails' h() helper:
+  ```ruby
+  html: "<div class='alert alert-danger'>#{ERB::Util.html_escape(e.message)}</div>"
+  ```
+
+##### INJ-009: html_safe Usage in Views (LOW)
+- **Location**: `app/views/shared/_card.html.erb:72-78`, `app/views/shared/_button.html.erb:142-180`
+- **Description**: Multiple uses of `.html_safe` for data attributes and icons.
+- **Risk**: Low - values appear to be constructed from controlled data (CSS classes, attribute names), not user input.
+- **Status**: Review each use case during implementation.
+
+##### INJ-010: Sanitize with gsub in Search Results (LOW)
+- **Location**: `app/views/search/results.html.erb:296`
+- **Description**: Uses sanitize() with gsub to highlight search terms.
+- **Code**:
+  ```ruby
+  <%= sanitize result['context'].gsub(/\*\*(.*?)\*\*/, '<span class="font-semibold bg-yellow-100 px-1 rounded">\\1</span>') %>
+  ```
+- **Risk**: Low - sanitize() is called, which removes dangerous tags. The capture group content comes from the server-side bold markers.
+- **Status**: Acceptable if server-side boldening is trusted.
+
+#### Path Traversal Findings
+
+##### INJ-011: File Operations Use Controlled Paths (INFO - Positive)
+- **Location**: `app/controllers/admin/llm_providers_controller.rb:125-148`
+- **Description**: File operations use `Rails.root.join()` with hardcoded paths.
+- **Code**:
+  ```ruby
+  env_path = Rails.root.join('.env')
+  ```
+- **Status**: Safe - paths are not user-controlled.
+
+#### Summary Table
+
+| ID | Vulnerability | Severity | Location | Status |
+|----|--------------|----------|----------|--------|
+| INJ-001 | SQL Injection (Search) | HIGH | documents_controller.rb:277,372 | Open |
+| INJ-002 | SQL Injection (MCP) | HIGH | tool_executor.rb:154 | Open |
+| INJ-003 | SQL Injection (Full-text) | MEDIUM | unified_search_service.rb:108 | Open |
+| INJ-004 | SQL Injection (Order By) | LOW | documents_controller.rb:445 | Mitigated |
+| INJ-005 | SQL Injection (Rake) | LOW | mark_migrations.rake:30 | Open |
+| INJ-006 | Command Injection (eval) | MEDIUM | tools.py:419 | Open |
+| INJ-007 | Command Injection (subprocess) | LOW | main.py:858 | Safe |
+| INJ-008 | Reflected XSS | MEDIUM | conversation_messages_controller.rb:67 | Open |
+| INJ-009 | html_safe usage | LOW | shared views | Review |
+| INJ-010 | Sanitize with gsub | LOW | search/results.html.erb:296 | Acceptable |
+| INJ-011 | Path Traversal | INFO | llm_providers_controller.rb | Safe |
 
 ### V6-005: Data Exposure and Secrets
 *To be completed*
