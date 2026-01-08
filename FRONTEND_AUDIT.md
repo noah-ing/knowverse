@@ -171,6 +171,107 @@ The KnowVerse frontend demonstrates **professional design quality** with a cohes
 
 ---
 
+## V8-002: Registration and Login Flow Audit
+
+### Test Coverage
+
+| Flow | Status | Notes |
+|------|--------|-------|
+| Registration page load | PASS | Form renders with all fields |
+| Registration form fields | PASS | Name, Email, Password, Password confirmation |
+| Registration form validation | PASS | 6 character minimum hint shown |
+| Login page load | PASS | Clean UI with clear form fields |
+| Login with valid credentials | PASS | Redirects to dashboard |
+| Login with invalid credentials | FAIL | No error message displayed |
+| Password reset flow | PASS | "Forgot password?" link present |
+| Magic link login | PASS | Alternative passwordless option available |
+| Logout flow | PASS | Session ends properly |
+| Rate limiting | PASS | Rack::Attack blocks rapid requests |
+
+### Screenshots Captured (V8-002)
+
+| Screenshot | Description |
+|------------|-------------|
+| `03_login_page.png` | Login form with email, password, remember me, Magic Link |
+| `04_registration_page.png` | Registration form with all required fields |
+| `05_login_error.png` | Failed login (no visible error) |
+| `06_after_login.png` | Successful login redirect to dashboard |
+| `07_dashboard.png` | Unauthenticated redirect error message |
+| `08_documents.png` | Authenticated documents page |
+
+### Registration Flow Analysis
+
+**Positive Findings:**
+- Clean, centered form design
+- Clear field labels (Name, Email, Password, Password confirmation)
+- Password hint "6 characters minimum" helps users
+- "Sign in" link for existing users
+- Consistent visual design with rest of app
+
+**UX Friction Points:**
+- No inline validation - errors only shown after submit
+- No password strength indicator
+- No terms of service / privacy policy checkbox (may be intentional)
+
+### Login Flow Analysis
+
+**Positive Findings:**
+- Clean "Welcome back" heading
+- Email and password fields clearly labeled
+- "Remember me" checkbox for convenience
+- "Forgot password?" link prominent
+- Magic Link option for passwordless authentication
+- Sign up link at bottom for new users
+
+**UX Friction Points:**
+- **FE-002 (HIGH)**: No error message when login fails with invalid credentials
+  - User sees form reload but no indication of what went wrong
+  - Compare: Auth redirect shows "Error: You need to sign in..." message correctly
+  - Only failed login attempts lack feedback
+
+### Password Reset Flow Analysis
+
+**Positive Findings:**
+- "Forgot password?" link clearly visible on login form
+- Link navigates to password reset page
+- Standard email-based reset flow
+
+### Magic Link Flow Analysis
+
+**Positive Findings:**
+- "Or continue with" separator clearly distinguishes alternative
+- Magic Link button with email icon
+- Provides passwordless authentication option
+- Good accessibility for users who prefer not to remember passwords
+
+### Rate Limiting (Security Feature)
+
+The application correctly implements rate limiting via Rack::Attack:
+- Automated tests trigger rate limiting after rapid requests
+- Returns JSON: `{"error":"Blocked","message":"Your IP has been temporarily blocked due to suspicious activity."}`
+- This is a **positive security feature** that protects against brute force attacks
+- **Recommendation**: Add a user-friendly HTML error page for rate-limited requests instead of raw JSON
+
+### New Issues Found (V8-002)
+
+#### FE-007: Rate Limit Page Shows Raw JSON
+- **Location**: Any page when rate limited
+- **Issue**: When Rack::Attack blocks an IP, user sees raw JSON response
+- **Screenshot**: `v8-002/01_registration_page.png` (captured during rate limit)
+- **Impact**: Poor user experience; technical error message
+- **Severity**: LOW
+- **Recommendation**: Create custom 429 error page with friendly message and countdown timer
+
+#### FE-008: No Password Strength Indicator
+- **Location**: `/users/sign_up`
+- **Issue**: No visual feedback on password strength during registration
+- **Screenshot**: `04_registration_page.png`
+- **Impact**: Users may choose weak passwords without knowing
+- **Severity**: LOW
+- **Recommendation**: Add password strength meter (weak/medium/strong)
+
+---
+
 ## Appendix: Test Environment
 
 - **Browser**: Chromium (Playwright)
