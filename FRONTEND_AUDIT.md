@@ -512,6 +512,189 @@ The application correctly implements rate limiting via Rack::Attack:
 
 ---
 
+## V8-005: Admin Dashboard Audit
+
+### Test Coverage
+
+| Section | Status | Notes |
+|---------|--------|-------|
+| Admin Dashboard | PASS | Statistics, quick actions, system status |
+| Mission Control | PASS | Excellent NASA-style monitoring dashboard |
+| Users | PASS | Full CRUD with search, edit functionality |
+| Analytics | PASS | Visits, events, charts, recent activity |
+| Search Metrics | PASS | Search analytics page loads |
+| LLM Providers | **FAIL** | Rails error - NoMethodError |
+| Distributed Dashboard | **FAIL** | Rails error - NoMethodError |
+| Embedding Cache | **FAIL** | Rails error - NoMethodError |
+| Access Control | PASS | Non-admin properly redirected to login |
+
+### Screenshots Captured (V8-005)
+
+| Screenshot | Description |
+|------------|-------------|
+| `01_admin_dashboard.png` | Main admin dashboard with stats and quick actions |
+| `02_admin_mission_control.png` | Mission Control with system monitoring |
+| `03_admin_users_list.png` | User management table with search |
+| `04_admin_users_search.png` | User search results |
+| `05_admin_user_edit.png` | Edit user form (email, admin privileges) |
+| `06_admin_analytics.png` | Analytics dashboard with charts |
+| `07_admin_mission_control.png` | Mission Control detailed view |
+| `08_admin_search_metrics.png` | Search metrics page |
+| `09_admin_llm_providers.png` | LLM Providers - ERROR PAGE |
+| `10_admin_distributed.png` | Distributed Dashboard - ERROR PAGE |
+| `11_admin_access_control.png` | Access denied redirect for unauthenticated |
+| `13_admin_embedding_cache.png` | Embedding Cache - ERROR PAGE |
+
+### Critical Issues Found (V8-005)
+
+#### FE-013: LLM Providers Page Broken (CRITICAL)
+- **Location**: `/admin/llm_providers`
+- **Error**: `NoMethodError in Admin::LlmProviders#index`
+- **Message**: `undefined method 'with_header' for nil:NilClass`
+- **File**: `app/views/shared/_card.html.erb:100`
+- **Screenshot**: `09_admin_llm_providers.png`
+- **Impact**: Admin cannot manage LLM provider configuration
+- **Severity**: CRITICAL
+- **Recommendation**: Fix the card partial to handle nil values, or ensure controller provides required card object
+
+#### FE-014: Distributed Dashboard Page Broken (CRITICAL)
+- **Location**: `/admin/distributed/dashboard`
+- **Error**: `NoMethodError in Admin::Distributed#dashboard`
+- **Message**: `undefined method '[]' for nil:NilClass`
+- **File**: `app/views/shared/_card.html.erb:100`
+- **Screenshot**: `10_admin_distributed.png`
+- **Impact**: Admin cannot view distributed system status
+- **Severity**: CRITICAL
+- **Root Cause**: Same as FE-013 - shared card partial issue
+
+#### FE-015: Embedding Cache Dashboard Page Broken (CRITICAL)
+- **Location**: `/admin/embedding_cache/dashboard`
+- **Error**: `NoMethodError in Admin::EmbeddingCache#dashboard`
+- **Message**: `undefined method 'with_header' for nil:NilClass`
+- **File**: `app/views/shared/_card.html.erb:100`
+- **Screenshot**: `13_admin_embedding_cache.png`
+- **Impact**: Admin cannot manage embedding cache
+- **Severity**: CRITICAL
+- **Root Cause**: Same as FE-013/FE-014 - shared card partial issue
+
+#### Root Cause Analysis for FE-013, FE-014, FE-015
+
+All three errors originate from `app/views/shared/_card.html.erb` line 100. The card partial expects a `card` block variable but receives `nil`. This is likely due to:
+
+1. View calling `render 'shared/card'` without passing required `card` local
+2. Or view using `card.with_header` block syntax but the card builder object is nil
+
+**Fix**: Check the views in:
+- `app/views/admin/llm_providers/index.html.erb`
+- `app/views/admin/distributed/dashboard.html.erb`
+- `app/views/admin/embedding_cache/dashboard.html.erb`
+
+Ensure they properly pass the card object or use the correct ViewComponent syntax.
+
+### Medium Issues Found (V8-005)
+
+#### FE-016: No Pagination in User Table (MEDIUM)
+- **Location**: `/admin/users`
+- **Issue**: User table shows all 15 users without pagination controls
+- **Screenshot**: `03_admin_users_list.png`
+- **Impact**: May cause performance issues with many users; poor UX for large datasets
+- **Severity**: MEDIUM
+- **Recommendation**: Add pagination (e.g., Pagy gem) with per-page selector
+
+#### FE-017: No Sortable Columns in User Table (MEDIUM)
+- **Location**: `/admin/users`
+- **Issue**: Table headers are not clickable for sorting
+- **Screenshot**: `03_admin_users_list.png`
+- **Impact**: Admin cannot easily find users by date, email, or status
+- **Severity**: MEDIUM
+- **Recommendation**: Add sortable column headers with visual indicators
+
+### Low Issues Found (V8-005)
+
+#### FE-018: Limited User Edit Form (LOW)
+- **Location**: `/admin/users/:id/edit`
+- **Issue**: Edit form only shows Email (read-only) and Admin checkbox
+- **Screenshot**: `05_admin_user_edit.png`
+- **Impact**: Admin cannot update subscription, deactivate, or send magic link from this form
+- **Severity**: LOW
+- **Note**: These actions may be available via other routes (patch endpoints exist in routes)
+- **Recommendation**: Add action buttons for subscription management, deactivation, magic link
+
+### Positive Findings (V8-005)
+
+1. **Excellent Dashboard Design**: Clean, professional admin dashboard with key metrics
+   - Total Users, Active Subscriptions, Trialing Users, Past Due counts
+   - Quick Actions with clear icons for common admin tasks
+   - System Status showing Search API, LLM API, Vector DB, Cache health
+
+2. **Outstanding Mission Control**: NASA-style monitoring dashboard
+   - Real-time document processing pipeline visualization
+   - Infrastructure status (Database, Redis, Haystack, Qdrant, Storage)
+   - Processing statistics with percentages
+   - Activity log with timestamps
+   - Recent documents and queries tables
+   - Response time and environment indicators
+
+3. **Functional User Management**:
+   - Search by email works correctly
+   - User table shows Email, Created, Status, Plan, Admin flag
+   - View and Edit links per user
+   - Admin privilege toggle with clear description
+
+4. **Comprehensive Analytics Dashboard**:
+   - Total Visits, Events, Users metrics
+   - Visits by Day and Events by Day charts
+   - Subscription Status pie chart
+   - Top Referrers bar chart
+   - Recent Visits table with visitor, time, referrer, device
+   - Magic Link and Subscription Change event tracking
+
+5. **Proper Access Control**:
+   - Unauthenticated users redirected to login with clear error message
+   - "You need to sign in or sign up before continuing" displayed
+   - Admin-only pages protected by `require_admin` before_action
+
+6. **Consistent Design Language**:
+   - Purple sidebar navigation matches main app
+   - Card-based layout for content sections
+   - Green status indicators for operational services
+   - Clean typography with Berkeley Mono font
+
+### Test Results Summary (V8-005)
+
+| Test | Result |
+|------|--------|
+| Navigate to admin dashboard | PASS |
+| Admin navigation - all sections | PARTIAL (3 broken pages) |
+| User management - list users | PASS |
+| User management - search users | PASS |
+| User management - edit user | PASS |
+| Analytics dashboard | PASS |
+| Mission Control | PASS |
+| Search Metrics | PASS |
+| LLM Providers | **FAIL** (Rails error) |
+| Distributed Dashboard | **FAIL** (Rails error) |
+| Embedding Cache | **FAIL** (Rails error) |
+| Access control - non-admin denied | PASS |
+| Data tables - pagination | FAIL (no pagination) |
+| Data tables - sorting | FAIL (no sorting) |
+
+**12 tests run, 9 passed, 3 failed**
+
+### Priority Fixes for Admin Dashboard
+
+#### Immediate (Critical)
+1. **FE-013/014/015**: Fix `shared/_card.html.erb` nil reference errors affecting 3 admin pages
+
+#### Short-Term (Medium)
+2. **FE-016**: Add pagination to user table
+3. **FE-017**: Add sortable columns to user table
+
+#### Enhancement (Low)
+4. **FE-018**: Enhance user edit form with more administrative actions
+
+---
+
 ## Appendix: Test Environment
 
 - **Browser**: Chromium (Playwright)
