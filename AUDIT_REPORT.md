@@ -55,10 +55,10 @@
 | Severity | Count | Fixed | Remaining |
 |----------|-------|-------|-----------|
 | CRITICAL | 0 | 0 | 0 |
-| HIGH | 0 | 0 | 0 |
-| MEDIUM | 0 | 0 | 0 |
-| LOW | 0 | 0 | 0 |
-| INFO | 0 | 0 | 0 |
+| HIGH | 3 | 0 | 3 |
+| MEDIUM | 2 | 0 | 2 |
+| LOW | 1 | 0 | 1 |
+| INFO | 3 | - | - |
 
 ---
 
@@ -159,7 +159,77 @@
 Saved to: `/Users/noah-ing/Desktop/knowverse/.consensys-dna.json`
 
 ### V6-003: Authentication and Authorization
-*To be completed*
+
+#### Summary
+The application uses Devise with magic link authentication, standard database authentication, and enterprise SSO (SAML 2.0 / OpenID Connect). Security controls are generally well-implemented with some areas for improvement.
+
+#### Findings
+
+##### AUTH-001: Missing Login Rate Limiting (HIGH)
+- **Location**: `config/initializers/security.rb`
+- **Description**: Rack::Attack rate limiting does not include specific throttling for login endpoints (`/users/sign_in`, `/users/magic_link`). This allows brute force attacks against user accounts.
+- **Current Config**: General rate limit (300/min), search (60/min), API (100/min) - but no login-specific limits
+- **Remediation**: Add throttling for login endpoints:
+  ```ruby
+  Rack::Attack.throttle('login', limit: 5, period: 1.minute) do |req|
+    req.ip if req.path == '/users/sign_in' && req.post?
+  end
+  ```
+
+##### AUTH-002: Devise Lockable Not Enabled (MEDIUM)
+- **Location**: `app/models/user.rb:2`, `config/initializers/devise.rb:197-221`
+- **Description**: Devise's `:lockable` module is not included in the User model. This means accounts are not locked after failed login attempts.
+- **Current**: User model includes `:database_authenticatable, :registerable, :recoverable, :rememberable, :validatable, :omniauthable, :magic_link_authenticatable`
+- **Missing**: `:lockable` for account lockout after failed attempts
+- **Remediation**: Add `:lockable` to devise modules and configure `lock_strategy`, `maximum_attempts`, and `unlock_strategy`
+
+##### AUTH-003: API Key Authentication Fallback Risk (HIGH)
+- **Location**: `app/controllers/api/v1/base_controller.rb:31`
+- **Description**: When an API key is valid but organization has no owner, the authentication falls back to `@current_organization.users.first`, which could grant access to an arbitrary user without proper authorization checks.
+- **Code**:
+  ```ruby
+  @current_user = @current_organization.owner || @current_organization.users.first
+  ```
+- **Risk**: If owner is nil, any user in the organization becomes the authenticated user
+- **Remediation**: Require explicit owner assignment or fail authentication if no owner exists
+
+##### AUTH-004: Admin Privilege Escalation via User Params (HIGH)
+- **Location**: `app/controllers/admin/users_controller.rb:90`
+- **Description**: The `user_params` method permits the `:admin` attribute, allowing admins to elevate other users to admin status. While this is in an admin controller, there's no additional confirmation or audit logging.
+- **Code**: `params.require(:user).permit(:email, :admin)`
+- **Remediation**: Add audit logging for admin privilege changes and require re-authentication for privilege escalation
+
+##### AUTH-005: CSRF Token Skip on SSO Callbacks (LOW)
+- **Location**: `app/controllers/users/omniauth_callbacks_controller.rb:3`
+- **Description**: CSRF verification is skipped for SAML and OIDC callbacks. This is necessary for SSO but should be documented and the SSO response signature should be strictly validated.
+- **Code**: `skip_before_action :verify_authenticity_token, only: [:saml, :openid_connect]`
+- **Status**: Acceptable - standard SSO practice, and OmniAuth validates signatures
+
+##### AUTH-006: Session Management Good Practices (INFO - Positive)
+- **Location**: `config/initializers/security.rb:66-71`
+- **Description**: Session cookies are properly configured with:
+  - `secure: Rails.env.production?`
+  - `httponly: true`
+  - `same_site: :lax`
+  - `expire_after: 24.hours`
+- **Status**: Meets security best practices
+
+##### AUTH-007: Password Configuration (INFO - Positive)
+- **Location**: `config/initializers/devise.rb:130,185`
+- **Description**: Password hashing uses bcrypt with 12 stretches (1 in test). Password length requirement is 6-128 characters.
+- **Note**: Minimum password length of 6 is low by modern standards (recommend 8-12 minimum)
+
+##### AUTH-008: Organization-Level Authorization Working Correctly (INFO - Positive)
+- **Location**: `app/controllers/organizations_controller.rb:4-5`
+- **Description**: Proper authorization checks:
+  - `ensure_organization_member` - checks user belongs to org
+  - `ensure_can_manage` - checks owner/admin role for management actions
+- **Status**: Well implemented
+
+##### AUTH-009: MCP API Key Authentication (MEDIUM)
+- **Location**: `app/controllers/mcp_controller.rb:160-172`
+- **Description**: MCP API key lookup is performed in constant time via `find_by`, but there's no rate limiting on API key validation attempts.
+- **Remediation**: Add rate limiting for MCP authentication failures
 
 ### V6-004: Injection Vulnerabilities
 *To be completed*
