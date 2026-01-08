@@ -1,5 +1,5 @@
 class User < ApplicationRecord
-  devise :magic_link_authenticatable, :database_authenticatable, :registerable, :recoverable, :rememberable, :validatable, :omniauthable, omniauth_providers: [:saml, :openid_connect]
+  devise :magic_link_authenticatable, :database_authenticatable, :registerable, :recoverable, :rememberable, :validatable, :lockable, :omniauthable, omniauth_providers: [:saml, :openid_connect]
 
   # SSO association
   belongs_to :sso_organization, class_name: 'Organization', optional: true
