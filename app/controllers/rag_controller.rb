@@ -1,599 +1,110 @@
+# frozen_string_literal: true
+
 class RagController < ApplicationController
   include ActionController::Live
 
-  # Handle Warden authentication errors gracefully (can occur with ActionController::Live)
-  rescue_from UncaughtThrowError do |e|
-    if e.message.include?(':warden')
-      redirect_to new_user_session_path, alert: 'Please sign in to continue.'
-    else
-      raise e
-    end
-  end
+  rescue_from(UncaughtThrowError) { |e| e.message.include?(':warden') ? redirect_to(new_user_session_path, alert: 'Please sign in to continue.') : raise(e) }
 
   before_action :authenticate_user!
   before_action :set_organization
-  
-  # Set organization from params
-  private def set_organization
-    if params[:organization_id].present?
-      @organization = Organization.find(params[:organization_id])
-    else
-      # Fallback to user's first organization for top-level routes
-      @organization = current_user.organizations.first
 
-      if @organization.nil?
-        redirect_to organizations_path, alert: 'Please create or join an organization first.'
-      end
-    end
-  end
-  
-  # Display RAG interface
   def index
-    # Get available LLM providers
     providers_response = haystack_client.list_llm_providers
     @providers = providers_response.success? ? providers_response.data : []
-    
-    # Set default options
-    @retrieval_options = {
-      max_documents: 5,
-      min_similarity: 0.01,  # Very low - cross-encoder reranking handles relevance
-      strategy: "auto"
-    }
-    
-    @generation_options = {
-      temperature: 0.7,
-      max_tokens: 500
-    }
-    
-    # Get organization templates for RAG
-    template_service = TemplateService.new(@organization)
-    @templates = @organization.organization_templates.where(template_type: 'rag').order(name: :asc)
-    @default_template = @templates.find_by(is_default: true)
-    
-    # If there's a template_id in params, use that template
-    if params[:template_id].present?
-      @selected_template = @organization.organization_templates.find_by(id: params[:template_id])
-    end
-    
-    # Use the selected template, default template, or nil
+    @retrieval_options = query_service.default_retrieval_options
+    @generation_options = query_service.default_generation_options
+    @templates = conversation_service.load_templates
+    @default_template = conversation_service.default_template(@templates)
+    @selected_template = conversation_service.find_template(params[:template_id])
     @template = @selected_template || @default_template
-    
-    # Extract variables if template exists
-    @template_variables = @template ? template_service.extract_variables(@template) : {}
-    
-    # Check for conversation ID
+    @template_variables = conversation_service.extract_template_variables(@template)
     @conversation_id = params[:conversation_id]
-    
-    # If conversation ID is provided, load the conversation messages
-    if @conversation_id.present?
-      conversation = ConversationSession.find_by(
-        id: @conversation_id,
-        organization_id: @organization.id,
-        user_id: current_user.id
-      )
-      
-      # If conversation exists, load its messages
-      if conversation.present?
-        @messages = conversation.conversation_messages.order(created_at: :asc)
-      else
-        @messages = []
-      end
-    else
-      @messages = []
-    end
+    @messages = conversation_service.load_conversation_messages(@conversation_id)
   end
-  
-  # Stream RAG response using Server-Sent Events (SSE)
+
   def stream
-    # Set headers for SSE
-    response.headers["Content-Type"] = "text/event-stream"
-    response.headers["Cache-Control"] = "no-cache"
-    response.headers["Connection"] = "keep-alive"
-    
-    # Get query from params
+    setup_sse_headers
     @query = params[:query]
-    
-    if @query.blank?
-      # Send error event and close connection
-      response.stream.write("event: error\n")
-      response.stream.write("data: #{JSON.generate({error: "Question cannot be blank"})}\n\n")
-      response.stream.close
-      return
-    end
-    
-    # Extract provider from params
-    provider = params[:provider].presence
-    
-    # Extract retrieval options from params
-    retrieval_options = {
-      max_documents: params[:max_documents].presence&.to_i || 5,
-      min_similarity: params[:min_similarity].presence&.to_f || 0.01,  # Very low - cross-encoder handles relevance
-      strategy: params[:strategy].presence || "auto"
-    }
-    
-    # Extract generation options from params
-    generation_options = {
-      temperature: params[:temperature].presence&.to_f || 0.7,
-      max_tokens: params[:max_tokens].presence&.to_i || 500,
-      model: params[:model].presence
-    }
-    
-    # Get template if specified
-    template_id = params[:template_id]
-    template_service = TemplateService.new(@organization)
-    template = template_service.find_template('rag', template_id)
-    
-    # Prepare template variables from params
-    template_variables = {}
-    if params[:template_variables].present? && params[:template_variables].is_a?(Hash)
-      template_variables = params[:template_variables]
-    end
-    
-    # Render the template with variables if available
-    if template.present?
-      system_prompt = template_service.render_template(template, template_variables.merge({
-        query: @query,
-        organization: @organization.name,
-        user: current_user.email
-      }))
-      generation_options[:system_prompt] = system_prompt
-    elsif params[:system_prompt].present?
-      # If no template but system prompt provided, use that
-      generation_options[:system_prompt] = params[:system_prompt]
-    else
-      # Default system prompt for RAG conversations
-      generation_options[:system_prompt] = <<~PROMPT
-        You are a helpful AI assistant for #{@organization.name}'s knowledge base. Your role is to:
+    return send_error("Question cannot be blank") if @query.blank?
 
-        1. Answer questions based on the provided document context
-        2. Cite specific sources when making claims
-        3. Be clear when information is not available in the documents
-        4. Provide concise, accurate responses
+    retrieval_opts = query_service.parse_retrieval_options(params)
+    generation_opts = query_service.parse_generation_options(params)
+    generation_opts[:system_prompt] = build_system_prompt(params)
+    conversation = conversation_service.find_or_create_conversation(params[:conversation_id], find_rag_template&.id)
+    conversation.add_user_message(@query)
 
-        When responding:
-        - Base your answers on the retrieved document chunks
-        - If the context doesn't contain relevant information, say so clearly
-        - Use professional, clear language
-        - Format responses with markdown when helpful (lists, code blocks, etc.)
-      PROMPT
-    end
-    
-    # Extract or create conversation, with template association if specified
-    conversation = find_or_create_conversation(params[:conversation_id], template&.id)
-    
-    # Add user message to conversation
-    user_message = conversation.add_user_message(@query)
-    
-    # Set initial metadata for tracking
-    response_metadata = {}
-    
-    # Prepare complete response buffer
-    complete_response = ""
-    sources = []
-    
-    # Set options for streaming
-    options = {
-      provider: provider,
-      retrieval_strategy: retrieval_options[:strategy],
-      max_documents: retrieval_options[:max_documents],
-      similarity_threshold: retrieval_options[:min_similarity],
-      temperature: generation_options[:temperature],
-      max_tokens: generation_options[:max_tokens],
-      model: generation_options[:model],
-      system_prompt: generation_options[:system_prompt],
-      conversation_id: conversation.id
-    }
-    
-    # Start streaming response
-    begin
-      haystack_client.generate_answer_stream(@query, @organization.id, options) do |event|
-        # Process each event type
-        # NOTE: We send data-only SSE (no "event:" line) so JavaScript onmessage receives all events
-        # The event type is included in the JSON "type" field
-        case event[:type]
-        when :metadata
-          # Store metadata for later reference
-          response_metadata = event[:data]
-          data = event[:data].merge("type" => "metadata", "conversation_id" => conversation.id)
-          response.stream.write("data: #{JSON.generate(data)}\n\n")
-
-        when :token
-          # Extract token content (Python sends "content", handle both string and symbol keys)
-          token_content = event[:data]["content"] || event[:data][:content] || event[:data]["token"] || event[:data][:token] || ""
-          token_index = event[:data]["index"] || event[:data][:index] || event[:data]["id"] || event[:data][:id]
-
-          # Add token to complete response
-          complete_response += token_content
-
-          # Store token in StreamingElement if conversation exists
-          if conversation
-            idx = token_index || conversation.streaming_elements.count
-            # Check for source reference in this token
-            has_source = event[:data]["has_source"] || event[:data][:has_source] || false
-
-            # Add to streaming elements
-            conversation.add_streaming_token(
-              token_content,
-              idx,
-              false, # not complete
-              has_source ? sources : nil
-            )
-          end
-
-          # Forward token to browser (ensure type is in JSON)
-          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "token") : {"type" => "token", "content" => token_content}
-          response.stream.write("data: #{JSON.generate(data)}\n\n")
-
-        when :sources
-          # Store sources for highlighting and message metadata (handle string/symbol keys)
-          sources = event[:data]["sources"] || event[:data][:sources] || []
-          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "sources") : {"type" => "sources", "sources" => sources}
-          response.stream.write("data: #{JSON.generate(data)}\n\n")
-
-        when :complete
-          # Store sources for message metadata (handle string/symbol keys)
-          sources = event[:data]["sources"] || event[:data][:sources] || []
-
-          # Mark streaming as complete for the last token
-          if conversation && conversation.streaming_elements.any?
-            StreamingElement.mark_complete(conversation.id)
-          end
-
-          # Get metrics and provider (handle string/symbol keys)
-          metrics = event[:data]["metrics"] || event[:data][:metrics]
-          provider = event[:data]["provider"] || event[:data][:provider]
-
-          # Convert streaming tokens to a message or create a new message
-          assistant_message = if conversation && conversation.streaming_elements.any?
-            # Create message from streaming tokens and their source references
-            conversation.finalize_streaming({
-              sources: sources,
-              metrics: metrics,
-              provider: provider
-            })
-          else
-            # Fallback to direct message creation (for compatibility)
-            conversation.add_assistant_message(
-              complete_response,
-              {
-                sources: sources,
-                metrics: metrics,
-                provider: provider
-              }
-            )
-          end
-
-          # Include the message ID and type in the response
-          event_data = (event[:data].is_a?(Hash) ? event[:data] : {}).merge(
-            "type" => "complete",
-            "conversation_id" => conversation.id,
-            "message_id" => assistant_message.id
-          )
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :error
-          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "error") : {"type" => "error", "error" => event[:data].to_s}
-          response.stream.write("data: #{JSON.generate(data)}\n\n")
-
-        when :fallback
-          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "fallback") : {"type" => "fallback"}
-          response.stream.write("data: #{JSON.generate(data)}\n\n")
-
-        when :metric
-          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => "metric") : {"type" => "metric"}
-          response.stream.write("data: #{JSON.generate(data)}\n\n")
-
-        when :context
-          # Forward context event with conversation_id for follow-up messages
-          data = (event[:data].is_a?(Hash) ? event[:data] : {}).merge("type" => "context", "conversation_id" => conversation.id)
-          response.stream.write("data: #{JSON.generate(data)}\n\n")
-
-        else
-          # Generic event handler - include type in JSON
-          data = event[:data].is_a?(Hash) ? event[:data].merge("type" => event[:type].to_s) : {"type" => event[:type].to_s}
-          response.stream.write("data: #{JSON.generate(data)}\n\n")
-        end
-      end
-    rescue => e
-      # Handle exceptions during streaming
-      error_message = "Streaming error: #{e.message}"
-      Rails.logger.error(error_message)
-      Rails.logger.error(e.backtrace.join("\n"))
-
-      # Add error message to conversation
-      conversation.add_system_message("Error: #{error_message}", { error: true })
-
-      # Send error to browser
-      response.stream.write("event: error\n")
-      response.stream.write("data: #{JSON.generate({error: error_message})}\n\n")
-    ensure
-      # Always close the stream
-      response.stream.close
-    end
+    svc = Rag::StreamingService.new(@organization, conversation)
+    opts = query_service.build_streaming_options(provider: params[:provider].presence, retrieval_options: retrieval_opts, generation_options: generation_opts, conversation_id: conversation.id)
+    stream_response(:generate_answer_stream, opts, svc)
   end
 
-  # Stream Agentic RAG response using Server-Sent Events (SSE)
-  # Supports multiple agent modes: basic, react, deep_research, plan_execute
   def agent_stream
-    # Set headers for SSE
-    response.headers["Content-Type"] = "text/event-stream"
-    response.headers["Cache-Control"] = "no-cache"
-    response.headers["Connection"] = "keep-alive"
-
-    # Get query from params
+    setup_sse_headers
     @query = params[:query]
+    return send_error("Question cannot be blank") if @query.blank?
 
-    if @query.blank?
-      response.stream.write("data: #{JSON.generate({type: "error", error: "Question cannot be blank"})}\n\n")
-      response.stream.close
-      return
-    end
+    agent_opts = query_service.parse_agent_options(params)
+    conversation = conversation_service.find_or_create_conversation(params[:conversation_id])
+    conversation.add_user_message(@query)
 
-    # Extract agent options from params
-    agent_mode = params[:mode].presence || "auto"
-    max_iterations = params[:max_iterations].presence&.to_i || 10
-    provider = params[:provider].presence
-    include_trace = params[:include_trace].present? ? params[:include_trace] == "true" : true
-
-    # Extract generation options
-    temperature = params[:temperature].presence&.to_f || 0.7
-    max_tokens = params[:max_tokens].presence&.to_i || 1000
-
-    # Extract or create conversation
-    conversation = find_or_create_conversation(params[:conversation_id])
-
-    # Add user message to conversation
-    user_message = conversation.add_user_message(@query)
-
-    # Prepare complete response buffer for agent
-    complete_response = ""
-    sources = []
-    agent_trace = []
-
-    # Set options for agent streaming
-    options = {
-      mode: agent_mode,
-      max_iterations: max_iterations,
-      provider: provider,
-      temperature: temperature,
-      max_tokens: max_tokens,
-      include_trace: include_trace,
-      conversation_id: conversation.id
-    }
-
-    # Start streaming agent response
-    begin
-      haystack_client.generate_agent_stream(@query, @organization.id, options) do |event|
-        # Forward event type in JSON data
-        event_type = event[:type].to_s
-        event_data = event[:data].is_a?(Hash) ? event[:data].dup : {}
-        event_data["type"] = event_type
-        event_data["conversation_id"] = conversation.id
-
-        case event[:type]
-        when :mode_selected
-          # Agent mode was selected (auto-detected or user-specified)
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :thought
-          # Agent reasoning step
-          agent_trace << { type: "thought", content: event_data["thought"] }
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :action
-          # Agent is calling a tool
-          agent_trace << { type: "action", tool: event_data["tool"], input: event_data["input"] }
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :observation
-          # Tool result received
-          agent_trace << { type: "observation", result: event_data["result"] }
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :plan
-          # Execution plan created (plan-execute mode)
-          agent_trace << { type: "plan", steps: event_data["steps"] }
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :step_complete
-          # Plan step completed
-          agent_trace << { type: "step_complete", step: event_data["step"] }
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :researching
-          # Sub-question being researched (deep research mode)
-          agent_trace << { type: "researching", question: event_data["question"] }
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :phase
-          # Agent entering a new phase
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :context
-          # Retrieved context documents
-          sources = event_data["documents"] || event_data["sources"] || []
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :token
-          # Streaming text token
-          token_content = event_data["content"] || event_data["token"] || ""
-          complete_response += token_content
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :final_answer
-          # Complete answer with sources
-          complete_response = event_data["answer"] || complete_response
-          sources = event_data["sources"] || sources
-
-          # Create assistant message with agent metadata
-          assistant_message = conversation.add_assistant_message(
-            complete_response,
-            {
-              sources: sources,
-              agent_mode: agent_mode,
-              agent_trace: include_trace ? agent_trace : nil,
-              confidence: event_data["confidence"]
-            }
-          )
-
-          event_data["message_id"] = assistant_message.id
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :quality_check
-          # Quality/hallucination check results
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :clarify
-          # Agent needs clarification from user
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :warning
-          # Non-fatal warning
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :error
-          # Error occurred
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        when :complete
-          # Agent execution complete
-          event_data["message_id"] ||= conversation.conversation_messages.last&.id
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-
-        else
-          # Forward any other events
-          response.stream.write("data: #{JSON.generate(event_data)}\n\n")
-        end
-      end
-    rescue => e
-      # Handle exceptions during agent streaming
-      error_message = "Agent streaming error: #{e.message}"
-      Rails.logger.error(error_message)
-      Rails.logger.error(e.backtrace.join("\n"))
-
-      # Add error message to conversation
-      conversation.add_system_message("Error: #{error_message}", { error: true, agent_mode: agent_mode })
-
-      # Send error to browser
-      response.stream.write("data: #{JSON.generate({type: "error", error: error_message})}\n\n")
-    ensure
-      # Always close the stream
-      response.stream.close
-    end
+    svc = Rag::AgentStreamingService.new(@organization, conversation, agent_opts[:mode])
+    opts = query_service.build_agent_options(agent_options: agent_opts, conversation_id: conversation.id)
+    stream_response(:generate_agent_stream, opts, svc)
   end
 
-  # Get available agent modes and tools
   def agent_info
     modes_response = haystack_client.list_agent_modes
     tools_response = haystack_client.list_agent_tools
-
-    render json: {
-      modes: modes_response.success? ? modes_response.data : [],
-      tools: tools_response.success? ? tools_response.data : []
-    }
+    render json: { modes: modes_response.success? ? modes_response.data : [], tools: tools_response.success? ? tools_response.data : [] }
   end
 
-  # Get conversation messages for multi-turn context
   def conversation
-    conversation_id = params[:conversation_id]
-    
-    if conversation_id.blank?
-      render json: { error: "Conversation ID is required" }, status: :bad_request
-      return
-    end
-    
-    # Find conversation
-    conversation = ConversationSession.find_by(
-      id: conversation_id,
-      organization_id: @organization.id,
-      user_id: current_user.id
-    )
-    
-    if conversation.nil?
-      render json: { error: "Conversation not found" }, status: :not_found
-      return
-    end
-    
-    # Get messages
-    messages = conversation.conversation_messages.order(created_at: :asc)
-    
-    # Return conversation context
-    render json: {
-      conversation: {
-        id: conversation.id,
-        title: conversation.title,
-        created_at: conversation.created_at,
-        updated_at: conversation.updated_at,
-        last_message_at: conversation.last_message_at
-      },
-      messages: messages.map do |msg|
-        {
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          created_at: msg.created_at,
-          metadata: msg.metadata
-        }
-      end
-    }
+    return render(json: { error: "Conversation ID is required" }, status: :bad_request) if params[:conversation_id].blank?
+    conv = ConversationSession.find_by(id: params[:conversation_id], organization_id: @organization.id, user_id: current_user.id)
+    return render(json: { error: "Conversation not found" }, status: :not_found) if conv.nil?
+    messages = conv.conversation_messages.order(created_at: :asc)
+    render json: { conversation: { id: conv.id, title: conv.title, created_at: conv.created_at, updated_at: conv.updated_at, last_message_at: conv.last_message_at }, messages: messages.map { |m| { id: m.id, role: m.role, content: m.content, created_at: m.created_at, metadata: m.metadata } } }
   end
-  # Find or create a conversation based on ID
-  private def find_or_create_conversation(conversation_id, template_id = nil)
-    if conversation_id.present?
-      # Try to find existing conversation
-      conversation = ConversationSession.find_by(
-        id: conversation_id,
-        organization_id: @organization.id,
-        user_id: current_user.id
-      )
-      
-      # If template_id is provided and conversation exists, store in metadata
-      if conversation.present? && template_id.present?
-        current_template = conversation.metadata&.dig('template_id')
-        if current_template != template_id
-          conversation.update(metadata: conversation.metadata.merge('template_id' => template_id))
-        end
-      end
-      
-      return conversation if conversation.present?
-    end
-    
-    # Create a new conversation if not found
-    ConversationSession.create!(
-      organization: @organization,
-      user: current_user,
-      title: "Q&A #{Time.current.strftime('%Y-%m-%d %H:%M')}",
-      metadata: template_id.present? ? { 'template_id' => template_id } : {},
-      last_message_at: Time.current
-    )
+
+  private
+
+  def set_organization
+    @organization = params[:organization_id].present? ? Organization.find(params[:organization_id]) : current_user.organizations.first
+    redirect_to(organizations_path, alert: 'Please create or join an organization first.') if @organization.nil?
   end
-  
-  # Helper to track template usage after completion
-  private def track_template_usage(template, conversation, start_time, metrics)
-    return unless template.present?
-    
-    # Calculate response time
-    response_time = (Time.current - start_time).to_f
-    
-    # Get token count from metrics if available
-    token_count = metrics['token_count'] if metrics.present?
-    
-    # Track the usage
-    template_service = TemplateService.new(@organization)
-    template_service.track_usage(
-      template,
-      current_user,
-      conversation,
-      {
-        response_time: response_time,
-        token_count: token_count,
-        metrics: metrics
-      }
-    )
+
+  def setup_sse_headers
+    response.headers["Content-Type"] = "text/event-stream"
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Connection"] = "keep-alive"
   end
-  
-  # Helper method to get the Haystack client
-  private def haystack_client
-    HaystackClient.new
+
+  def send_error(msg)
+    response.stream.write("event: error\ndata: #{JSON.generate({ error: msg })}\n\n")
+    response.stream.close
   end
+
+  def stream_response(method, opts, svc)
+    haystack_client.send(method, @query, @organization.id, opts) { |event| response.stream.write(svc.process_event(event)) }
+  rescue => e
+    Rails.logger.error("Streaming error: #{e.message}\n#{e.backtrace.join("\n")}")
+    response.stream.write("data: #{JSON.generate({ type: 'error', error: e.message })}\n\n")
+  ensure
+    response.stream.close
+  end
+
+  def build_system_prompt(params)
+    template = find_rag_template
+    vars = conversation_service.parse_template_variables(params)
+    return query_service.build_system_prompt(template: template, template_service: TemplateService.new(@organization), template_variables: vars, query: @query) if template.present?
+    params[:system_prompt].presence || query_service.default_system_prompt
+  end
+
+  def find_rag_template
+    TemplateService.new(@organization).find_template('rag', params[:template_id])
+  end
+
+  def haystack_client = @haystack_client ||= HaystackClient.new
+  def query_service = @query_service ||= Rag::QueryService.new(@organization, current_user)
+  def conversation_service = @conversation_service ||= Rag::ConversationService.new(@organization, current_user)
 end
