@@ -28,9 +28,17 @@ module Api
         if api_key.present?
           @current_organization = Organization.find_by(api_key: api_key)
           if @current_organization
-            @current_user = @current_organization.owner || @current_organization.users.first
-            sign_in(@current_user, store: false) if @current_user
-            return
+            # AUTH-003 fix: Only use owner for API key auth, never fall back to arbitrary user
+            # An organization without an owner cannot use API key authentication
+            @current_user = @current_organization.owner
+            if @current_user
+              sign_in(@current_user, store: false)
+              return
+            else
+              Rails.logger.warn("[API] Organization #{@current_organization.id} has no owner - API key auth denied")
+              render json: { error: 'Unauthorized', message: 'Organization has no owner configured' }, status: :unauthorized
+              return
+            end
           end
         end
 

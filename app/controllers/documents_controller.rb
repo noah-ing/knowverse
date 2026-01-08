@@ -274,7 +274,9 @@ class DocumentsController < ApplicationController
       # Placeholder for search functionality
       # In a real implementation, this would use HaystackClient to perform semantic search
       # For now, we'll do a simple text search on title and content
-      @documents = @organization.documents.where("title ILIKE ? OR content ILIKE ?", "%#{@query}%", "%#{@query}%")
+      # INJ-001 fix: Use sanitize_sql_like to prevent SQL injection in ILIKE queries
+      sanitized_query = Document.sanitize_sql_like(@query)
+      @documents = @organization.documents.where("title ILIKE ? OR content ILIKE ?", "%#{sanitized_query}%", "%#{sanitized_query}%")
       
       # Apply filters
       @documents = apply_filters(@documents)
@@ -368,8 +370,10 @@ class DocumentsController < ApplicationController
       end
       
       # Filter by search term
+      # INJ-001 fix: Use sanitize_sql_like to prevent SQL injection in ILIKE queries
       if params[:q].present?
-        documents = documents.where("title ILIKE ? OR content ILIKE ?", "%#{params[:q]}%", "%#{params[:q]}%")
+        sanitized_q = Document.sanitize_sql_like(params[:q])
+        documents = documents.where("title ILIKE ? OR content ILIKE ?", "%#{sanitized_q}%", "%#{sanitized_q}%")
         @filter_params[:q] = params[:q]
       end
       

@@ -8,13 +8,15 @@ class Admin::UsersController < Admin::BaseController
 
   def search
     if params[:query].present?
-      @users = User.where("email ILIKE ?", "%#{params[:query]}%")
+      # Security fix: Use sanitize_sql_like to prevent SQL injection in ILIKE queries
+      sanitized_query = User.sanitize_sql_like(params[:query])
+      @users = User.where("email ILIKE ?", "%#{sanitized_query}%")
                    .order(created_at: :desc)
                    .page(params[:page]).per(15)
     else
       @users = User.all.order(created_at: :desc).page(params[:page]).per(15)
     end
-    
+
     render :index
   end
 
@@ -25,7 +27,25 @@ class Admin::UsersController < Admin::BaseController
   end
 
   def update
+    # AUTH-004 fix: Track admin privilege changes with audit logging
+    admin_changed = params[:user][:admin].present? && @user.admin? != (params[:user][:admin] == 'true' || params[:user][:admin] == true || params[:user][:admin] == '1')
+    previous_admin_status = @user.admin?
+
     if @user.update(user_params)
+      # Log admin privilege changes
+      if admin_changed
+        SecurityAuditLogger.log_security_event('admin_privilege_change', {
+          target_user_id: @user.id,
+          target_user_email: @user.email,
+          admin_user_id: current_user.id,
+          admin_user_email: current_user.email,
+          previous_status: previous_admin_status,
+          new_status: @user.admin?,
+          ip_address: request.remote_ip,
+          user_agent: request.user_agent
+        })
+        Rails.logger.info "[SECURITY] Admin privilege #{@user.admin? ? 'granted to' : 'revoked from'} user #{@user.id} (#{@user.email}) by admin #{current_user.id}"
+      end
       redirect_to admin_user_path(@user), notice: "User was successfully updated."
     else
       render :edit, status: :unprocessable_entity

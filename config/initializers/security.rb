@@ -94,6 +94,16 @@ if defined?(Rack::Attack)
     req.ip if req.path.start_with?('/api')
   end
 
+  # Login rate limiting - prevent brute force attacks (AUTH-001 fix)
+  Rack::Attack.throttle('login', limit: 5, period: 1.minute) do |req|
+    req.ip if req.path == '/users/sign_in' && req.post?
+  end
+
+  # Magic link rate limiting - prevent enumeration attacks
+  Rack::Attack.throttle('magic_link', limit: 3, period: 1.minute) do |req|
+    req.ip if req.path.include?('/magic_link') && req.post?
+  end
+
   # Block suspicious requests
   Rack::Attack.blocklist('fail2ban pentesters') do |req|
     # Block known bad IPs

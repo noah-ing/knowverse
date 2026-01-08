@@ -150,8 +150,10 @@ module Mcp
       rescue => e
         Rails.logger.warn("[MCP] Search service error, falling back to basic search: #{e.message}")
         # Fallback to basic full-text search
+        # INJ-002 fix: Use sanitize_sql_like to prevent SQL injection in ILIKE queries
+        sanitized_query = Document.sanitize_sql_like(query)
         @organization.documents.processed
-          .where("title ILIKE ? OR content ILIKE ?", "%#{query}%", "%#{query}%")
+          .where("title ILIKE ? OR content ILIKE ?", "%#{sanitized_query}%", "%#{sanitized_query}%")
           .limit(limit)
           .map do |doc|
             {
