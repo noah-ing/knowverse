@@ -56,9 +56,9 @@
 |----------|-------|-------|-----------|
 | CRITICAL | 0 | 0 | 0 |
 | HIGH | 5 | 0 | 5 |
-| MEDIUM | 5 | 0 | 5 |
-| LOW | 5 | 0 | 5 |
-| INFO | 4 | - | - |
+| MEDIUM | 8 | 0 | 8 |
+| LOW | 8 | 0 | 8 |
+| INFO | 13 | - | - |
 
 ---
 
@@ -390,7 +390,202 @@ Multiple injection vulnerabilities were identified across the Rails and Python c
 | INJ-011 | Path Traversal | INFO | llm_providers_controller.rb | Safe |
 
 ### V6-005: Data Exposure and Secrets
-*To be completed*
+
+#### Summary
+The application has generally good secrets management with proper .gitignore configuration and environment variable usage. However, several concerns were identified around sensitive data logging and API key exposure in logs.
+
+#### Secrets Management Findings
+
+##### DATA-001: API Key Partial Exposure in Logs (MEDIUM)
+- **Location**: `config/initializers/resend.rb:8`
+- **Description**: First 5 characters of API key are logged during initialization.
+- **Vulnerable Code**:
+  ```ruby
+  Rails.logger.info "[Resend] Initialized with API key: #{Resend.api_key.present? ? 'Present (first 5 chars: ' + Resend.api_key.to_s.first(5) + ')' : 'Missing'}"
+  ```
+- **Risk**: API key prefix exposure could assist attackers in identifying or brute-forcing keys. API keys typically share prefixes (e.g., `sk-ant`, `sk-`).
+- **Remediation**: Remove the key prefix logging, just log presence/absence:
+  ```ruby
+  Rails.logger.info "[Resend] API key configured: #{Resend.api_key.present?}"
+  ```
+
+##### DATA-002: Login Token Logged with Inspect (MEDIUM)
+- **Location**: `app/controllers/users/magic_links_controller.rb:58`
+- **Description**: Magic link login token is logged with `.inspect`, exposing the full token value.
+- **Vulnerable Code**:
+  ```ruby
+  Rails.logger.info "[MagicLink] Created fallback login token: #{login_token.inspect}"
+  ```
+- **Risk**: Login tokens in logs could be extracted by attackers with log access, enabling account takeover.
+- **Remediation**: Remove token value from logs:
+  ```ruby
+  Rails.logger.info "[MagicLink] Created fallback login token for user #{user.id}"
+  ```
+
+##### DATA-003: Full Token Logged in Magic Link Processing (MEDIUM)
+- **Location**: `app/controllers/users/magic_links_controller.rb:96, 102`
+- **Description**: Full login token values are logged during processing.
+- **Vulnerable Code**:
+  ```ruby
+  Rails.logger.info "[MagicLink] Processing magic link with token: #{token}"
+  Rails.logger.warn "[MagicLink] No user found with token: #{token}"
+  ```
+- **Risk**: Same as DATA-002 - token exposure in logs.
+- **Remediation**: Log only token presence or truncated hash for debugging:
+  ```ruby
+  Rails.logger.info "[MagicLink] Processing magic link (token hash: #{Digest::SHA256.hexdigest(token)[0..7]})"
+  ```
+
+##### DATA-004: API Key Presence Logged (LOW)
+- **Location**: `app/controllers/users/magic_links_controller.rb:66`
+- **Description**: Logs whether RESEND_API_KEY environment variable is present.
+- **Code**:
+  ```ruby
+  Rails.logger.info "[MagicLink] API key present?: #{ENV['RESEND_API_KEY'].present?}"
+  ```
+- **Risk**: Low - only confirms presence, but reveals internal configuration details.
+- **Remediation**: Remove or reduce log level to debug.
+
+##### DATA-005: Default PostgreSQL Password in Setup Script (LOW)
+- **Location**: `bin/ensure_database.rb:43, 51`
+- **Description**: Default password "postgres" is hardcoded for fallback database setup.
+- **Code**:
+  ```ruby
+  password = "postgres"
+  ```
+- **Risk**: Low - this is a development setup script, and the password is a common default. However, it could encourage poor security habits.
+- **Remediation**: Document that this is for development only, or prompt for password.
+
+#### .gitignore Configuration (INFO - Positive)
+
+##### DATA-006: Proper Secrets Exclusion
+- **Location**: `.gitignore:1-10`
+- **Description**: .gitignore properly excludes sensitive files.
+- **Configuration**:
+  ```
+  .env*
+  !.env.example
+  config/master.key
+  config/credentials/*.key
+  *.pem
+  *.p12
+  *.crt
+  secrets/
+  .secret
+  ```
+- **Verification**: `git ls-files` shows only `.env.example` tracked (template file).
+- **Status**: Meets best practices.
+
+##### DATA-007: No Real API Keys Committed
+- **Verification**: Searched for common API key patterns (sk-*, AKIA*, ghp_*, AIza*).
+- **Result**: No real API keys found in tracked files.
+- **Status**: Meets best practices.
+
+#### HTTPS and Cookie Security (INFO - Positive)
+
+##### DATA-008: Force SSL in Production
+- **Location**: `config/environments/production.rb:14-15`, `config/initializers/security.rb:6-17`
+- **Configuration**:
+  ```ruby
+  config.assume_ssl = true
+  config.force_ssl = true
+  config.ssl_options = {
+    redirect: { status: 301, port: 443 },
+    secure_cookies: true,
+    hsts: { expires: 1.year, subdomains: true, preload: true }
+  }
+  ```
+- **Status**: Excellent - HSTS preload enabled.
+
+##### DATA-009: Secure Session Cookies
+- **Location**: `config/initializers/security.rb:66-71`
+- **Configuration**:
+  ```ruby
+  Rails.application.config.session_store :cookie_store,
+    key: '_knowverse_session',
+    secure: Rails.env.production?,
+    httponly: true,
+    same_site: :lax,
+    expire_after: 24.hours
+  ```
+- **Status**: Meets best practices.
+
+##### DATA-010: Security Headers Middleware
+- **Location**: `config/initializers/security.rb:21-60`
+- **Headers Set**:
+  - Content-Security-Policy (CSP)
+  - X-Frame-Options: DENY
+  - X-Content-Type-Options: nosniff
+  - X-XSS-Protection: 1; mode=block
+  - Referrer-Policy: strict-origin-when-cross-origin
+  - Permissions-Policy: camera=(), microphone=(), geolocation=()
+  - Strict-Transport-Security (production only)
+- **Status**: Excellent - comprehensive security headers.
+
+#### Parameter Filtering (INFO - Positive)
+
+##### DATA-011: Sensitive Parameter Filtering
+- **Location**: `config/initializers/filter_parameter_logging.rb`, `config/initializers/security.rb:151-156`
+- **Configuration**:
+  ```ruby
+  # filter_parameter_logging.rb
+  Rails.application.config.filter_parameters += [
+    :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc
+  ]
+
+  # security.rb (additional)
+  config.filter_parameters += [
+    :password, :password_confirmation, :secret, :token, :key, :api_key,
+    :access_token, :refresh_token, :authentication_token, :remember_token,
+    :credit_card, :ssn, :social_security_number, :date_of_birth
+  ]
+  ```
+- **Status**: Comprehensive filtering configured.
+
+#### Input Validation (INFO - Positive)
+
+##### DATA-012: Strong Parameters Usage
+- **Description**: Application consistently uses Rails strong parameters for mass assignment protection.
+- **Examples**:
+  - `params.require(:user).permit(:email, :admin)` (admin controller)
+  - `params.require(:document).permit(:title, :description, :file, metadata: {})` (documents controller)
+  - `params.require(:message).permit(:role, :content, metadata: {})` (conversation messages)
+- **Status**: Proper strong parameter usage throughout.
+
+##### DATA-013: Model Validations
+- **Description**: Models include appropriate validations.
+- **Examples**:
+  - User: `validates :name, length: { maximum: 100 }`
+  - Organization: `validates :slug, format: { with: /\A[a-z0-9-]+\z/ }`
+  - Plan: `validates :amount, numericality: { greater_than_or_equal_to: 0 }`
+- **Status**: Good validation coverage.
+
+#### Missing CORS Configuration (LOW)
+
+##### DATA-014: No Explicit CORS Configuration
+- **Location**: No `config/initializers/cors.rb` found
+- **Description**: No explicit CORS configuration. This means cross-origin requests are blocked by default (Rails default behavior).
+- **Risk**: Low - default deny is secure. However, if API needs cross-origin access, configuration should be explicit.
+- **Status**: Acceptable for same-origin application.
+
+#### Summary Table
+
+| ID | Issue | Severity | Location | Status |
+|----|-------|----------|----------|--------|
+| DATA-001 | API key prefix in logs | MEDIUM | resend.rb:8 | Open |
+| DATA-002 | Login token in logs | MEDIUM | magic_links_controller.rb:58 | Open |
+| DATA-003 | Full token logged | MEDIUM | magic_links_controller.rb:96,102 | Open |
+| DATA-004 | API key presence logged | LOW | magic_links_controller.rb:66 | Open |
+| DATA-005 | Default DB password | LOW | ensure_database.rb:43,51 | Acceptable |
+| DATA-006 | .gitignore secrets | INFO | .gitignore | Good |
+| DATA-007 | No API keys committed | INFO | (verified) | Good |
+| DATA-008 | Force SSL | INFO | production.rb | Good |
+| DATA-009 | Secure cookies | INFO | security.rb | Good |
+| DATA-010 | Security headers | INFO | security.rb | Good |
+| DATA-011 | Parameter filtering | INFO | filter_parameter_logging.rb | Good |
+| DATA-012 | Strong parameters | INFO | controllers | Good |
+| DATA-013 | Model validations | INFO | models | Good |
+| DATA-014 | No CORS config | LOW | (missing) | Acceptable |
 
 ### V6-006: Code Quality - Architecture
 *To be completed*
