@@ -31,7 +31,7 @@ openai>=1.0.0                 # OpenAI API client
 anthropic>=0.18.0             # Anthropic Claude API client
 
 # Web server - Production deployment
-gunicorn==21.2.0           # WSGI server for production
+gunicorn==22.0.0           # WSGI server for production
 
 # Testing - Development quality assurance
 pytest==7.4.3             # Testing framework
