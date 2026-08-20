@@ -34,7 +34,7 @@ anthropic>=0.18.0             # Anthropic Claude API client
 gunicorn==21.2.0           # WSGI server for production
 
 # Testing - Development quality assurance
-pytest==7.4.3             # Testing framework
+pytest==9.0.3             # Testing framework
 
 # Performance optimizations - Enterprise performance
 uvloop==0.19.0             # High-performance event loop
