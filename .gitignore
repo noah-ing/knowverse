@@ -1,8 +1,10 @@
 # 🚨 SECURITY - Never commit these files
 .env*
 !.env.example
-config/master.key
+config/master.key*
 config/credentials/*.key
+config/credentials*.bak
+config/credentials.yml.enc.*
 *.pem
 *.p12
 *.crt
@@ -103,6 +105,7 @@ npm-debug.log*
 # 🌐 ENVIRONMENT SPECIFIC
 /config/database.yml.backup
 *.pyc
+__pycache__/
 
 # 📁 TEST DATA (Large files for local testing)
 test_uploads/
