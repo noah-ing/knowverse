@@ -23,7 +23,7 @@ gem "dotenv-rails"
 
 # SSO/SAML/OIDC authentication
 gem "omniauth", "~> 2.1"
-gem "omniauth-saml", "~> 2.1"
+gem "omniauth-saml", "~> 2.2"
 gem "omniauth_openid_connect", "~> 0.7"
 gem "omniauth-rails_csrf_protection", "~> 1.0"
 
