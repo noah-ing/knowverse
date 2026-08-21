@@ -87,7 +87,7 @@ GEM
     bcrypt_pbkdf (1.1.1-arm64-darwin)
     bcrypt_pbkdf (1.1.1-x64-mingw-ucrt)
     benchmark (0.4.0)
-    benchmark-ips (2.14.0)
+    benchmark-ips (2.15.1)
     benchmark-malloc (0.2.0)
     benchmark-perf (0.6.0)
     benchmark-trend (0.4.0)
@@ -643,7 +643,7 @@ PLATFORMS
 
 DEPENDENCIES
   ahoy_matey
-  benchmark-ips (~> 2.12)
+  benchmark-ips (~> 2.15)
   bootsnap
   brakeman
   capybara

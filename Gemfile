@@ -52,7 +52,7 @@ group :development, :test do
   gem "faker"
   
   # Testing tools for distributed system
-  gem "benchmark-ips", "~> 2.12" # Performance benchmarking
+  gem "benchmark-ips", "~> 2.15" # Performance benchmarking
   gem "memory_profiler", "~> 1.0" # Memory usage profiling
   gem "ruby-progressbar", "~> 1.13" # Progress reporting for long tests
   gem "rspec-benchmark", "~> 0.6" # Performance expectations in tests
