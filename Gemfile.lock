@@ -81,7 +81,7 @@ GEM
       safely_block (>= 0.4)
     ast (2.4.3)
     attr_required (1.0.2)
-    base64 (0.2.0)
+    base64 (0.3.0)
     bcrypt (3.1.20)
     bcrypt_pbkdf (1.1.1)
     bcrypt_pbkdf (1.1.1-arm64-darwin)
@@ -203,7 +203,8 @@ GEM
     groupdate (6.5.1)
       activesupport (>= 7)
     hashdiff (1.1.2)
-    hashie (5.0.0)
+    hashie (5.2.0)
+      logger
     httparty (0.23.1)
       csv
       mini_mime (>= 1.0.0)
@@ -316,11 +317,11 @@ GEM
     oj (3.16.10)
       bigdecimal (>= 3.0)
       ostruct (>= 0.2)
-    omniauth (2.1.4)
-      hashie (>= 3.4.6)
+    omniauth (2.2.0)
+      hashie (>= 3.5.2)
       logger
-      rack (>= 2.2.3)
-      rack-protection
+      rack (>= 2.2.8)
+      rack-protection (>= 2.2.0)
     omniauth-rails_csrf_protection (1.0.2)
       actionpack (>= 4.2)
       omniauth (~> 2.0)
@@ -375,7 +376,7 @@ GEM
       activesupport (>= 3.0.0)
     raabro (1.4.0)
     racc (1.8.1)
-    rack (3.1.12)
+    rack (3.2.8)
     rack-oauth2 (2.3.0)
       activesupport
       attr_required
@@ -669,7 +670,7 @@ DEPENDENCIES
   memory_profiler (~> 1.0)
   notion-ruby-client (~> 1.2)
   oj (~> 3.16)
-  omniauth (~> 2.1)
+  omniauth (~> 2.2)
   omniauth-rails_csrf_protection (~> 1.0)
   omniauth-saml (~> 2.1)
   omniauth_openid_connect (~> 0.7)
